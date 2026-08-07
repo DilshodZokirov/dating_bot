@@ -463,7 +463,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 });
 
 // ============================================================
-// Qo'ng'iroq (WebRTC audio/video)
+// Qo'ng'iroq (WebRTC audio/video) — perfect negotiation + ICE buffer
 // ============================================================
 let pc = null;
 let ws = null;
@@ -473,6 +473,12 @@ let callRoomId = null;
 let callPollTimer = null;
 let isMuted = false;
 let videoOn = false;
+let videoTrack = null;
+let makingOffer = false;
+let ignoreOffer = false;
+let polite = false;
+let pendingIce = [];
+let pendingLocalSdp = null;
 
 function dlog(msg) {
   const el = document.getElementById("debugLog");
@@ -485,19 +491,45 @@ function dlog(msg) {
   console.log(msg);
 }
 
+async function flushIce() {
+  while (pendingIce.length && pc && pc.remoteDescription) {
+    const c = pendingIce.shift();
+    try {
+      await pc.addIceCandidate(c);
+      dlog("ICE (buffer) qo'shildi.");
+    } catch (e) {
+      dlog("ICE buffer xato: " + e.message);
+    }
+  }
+}
+
 async function enterCall(roomId, partnerId) {
   callRoomId = roomId;
   callPartnerId = partnerId;
+  isMuted = false;
+  videoOn = false;
+  videoTrack = null;
+  pendingIce.length = 0;
+  makingOffer = false;
+  ignoreOffer = false;
+  // Past ID — impolite (offer beradi), katta ID — polite (collisionda chekinadi)
+  polite = myId > partnerId;
+
   document.getElementById("debugLog").innerHTML = "";
-  dlog(`Qo'ng'iroq boshlandi. room=${roomId} partner=${partnerId} myId=${myId}`);
+  dlog(`Call start room=${roomId} me=${myId} partner=${partnerId} polite=${polite}`);
   searchView.classList.remove("active");
   bottomNav.style.display = "none";
   callView.style.display = "flex";
   document.getElementById("callStatus").textContent = tr("connecting");
+  document.getElementById("muteBtn").classList.remove("active-toggle");
+  document.getElementById("videoBtn").classList.remove("active-toggle");
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    dlog("Mikrofon olindi.");
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: false,
+    });
+    dlog("Mikrofon OK.");
   } catch (e) {
     dlog("Mikrofon xatosi: " + e.message);
     document.getElementById("callStatus").textContent = tr("mic_error");
@@ -507,117 +539,139 @@ async function enterCall(roomId, partnerId) {
   let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
   try {
     const turnData = await api("/api/turn-credentials");
-    if (turnData.iceServers && turnData.iceServers.length) {
+    if (turnData.iceServers?.length) {
       iceServers = turnData.iceServers;
-      dlog(`TURN ma'lumotlari olindi (${iceServers.length} ta server).`);
+      dlog(`ICE servers: ${iceServers.length}`);
     }
   } catch (e) {
-    dlog("TURN olishda xato, faqat STUN bilan davom etamiz: " + e.message);
+    dlog("TURN olishda xato, STUN only: " + e.message);
   }
 
-  pc = new RTCPeerConnection({ iceServers });
+  pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
   localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
-  const isOfferer = myId < partnerId;
-  dlog(`isOfferer=${isOfferer}`);
-  let negotiating = false;
-  let wsReady = false;
-  let pendingNegotiation = false;
-
-  async function sendOffer() {
-    if (negotiating) return;
-    negotiating = true;
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      ws.send(JSON.stringify({ type: "offer", sdp: pc.localDescription }));
-      dlog("Offer yuborildi.");
-    } finally {
-      negotiating = false;
-    }
-  }
-
   pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      dlog("ICE nomzod topildi: " + (event.candidate.type || "?"));
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
-      } else {
-        dlog("OGOHLANTIRISH: WS ochiq emas, ICE nomzod yo'qotildi!");
-      }
+    if (!event.candidate) {
+      dlog("ICE gathering done.");
+      return;
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
     } else {
-      dlog("ICE gathering tugadi.");
+      dlog("WS ochiq emas — ICE yo'qotildi!");
     }
   };
 
   pc.ontrack = (event) => {
-    dlog("Remote track keldi: " + event.track.kind);
-    const remoteAudio = document.getElementById("remoteAudio");
-    remoteAudio.srcObject = event.streams[0];
-    remoteAudio.muted = false;
-    remoteAudio.volume = 1.0;
-    remoteAudio.play().then(() => dlog("Audio play() muvaffaqiyatli.")).catch((e) => {
-      dlog("Audio play() bloklandi: " + e.message);
-      document.getElementById("callStatus").textContent = tr("tap_to_enable_audio");
-      document.getElementById("callStatus").style.cursor = "pointer";
-      document.getElementById("callStatus").onclick = () => {
-        remoteAudio.play().then(() => { dlog("Qo'lda play() muvaffaqiyatli."); document.getElementById("callStatus").onclick = null; }).catch(() => {});
-      };
-    });
+    dlog("Remote track: " + event.track.kind);
+    const stream = event.streams[0] || new MediaStream([event.track]);
+    if (event.track.kind === "audio") {
+      const remoteAudio = document.getElementById("remoteAudio");
+      remoteAudio.srcObject = stream;
+      remoteAudio.play().catch(() => {
+        document.getElementById("callStatus").textContent = tr("tap_to_enable_audio");
+        document.getElementById("callStatus").onclick = () => {
+          remoteAudio.play().catch(() => {});
+          document.getElementById("callStatus").onclick = null;
+          document.getElementById("callStatus").textContent = tr("connected");
+        };
+      });
+    }
     if (event.track.kind === "video") {
       const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.srcObject = stream;
       remoteVideo.style.display = "block";
+      document.querySelector(".call-avatar").style.display = "none";
     }
   };
 
-  pc.onnegotiationneeded = () => {
-    dlog("negotiationneeded hodisasi.");
-    if (!isOfferer) return;
-    if (!wsReady) { pendingNegotiation = true; return; }
-    sendOffer();
+  pc.onnegotiationneeded = async () => {
+    try {
+      makingOffer = true;
+      await pc.setLocalDescription();
+      const payload = JSON.stringify({ type: "sdp", description: pc.localDescription });
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(payload);
+        dlog("Local SDP yuborildi: " + pc.localDescription.type);
+      } else {
+        pendingLocalSdp = payload;
+        dlog("SDP WS ochilishini kutmoqda...");
+      }
+    } catch (e) {
+      dlog("negotiationneeded xato: " + e.message);
+    } finally {
+      makingOffer = false;
+    }
   };
 
   pc.oniceconnectionstatechange = () => {
-    dlog("ICE holati: " + pc.iceConnectionState);
+    dlog("ICE: " + pc.iceConnectionState);
     const statusEl = document.getElementById("callStatus");
-    if (pc.iceConnectionState === "checking") statusEl.textContent = tr("connecting") + " (ICE: checking)";
-    else if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") statusEl.textContent = tr("connected") + " (ICE: " + pc.iceConnectionState + ")";
-    else if (pc.iceConnectionState === "failed") statusEl.textContent = tr("connecting") + " (ICE: failed — tarmoq NAT muammosi)";
-    else if (pc.iceConnectionState === "disconnected") statusEl.textContent = tr("connecting") + " (ICE: disconnected)";
+    if (["connected", "completed"].includes(pc.iceConnectionState)) {
+      statusEl.textContent = tr("connected");
+    } else if (pc.iceConnectionState === "failed") {
+      statusEl.textContent = "ICE failed — TURN kerak (mobil tarmoq)";
+    } else if (pc.iceConnectionState === "checking") {
+      statusEl.textContent = tr("connecting");
+    }
   };
 
   const wsProto = location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = `${wsProto}://${location.host}/ws/call/${roomId}?init_data=${encodeURIComponent(initData)}`;
-  dlog("WebSocket ulanmoqda: " + location.host);
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
     dlog("WebSocket ochildi.");
-    wsReady = true;
-    if (pendingNegotiation) {
-      pendingNegotiation = false;
-      sendOffer();
+    if (pendingLocalSdp) {
+      ws.send(pendingLocalSdp);
+      dlog("Kutilgan SDP yuborildi.");
+      pendingLocalSdp = null;
     }
   };
-
-  ws.onerror = (e) => dlog("WebSocket XATOSI!");
-  ws.onclose = (e) => dlog(`WebSocket yopildi. code=${e.code}`);
+  ws.onerror = () => dlog("WebSocket XATOSI");
+  ws.onclose = (e) => dlog(`WebSocket yopildi code=${e.code}`);
 
   ws.onmessage = async (event) => {
-    const msg = JSON.parse(event.data);
-    dlog("WS xabar keldi: " + msg.type);
-    if (msg.type === "offer") {
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      ws.send(JSON.stringify({ type: "answer", sdp: pc.localDescription }));
-      dlog("Answer yuborildi.");
-    } else if (msg.type === "answer") {
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-      dlog("Answer o'rnatildi.");
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { return; }
+
+    // Eski format (offer/answer) + yangi (sdp) bilan mos
+    if (msg.type === "offer" || msg.type === "answer") {
+      msg = { type: "sdp", description: msg.sdp };
+    }
+
+    if (msg.type === "sdp" && msg.description) {
+      const desc = msg.description;
+      const offerCollision =
+        desc.type === "offer" && (makingOffer || pc.signalingState !== "stable");
+      ignoreOffer = !polite && offerCollision;
+      if (ignoreOffer) {
+        dlog("Offer collision — impolite, ignore.");
+        return;
+      }
+      try {
+        await pc.setRemoteDescription(desc);
+        dlog("Remote SDP: " + desc.type);
+        await flushIce();
+        if (desc.type === "offer") {
+          await pc.setLocalDescription();
+          ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
+          dlog("Answer yuborildi.");
+        }
+      } catch (e) {
+        dlog("SDP xato: " + e.message);
+      }
     } else if (msg.type === "ice" && msg.candidate) {
-      try { await pc.addIceCandidate(msg.candidate); dlog("ICE nomzod qo'shildi."); } catch (e) { dlog("ICE qo'shishda xato: " + e.message); }
+      if (!pc.remoteDescription) {
+        pendingIce.push(msg.candidate);
+        dlog("ICE bufferlandi.");
+      } else {
+        try {
+          await pc.addIceCandidate(msg.candidate);
+        } catch (e) {
+          dlog("ICE xato: " + e.message);
+        }
+      }
     }
   };
 
@@ -635,17 +689,29 @@ async function enterCall(roomId, partnerId) {
 function cleanupCall(notifyServer) {
   clearInterval(callPollTimer);
   if (notifyServer && callRoomId && callPartnerId) {
-    api("/api/call/end", { method: "POST", body: JSON.stringify({ room_id: callRoomId, partner_id: callPartnerId }) }).catch(() => {});
+    api("/api/call/end", {
+      method: "POST",
+      body: JSON.stringify({ room_id: callRoomId, partner_id: callPartnerId }),
+    }).catch(() => {});
+  }
+  if (videoTrack) {
+    try { videoTrack.stop(); } catch (_) {}
+    videoTrack = null;
   }
   if (pc) { pc.close(); pc = null; }
   if (ws) { ws.close(); ws = null; }
-  if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
+  if (localStream) {
+    localStream.getTracks().forEach((t) => t.stop());
+    localStream = null;
+  }
   document.getElementById("remoteVideo").style.display = "none";
   document.getElementById("localVideo").style.display = "none";
+  document.querySelector(".call-avatar").style.display = "flex";
   callView.style.display = "none";
   bottomNav.style.display = "flex";
   searchView.classList.add("active");
   setSearchingUI(false);
+  videoOn = false;
 }
 
 document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
@@ -658,18 +724,44 @@ document.getElementById("muteBtn").addEventListener("click", () => {
 });
 
 document.getElementById("videoBtn").addEventListener("click", async () => {
-  if (videoOn || !pc || !localStream) return;
-  try {
-    const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const videoTrack = videoStream.getVideoTracks()[0];
-    localStream.addTrack(videoTrack);
-    pc.addTrack(videoTrack, localStream);
-    const localVideo = document.getElementById("localVideo");
-    localVideo.srcObject = new MediaStream([videoTrack]);
-    localVideo.style.display = "block";
-    videoOn = true;
-    document.getElementById("videoBtn").classList.add("active-toggle");
-  } catch (e) { /* kamera ruxsati berilmadi */ }
+  if (!pc || !localStream) return;
+  const btn = document.getElementById("videoBtn");
+  const localVideo = document.getElementById("localVideo");
+
+  if (!videoOn) {
+    try {
+      const vs = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      });
+      videoTrack = vs.getVideoTracks()[0];
+      localStream.addTrack(videoTrack);
+      pc.addTrack(videoTrack, localStream);
+      localVideo.srcObject = new MediaStream([videoTrack]);
+      localVideo.style.display = "block";
+      videoOn = true;
+      btn.classList.add("active-toggle");
+      dlog("Video yoqildi.");
+    } catch (e) {
+      dlog("Kamera xato: " + e.message);
+      tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
+    }
+  } else {
+    // Video o'chirish
+    const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
+    if (sender) {
+      try { pc.removeTrack(sender); } catch (_) {}
+    }
+    if (videoTrack) {
+      videoTrack.stop();
+      localStream.removeTrack(videoTrack);
+      videoTrack = null;
+    }
+    localVideo.srcObject = null;
+    localVideo.style.display = "none";
+    videoOn = false;
+    btn.classList.remove("active-toggle");
+    dlog("Video o'chirildi.");
+  }
 });
 
 loadCities();

@@ -10,10 +10,15 @@ class Settings(BaseSettings):
     min_age: int = 18
     max_age_gap: int = 5  # matching qilinadigan foydalanuvchilar orasidagi maksimal yosh farqi
 
-    webapp_url: str = ""  # Mini App uchun ochiq HTTPS manzil (masalan ngrok)
+    webapp_url: str = ""  # Mini App uchun ochiq HTTPS manzil (masalan ngrok / Render)
 
-    metered_domain: str = ""  # masalan: soylaibot.metered.live
+    # TURN (WebRTC) — mobil tarmoqda audio/video uchun muhim
+    metered_domain: str = ""  # masalan: xxx.metered.live
     metered_secret_key: str = ""
+    # Ixtiyoriy o'z TURN (masalan docker coturn): turn:host:3478?transport=udp
+    turn_urls: str = ""
+    turn_username: str = ""
+    turn_password: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

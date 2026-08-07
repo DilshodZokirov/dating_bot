@@ -6,6 +6,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardRemove,
+    WebAppInfo,
 )
 
 from app.bot.states import Registration
@@ -16,6 +17,19 @@ from app.matching.queue import cancel_proposals_by_user, cancel_wait, set_result
 from app.models import Gender, Language, LookingFor, User
 
 router = Router()
+
+
+def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
+    """Mini App ochish tugmasi — video qo'ng'iroq shu yerda."""
+    if not settings.webapp_url:
+        return ReplyKeyboardRemove()
+    label = {"uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call"}.get(
+        lang, "🔍 Qidirish / Qo'ng'iroq"
+    )
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=f"{settings.webapp_url.rstrip('/')}/webapp/"))]],
+        resize_keyboard=True,
+    )
 
 gender_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Erkak"), KeyboardButton(text="Ayol")]],
@@ -38,7 +52,10 @@ async def cmd_start(message: Message, state: FSMContext):
         user = await session.get(User, message.from_user.id)
 
     if user:
-        await message.answer(t(user.language.value, "welcome_back", name=user.name))
+        await message.answer(
+            t(user.language.value, "welcome_back", name=user.name),
+            reply_markup=_webapp_kb(user.language.value),
+        )
         return
 
     await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
@@ -98,11 +115,12 @@ async def process_language(message: Message, state: FSMContext):
         await session.commit()
 
     await state.clear()
+    lang = data["language"].value if hasattr(data["language"], "value") else data["language"]
     await message.answer(
         "✅ Ro'yxatdan o'tish tugadi!\n\n"
-        "Suhbatdosh qidirish, taklifga javob berish va suhbatni tugatish endi "
-        "pastdagi <b>Menu</b> tugmasi orqali ochiladigan ilova ichida amalga oshiriladi.",
-        reply_markup=ReplyKeyboardRemove(),
+        "Suhbatdosh qidirish va <b>audio/video qo'ng'iroq</b> Mini App ichida.\n"
+        "Pastdagi tugmani bosing yoki Menu → Qidirish.",
+        reply_markup=_webapp_kb(lang),
     )
 
 
@@ -119,7 +137,10 @@ async def cmd_search(message: Message, state: FSMContext):
         await message.answer("Avval ro'yxatdan o'ting: /start")
         return
 
-    await message.answer(t(user.language.value, "search_check_app"))
+    await message.answer(
+        t(user.language.value, "search_check_app"),
+        reply_markup=_webapp_kb(user.language.value),
+    )
 
 
 @router.message(Command("stop"))
