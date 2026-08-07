@@ -1,0 +1,16 @@
+UZBEKISTAN_CITIES = [
+    "Toshkent shahri",
+    "Toshkent viloyati",
+    "Andijon",
+    "Buxoro",
+    "Farg'ona",
+    "Jizzax",
+    "Xorazm",
+    "Namangan",
+    "Navoiy",
+    "Qashqadaryo",
+    "Qoraqalpog'iston",
+    "Samarqand",
+    "Sirdaryo",
+    "Surxondaryo",
+]

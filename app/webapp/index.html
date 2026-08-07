@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Suhbatdosh qidirish</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #0e1621);
+    --text: var(--tg-theme-text-color, #ffffff);
+    --hint: var(--tg-theme-hint-color, #7d8b99);
+    --accent: var(--tg-theme-button-color, #e8823c);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --card: rgba(255,255,255,0.05);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  .view { display: none; flex: 1; flex-direction: column; align-items: center; padding: 24px 16px 90px; }
+  .view.active { display: flex; }
+
+  .status-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--hint); margin-bottom: 40px; }
+  .circle-btn {
+    width: 190px; height: 190px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--accent), #a15420);
+    border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 0 40px rgba(232, 130, 60, 0.35); transition: transform 0.15s ease;
+  }
+  .circle-btn:active { transform: scale(0.96); }
+  .circle-btn svg { width: 60px; height: 60px; fill: #fff; }
+  .circle-btn.searching { animation: pulse 1.4s infinite ease-in-out; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(232, 130, 60, 0.5); }
+    70% { box-shadow: 0 0 0 24px rgba(232, 130, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(232, 130, 60, 0); }
+  }
+  h1 { font-size: 22px; margin: 26px 0 8px; text-align: center; }
+  p.hint { color: var(--hint); text-align: center; font-size: 14px; max-width: 280px; line-height: 1.4; }
+  .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
+  .error-box { display: none; text-align: center; margin-top: 40px; color: var(--hint); font-size: 14px; }
+
+  /* Taklif kartasi */
+  .proposal-card {
+    display: none; width: 100%; max-width: 320px; background: var(--card);
+    border-radius: 16px; padding: 22px; margin-top: 10px; text-align: center;
+  }
+  .proposal-card .p-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .proposal-card .p-meta { color: var(--hint); font-size: 14px; margin-bottom: 18px; }
+  .proposal-actions { display: flex; gap: 10px; }
+  .proposal-actions button {
+    flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn-accept { background: #3ba55c; color: #fff; }
+  .btn-decline { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  /* Qo'ng'iroq oynasi */
+  .call-view { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 24px 16px 100px; }
+  .call-avatar {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--accent), #a15420);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+  }
+  .call-avatar svg { width: 48px; height: 48px; fill: #fff; }
+  .call-status { color: var(--hint); font-size: 14px; margin-bottom: 30px; }
+  video#remoteVideo { width: 100%; max-width: 320px; border-radius: 16px; background: #000; margin-bottom: 16px; display: none; }
+  video#localVideo { width: 90px; border-radius: 10px; background: #000; position: absolute; top: 20px; right: 20px; display: none; }
+  .call-controls { display: flex; gap: 16px; }
+  .call-btn {
+    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; background: var(--card);
+  }
+  .call-btn svg { width: 24px; height: 24px; fill: var(--text); }
+  .call-btn.end { background: #e5484d; }
+  .call-btn.active-toggle { background: var(--accent); }
+
+  /* Profil */
+  .profile-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--hint); margin-bottom: 6px; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+    background: var(--card); color: var(--text); font-size: 14px; font-family: inherit;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .save-btn { margin-top: 4px; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .save-status { text-align: center; font-size: 13px; color: var(--hint); min-height: 18px; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--bg);
+    border-top: 1px solid rgba(255,255,255,0.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .nav-btn { flex: 1; background: none; border: none; color: var(--hint); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
+</style>
+</head>
+<body>
+
+  <!-- QIDIRISH -->
+  <div class="view active" id="searchView">
+    <div class="status-bar">
+      <span id="userLabel">...</span>
+      <span id="stateLabel"></span>
+    </div>
+
+    <button class="circle-btn" id="mainBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+    </button>
+
+    <h1 id="titleText">Boshlash uchun bosing</h1>
+    <p class="hint" id="hintText">Sizga mos suhbatdoshni topib beramiz.</p>
+    <span class="cancel-link" id="cancelLink">Bekor qilish</span>
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Taklif kartasi -->
+    <div class="proposal-card" id="proposalCard">
+      <div class="p-name" id="pName"></div>
+      <div class="p-meta" id="pMeta"></div>
+      <div class="proposal-actions">
+        <button class="btn-decline" id="pDeclineBtn">❌</button>
+        <button class="btn-accept" id="pAcceptBtn">✅</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QO'NG'IROQ -->
+  <div class="call-view" id="callView">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+    <audio id="remoteAudio" autoplay></audio>
+    <div class="call-avatar">
+      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+    </div>
+    <div class="call-status" id="callStatus">Ulanmoqda...</div>
+    <div id="debugLog" style="width:100%;max-width:320px;max-height:140px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;font-size:11px;color:var(--hint);margin-bottom:16px;font-family:monospace;"></div>
+    <div class="call-controls">
+      <button class="call-btn" id="muteBtn" title="Mute">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <button class="call-btn" id="videoBtn" title="Video">
+        <svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg>
+      </button>
+      <button class="call-btn end" id="endCallBtn" title="End">
+        <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.71c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.66c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PROFIL -->
+  <div class="view" id="profileView">
+    <h1 id="profileTitle">Profil</h1>
+    <div class="profile-form">
+      <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
+      <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
+      <div class="field"><label id="lblLocation">Yashash joyi</label><input type="text" id="profileLocation" maxlength="100"></div>
+      <div class="field">
+        <label id="lblLanguage">Til</label>
+        <select id="profileLanguage">
+          <option value="uz">O'zbek</option><option value="ru">Русский</option><option value="en">English</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="lblCity">Shahar / Viloyat</label>
+        <select id="profileCity"><option value="" id="cityNoneOpt">Tanlanmagan</option></select>
+      </div>
+      <div class="field">
+        <label id="lblScope">Qidiruv doirasi</label>
+        <select id="profileSearchScope">
+          <option value="country" id="scopeCountryOpt">Butun O'zbekiston bo'yicha</option>
+          <option value="city" id="scopeCityOpt">Faqat o'z shahrim bo'yicha</option>
+        </select>
+      </div>
+      <button class="save-btn" id="saveProfileBtn">Saqlash</button>
+      <div class="save-status" id="saveStatus"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" data-view="searchView">
+      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      <span id="navSearchLabel">Qidirish</span>
+    </button>
+    <button class="nav-btn" data-view="profileView">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+      <span id="navProfileLabel">Profil</span>
+    </button>
+  </div>
+
+<script>
+const TRANSLATIONS = {
+  idle_title: { uz: "Boshlash uchun bosing", ru: "Нажмите, чтобы начать", en: "Tap to start" },
+  idle_hint: { uz: "Sizga mos suhbatdoshni topib beramiz.", ru: "Мы найдём вам подходящего собеседника.", en: "We'll find you a matching partner." },
+  searching_title: { uz: "Suhbatdosh qidirilmoqda...", ru: "Ищем собеседника...", en: "Searching for a partner..." },
+  searching_hint: { uz: "Bir oz kuting, sizga mos kishi topilishi bilan xabar beramiz.", ru: "Подождите немного, мы сообщим, как только найдём подходящего человека.", en: "Please wait, we'll notify you once a match is found." },
+  requeued_hint: { uz: "Hamsuhbatingiz rad etdi, sizni qayta qidiruvga qo'shdik...", ru: "Собеседник отказался, вы снова добавлены в поиск...", en: "The other person declined, you've been added back to the search..." },
+  cancel_link: { uz: "Bekor qilish", ru: "Отменить", en: "Cancel" },
+  not_registered: { uz: "Avval botda /start buyrug'i orqali ro'yxatdan o'ting.", ru: "Сначала зарегистрируйтесь в боте через /start.", en: "Please register first in the bot via /start." },
+  profile_title: { uz: "Profil", ru: "Профиль", en: "Profile" },
+  lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
+  lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
+  lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location" },
+  lbl_language: { uz: "Til", ru: "Язык", en: "Language" },
+  lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region" },
+  lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
+  city_none: { uz: "Tanlanmagan", ru: "Не выбрано", en: "Not selected" },
+  scope_country: { uz: "Butun O'zbekiston bo'yicha", ru: "По всему Узбекистану", en: "All over Uzbekistan" },
+  scope_city: { uz: "Faqat o'z shahrim bo'yicha", ru: "Только в моём городе", en: "Only in my city" },
+  save_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
+  saved_ok: { uz: "✅ Saqlandi", ru: "✅ Сохранено", en: "✅ Saved" },
+  save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: " },
+  nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search" },
+  nav_profile: { uz: "Profil", ru: "Профиль", en: "Profile" },
+  gender_male: { uz: "Erkak", ru: "Мужской", en: "Male" },
+  gender_female: { uz: "Ayol", ru: "Женский", en: "Female" },
+  p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} y.o. · {gender}" },
+  proposal_question: { uz: "Shu kishi bilan suhbatlashishga rozimisiz?", ru: "Хотите пообщаться с этим человеком?", en: "Would you like to chat with this person?" },
+  waiting_partner_title: { uz: "Javobingiz qabul qilindi", ru: "Ваш ответ принят", en: "Your response was received" },
+  waiting_partner_hint: { uz: "Hamsuhbatingiz javobini kutmoqdamiz...", ru: "Ждём ответа собеседника...", en: "Waiting for the other person's response..." },
+  connecting: { uz: "Ulanmoqda...", ru: "Подключение...", en: "Connecting..." },
+  connected: { uz: "Ulandi", ru: "Соединено", en: "Connected" },
+  call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "The call has ended." },
+  mic_error: { uz: "Mikrofonga ruxsat berilmadi. Sozlamalardan ruxsat bering.", ru: "Доступ к микрофону не разрешён. Разрешите в настройках.", en: "Microphone access denied. Please allow it in settings." },
+  tap_to_enable_audio: { uz: "Ovozni yoqish uchun shu yerga bosing", ru: "Нажмите здесь, чтобы включить звук", en: "Tap here to enable audio" },
+};
+
+let currentLang = "uz";
+function tr(key, vars) {
+  const entry = TRANSLATIONS[key] || {};
+  let str = entry[currentLang] || entry.uz || key;
+  if (vars) for (const k in vars) str = str.replace(`{${k}}`, vars[k]);
+  return str;
+}
+
+function applyStaticTranslations() {
+  document.getElementById("cancelLink").textContent = tr("cancel_link");
+  document.getElementById("profileTitle").textContent = tr("profile_title");
+  document.getElementById("lblName").textContent = tr("lbl_name");
+  document.getElementById("lblBio").textContent = tr("lbl_bio");
+  document.getElementById("lblLocation").textContent = tr("lbl_location");
+  document.getElementById("lblLanguage").textContent = tr("lbl_language");
+  document.getElementById("lblCity").textContent = tr("lbl_city");
+  document.getElementById("lblScope").textContent = tr("lbl_scope");
+  document.getElementById("cityNoneOpt").textContent = tr("city_none");
+  document.getElementById("scopeCountryOpt").textContent = tr("scope_country");
+  document.getElementById("scopeCityOpt").textContent = tr("scope_city");
+  document.getElementById("saveProfileBtn").textContent = tr("save_btn");
+  document.getElementById("navSearchLabel").textContent = tr("nav_search");
+  document.getElementById("navProfileLabel").textContent = tr("nav_profile");
+  if (!searching) {
+    titleText.textContent = tr("idle_title");
+    hintText.textContent = tr("idle_hint");
+  }
+}
+
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
+const initData = tg?.initData || "";
+const myId = tg?.initDataUnsafe?.user?.id || 0;
+
+const mainBtn = document.getElementById("mainBtn");
+const titleText = document.getElementById("titleText");
+const hintText = document.getElementById("hintText");
+const cancelLink = document.getElementById("cancelLink");
+const userLabel = document.getElementById("userLabel");
+const stateLabel = document.getElementById("stateLabel");
+const errorBox = document.getElementById("errorBox");
+const proposalCard = document.getElementById("proposalCard");
+const searchView = document.getElementById("searchView");
+const callView = document.getElementById("callView");
+const bottomNav = document.getElementById("bottomNav");
+
+let pollTimer = null;
+let searching = false;
+let currentProposalId = null;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Telegram-Init-Data": initData,
+      "ngrok-skip-browser-warning": "true",
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `Error: ${res.status}`);
+  }
+  return res.json();
+}
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = "block";
+  mainBtn.style.display = "none";
+  titleText.style.display = "none";
+  hintText.style.display = "none";
+}
+
+function resetSearchUIElements() {
+  proposalCard.style.display = "none";
+  mainBtn.style.display = "flex";
+  titleText.style.display = "block";
+  hintText.style.display = "block";
+}
+
+function setSearchingUI(isSearching) {
+  searching = isSearching;
+  mainBtn.classList.toggle("searching", isSearching);
+  cancelLink.style.display = isSearching ? "block" : "none";
+  titleText.textContent = isSearching ? tr("searching_title") : tr("idle_title");
+  hintText.textContent = isSearching ? tr("searching_hint") : tr("idle_hint");
+  resetSearchUIElements();
+}
+
+function showProposal(proposalId, name, age, gender) {
+  clearInterval(pollTimer);
+  currentProposalId = proposalId;
+  mainBtn.style.display = "none";
+  titleText.textContent = tr("proposal_question");
+  hintText.style.display = "none";
+  cancelLink.style.display = "none";
+  document.getElementById("pName").textContent = name;
+  document.getElementById("pMeta").textContent = tr("p_meta", { age, gender: tr(gender === "male" ? "gender_male" : "gender_female") });
+  proposalCard.style.display = "block";
+}
+
+async function respondToProposal(decision) {
+  proposalCard.style.display = "none";
+  try {
+    const result = await api("/api/proposal/respond", {
+      method: "POST",
+      body: JSON.stringify({ proposal_id: currentProposalId, decision }),
+    });
+    currentProposalId = null;
+    if (result.outcome === "matched") {
+      enterCall(result.room_id, result.partner_id);
+    } else if (result.outcome === "waiting_partner") {
+      titleText.textContent = tr("waiting_partner_title");
+      hintText.textContent = tr("waiting_partner_hint");
+      hintText.style.display = "block";
+      pollTimer = setInterval(pollStatus, 2000);
+    } else {
+      // "declined" (men rad etdim) yoki "invalid"
+      setSearchingUI(false);
+    }
+  } catch (e) {
+    setSearchingUI(false);
+    showError(e.message);
+  }
+}
+document.getElementById("pAcceptBtn").addEventListener("click", () => respondToProposal("accepted"));
+document.getElementById("pDeclineBtn").addEventListener("click", () => respondToProposal("declined"));
+
+async function loadCities() {
+  try {
+    const data = await api("/api/cities");
+    const select = document.getElementById("profileCity");
+    for (const city of data.cities) {
+      const opt = document.createElement("option");
+      opt.value = city; opt.textContent = city;
+      select.appendChild(opt);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+async function loadMe() {
+  try {
+    const me = await api("/api/me");
+    if (!me.registered) { showError(tr("not_registered")); return; }
+    currentLang = me.language || "uz";
+    applyStaticTranslations();
+    userLabel.textContent = me.name;
+    stateLabel.textContent = "";
+    document.getElementById("profileName").value = me.name || "";
+    document.getElementById("profileBio").value = me.bio || "";
+    document.getElementById("profileLocation").value = me.location || "";
+    document.getElementById("profileLanguage").value = me.language || "uz";
+    document.getElementById("profileCity").value = me.city || "";
+    document.getElementById("profileSearchScope").value = me.search_scope || "country";
+  } catch (e) { showError(e.message); }
+}
+
+async function startSearch() {
+  try {
+    setSearchingUI(true);
+    await api("/api/search/start", { method: "POST" });
+    pollTimer = setInterval(pollStatus, 2000);
+  } catch (e) {
+    setSearchingUI(false);
+    showError(e.message);
+  }
+}
+
+async function pollStatus() {
+  try {
+    const result = await api("/api/search/status");
+    if (result.outcome === "proposal") {
+      clearInterval(pollTimer);
+      showProposal(result.proposal_id, result.other_name, result.other_age, result.other_gender);
+    } else if (result.outcome === "matched") {
+      clearInterval(pollTimer);
+      enterCall(result.room_id, result.partner_id);
+    } else if (result.outcome === "requeued") {
+      hintText.textContent = tr("requeued_hint");
+      hintText.style.display = "block";
+    }
+  } catch (e) {
+    clearInterval(pollTimer);
+    showError(e.message);
+  }
+}
+
+async function cancelSearch() {
+  clearInterval(pollTimer);
+  setSearchingUI(false);
+  try { await api("/api/search/cancel", { method: "POST" }); } catch (e) { /* ignore */ }
+}
+
+mainBtn.addEventListener("click", () => { if (!searching) startSearch(); });
+cancelLink.addEventListener("click", cancelSearch);
+
+// --- Profil ---
+document.getElementById("saveProfileBtn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("saveStatus");
+  statusEl.textContent = "...";
+  try {
+    const newLang = document.getElementById("profileLanguage").value;
+    await api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({
+        name: document.getElementById("profileName").value,
+        bio: document.getElementById("profileBio").value,
+        location: document.getElementById("profileLocation").value,
+        language: newLang,
+        city: document.getElementById("profileCity").value,
+        search_scope: document.getElementById("profileSearchScope").value,
+      }),
+    });
+    currentLang = newLang;
+    applyStaticTranslations();
+    statusEl.textContent = tr("saved_ok");
+    userLabel.textContent = document.getElementById("profileName").value;
+    setTimeout(() => { statusEl.textContent = ""; }, 2000);
+  } catch (e) {
+    statusEl.textContent = tr("save_error") + e.message;
+  }
+});
+
+document.querySelectorAll(".nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.view).classList.add("active");
+  });
+});
+
+// ============================================================
+// Qo'ng'iroq (WebRTC audio/video)
+// ============================================================
+let pc = null;
+let ws = null;
+let localStream = null;
+let callPartnerId = null;
+let callRoomId = null;
+let callPollTimer = null;
+let isMuted = false;
+let videoOn = false;
+
+function dlog(msg) {
+  const el = document.getElementById("debugLog");
+  if (!el) return;
+  const line = document.createElement("div");
+  const t = new Date().toLocaleTimeString();
+  line.textContent = `[${t}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+  console.log(msg);
+}
+
+async function enterCall(roomId, partnerId) {
+  callRoomId = roomId;
+  callPartnerId = partnerId;
+  document.getElementById("debugLog").innerHTML = "";
+  dlog(`Qo'ng'iroq boshlandi. room=${roomId} partner=${partnerId} myId=${myId}`);
+  searchView.classList.remove("active");
+  bottomNav.style.display = "none";
+  callView.style.display = "flex";
+  document.getElementById("callStatus").textContent = tr("connecting");
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    dlog("Mikrofon olindi.");
+  } catch (e) {
+    dlog("Mikrofon xatosi: " + e.message);
+    document.getElementById("callStatus").textContent = tr("mic_error");
+    return;
+  }
+
+  let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+  try {
+    const turnData = await api("/api/turn-credentials");
+    if (turnData.iceServers && turnData.iceServers.length) {
+      iceServers = turnData.iceServers;
+      dlog(`TURN ma'lumotlari olindi (${iceServers.length} ta server).`);
+    }
+  } catch (e) {
+    dlog("TURN olishda xato, faqat STUN bilan davom etamiz: " + e.message);
+  }
+
+  pc = new RTCPeerConnection({ iceServers });
+  localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
+
+  const isOfferer = myId < partnerId;
+  dlog(`isOfferer=${isOfferer}`);
+  let negotiating = false;
+  let wsReady = false;
+  let pendingNegotiation = false;
+
+  async function sendOffer() {
+    if (negotiating) return;
+    negotiating = true;
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ type: "offer", sdp: pc.localDescription }));
+      dlog("Offer yuborildi.");
+    } finally {
+      negotiating = false;
+    }
+  }
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      dlog("ICE nomzod topildi: " + (event.candidate.type || "?"));
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
+      } else {
+        dlog("OGOHLANTIRISH: WS ochiq emas, ICE nomzod yo'qotildi!");
+      }
+    } else {
+      dlog("ICE gathering tugadi.");
+    }
+  };
+
+  pc.ontrack = (event) => {
+    dlog("Remote track keldi: " + event.track.kind);
+    const remoteAudio = document.getElementById("remoteAudio");
+    remoteAudio.srcObject = event.streams[0];
+    remoteAudio.muted = false;
+    remoteAudio.volume = 1.0;
+    remoteAudio.play().then(() => dlog("Audio play() muvaffaqiyatli.")).catch((e) => {
+      dlog("Audio play() bloklandi: " + e.message);
+      document.getElementById("callStatus").textContent = tr("tap_to_enable_audio");
+      document.getElementById("callStatus").style.cursor = "pointer";
+      document.getElementById("callStatus").onclick = () => {
+        remoteAudio.play().then(() => { dlog("Qo'lda play() muvaffaqiyatli."); document.getElementById("callStatus").onclick = null; }).catch(() => {});
+      };
+    });
+    if (event.track.kind === "video") {
+      const remoteVideo = document.getElementById("remoteVideo");
+      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.style.display = "block";
+    }
+  };
+
+  pc.onnegotiationneeded = () => {
+    dlog("negotiationneeded hodisasi.");
+    if (!isOfferer) return;
+    if (!wsReady) { pendingNegotiation = true; return; }
+    sendOffer();
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    dlog("ICE holati: " + pc.iceConnectionState);
+    const statusEl = document.getElementById("callStatus");
+    if (pc.iceConnectionState === "checking") statusEl.textContent = tr("connecting") + " (ICE: checking)";
+    else if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") statusEl.textContent = tr("connected") + " (ICE: " + pc.iceConnectionState + ")";
+    else if (pc.iceConnectionState === "failed") statusEl.textContent = tr("connecting") + " (ICE: failed — tarmoq NAT muammosi)";
+    else if (pc.iceConnectionState === "disconnected") statusEl.textContent = tr("connecting") + " (ICE: disconnected)";
+  };
+
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${wsProto}://${location.host}/ws/call/${roomId}?init_data=${encodeURIComponent(initData)}`;
+  dlog("WebSocket ulanmoqda: " + location.host);
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    dlog("WebSocket ochildi.");
+    wsReady = true;
+    if (pendingNegotiation) {
+      pendingNegotiation = false;
+      sendOffer();
+    }
+  };
+
+  ws.onerror = (e) => dlog("WebSocket XATOSI!");
+  ws.onclose = (e) => dlog(`WebSocket yopildi. code=${e.code}`);
+
+  ws.onmessage = async (event) => {
+    const msg = JSON.parse(event.data);
+    dlog("WS xabar keldi: " + msg.type);
+    if (msg.type === "offer") {
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      ws.send(JSON.stringify({ type: "answer", sdp: pc.localDescription }));
+      dlog("Answer yuborildi.");
+    } else if (msg.type === "answer") {
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      dlog("Answer o'rnatildi.");
+    } else if (msg.type === "ice" && msg.candidate) {
+      try { await pc.addIceCandidate(msg.candidate); dlog("ICE nomzod qo'shildi."); } catch (e) { dlog("ICE qo'shishda xato: " + e.message); }
+    }
+  };
+
+  callPollTimer = setInterval(async () => {
+    try {
+      const result = await api("/api/search/status");
+      if (result.outcome === "call_ended") {
+        tg?.showAlert(tr("call_ended_alert"));
+        cleanupCall(false);
+      }
+    } catch (e) { /* ignore */ }
+  }, 2500);
+}
+
+function cleanupCall(notifyServer) {
+  clearInterval(callPollTimer);
+  if (notifyServer && callRoomId && callPartnerId) {
+    api("/api/call/end", { method: "POST", body: JSON.stringify({ room_id: callRoomId, partner_id: callPartnerId }) }).catch(() => {});
+  }
+  if (pc) { pc.close(); pc = null; }
+  if (ws) { ws.close(); ws = null; }
+  if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
+  document.getElementById("remoteVideo").style.display = "none";
+  document.getElementById("localVideo").style.display = "none";
+  callView.style.display = "none";
+  bottomNav.style.display = "flex";
+  searchView.classList.add("active");
+  setSearchingUI(false);
+}
+
+document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
+
+document.getElementById("muteBtn").addEventListener("click", () => {
+  if (!localStream) return;
+  isMuted = !isMuted;
+  localStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
+  document.getElementById("muteBtn").classList.toggle("active-toggle", isMuted);
+});
+
+document.getElementById("videoBtn").addEventListener("click", async () => {
+  if (videoOn || !pc || !localStream) return;
+  try {
+    const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const videoTrack = videoStream.getVideoTracks()[0];
+    localStream.addTrack(videoTrack);
+    pc.addTrack(videoTrack, localStream);
+    const localVideo = document.getElementById("localVideo");
+    localVideo.srcObject = new MediaStream([videoTrack]);
+    localVideo.style.display = "block";
+    videoOn = true;
+    document.getElementById("videoBtn").classList.add("active-toggle");
+  } catch (e) { /* kamera ruxsati berilmadi */ }
+});
+
+loadCities();
+loadMe();
+</script>
+</body>
+</html>
