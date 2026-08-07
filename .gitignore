@@ -1,0 +1,22 @@
+.env
+.env.local
+.env.*.local
+# Virtualenv
+.venv/
+venv/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+# Log / DB
+*.log
+*.sqlite3
