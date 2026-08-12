@@ -895,7 +895,7 @@ async function loadSavedList() {
           <div class="sub">${status}${it.busy ? " · busy" : ""}</div>
         </div>
         <div class="saved-actions">
-          <button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>
+          <button type="button" class="invite" data-invite="${it.partner_id}" ${it.busy ? "disabled" : ""}>${tr("invite_btn")}</button>
           <button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>
         </div>`;
       list.appendChild(row);

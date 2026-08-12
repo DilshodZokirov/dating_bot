@@ -74,9 +74,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "gender_male": {"uz": "Erkak", "ru": "Мужской", "en": "Male"},
     "gender_female": {"uz": "Ayol", "ru": "Женский", "en": "Female"},
     "search_check_app": {
-        "uz": "Qidiruv Mini App'da. Mos kelganda Telegramda xabar keladi — Roziman/Yo'q tugmalarini bosing.",
-        "ru": "Поиск в Mini App. При совпадении придёт сообщение в Telegram — нажмите Согласен/Нет.",
-        "en": "Search in Mini App. On a match you'll get a Telegram message — tap Accept/Decline.",
+        "uz": "Qidiruv Mini App'da. Mini App ochiq bo'lsa taklif shu yerda; yopiq bo'lsa Telegramda xabar keladi.",
+        "ru": "Поиск в Mini App. Если Mini App открыт — предложение там; если закрыт — придёт в Telegram.",
+        "en": "Search in Mini App. If Mini App is open — proposal appears there; if closed — Telegram message.",
     },
 }
 

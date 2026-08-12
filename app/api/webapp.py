@@ -225,6 +225,7 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
 @router.post("/search/start")
 async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
+    await touch_presence(int(tg_user["id"]))
     async with async_session() as session:
         user = await session.get(User, tg_user["id"])
 
@@ -280,14 +281,17 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         other_name=user.name, other_age=user.age, other_gender=user.gender.value,
     )
 
-    await notify_match_found(
-        user.id, user.language.value, candidate_user.name, candidate_user.age, candidate_user.gender.value,
-        proposal_id,
-    )
-    await notify_match_found(
-        candidate_user.id, candidate_user.language.value, user.name, user.age, user.gender.value,
-        proposal_id,
-    )
+    # Mini App ochiq (online) → faqat webapp; yopiq → Telegram bot inline
+    if not await is_online(user.id):
+        await notify_match_found(
+            user.id, user.language.value, candidate_user.name, candidate_user.age,
+            candidate_user.gender.value, proposal_id,
+        )
+    if not await is_online(candidate_user.id):
+        await notify_match_found(
+            candidate_user.id, candidate_user.language.value, user.name, user.age,
+            user.gender.value, proposal_id,
+        )
 
     return {"status": "proposal_sent"}
 
@@ -718,8 +722,8 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         raise HTTPException(status_code=403, detail="Hisob cheklangan")
     if partner.is_in_call:
         raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
-    if not await is_online(payload.partner_id):
-        raise HTTPException(status_code=409, detail="Suhbatdosh hozir online emas")
+
+    partner_online = await is_online(payload.partner_id)
 
     # Navbatdan chiqarib, to'g'ridan-to'g'ri taklif
     for lf in ("male", "female", "any"):
@@ -738,7 +742,15 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         partner.id, "proposal", proposal_id=proposal_id,
         other_name=me.name, other_age=me.age, other_gender=me.gender.value,
     )
-    await notify_saved_invite(partner.id, partner.language.value, me.name, me.age, proposal_id)
-    await notify_match_found(me.id, me.language.value, partner.name, partner.age, partner.gender.value, proposal_id)
 
-    return {"status": "invited", "proposal_id": proposal_id, "partner_id": partner.id}
+    # Chaqiruvchi Mini Appda → Telegram kerak emas.
+    # Hamroh online → webapp; offline → Telegram bot.
+    if not partner_online:
+        await notify_saved_invite(partner.id, partner.language.value, me.name, me.age, proposal_id)
+
+    return {
+        "status": "invited",
+        "proposal_id": proposal_id,
+        "partner_id": partner.id,
+        "partner_online": partner_online,
+    }
