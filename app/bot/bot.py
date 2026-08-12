@@ -23,12 +23,18 @@ async def main():
     dp.include_router(router)
 
     if settings.webapp_url:
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(text="Qidirish", web_app=WebAppInfo(url=f"{settings.webapp_url}/webapp/"))
-        )
+        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/"
+        logging.info("Setting menu button: %s", menu_url)
+        try:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(text="Qidirish", web_app=WebAppInfo(url=menu_url))
+            )
+        except Exception as e:
+            logging.error("Menu button o'rnatilmadi: %s", e)
     else:
         logging.warning("WEBAPP_URL sozlanmagan — Menu tugmasi Mini App'ga ulanmadi")
 
+    logging.info("WEBAPP_URL=%r LIVEKIT=%s", settings.webapp_url, bool(settings.livekit_url))
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 

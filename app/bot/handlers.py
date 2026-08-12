@@ -71,27 +71,33 @@ LANGUAGE_MAP = {"O'zbek": Language.uz, "Русский": Language.ru, "English":
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
-    async with async_session() as session:
-        user = await session.get(User, message.from_user.id)
+    await state.clear()
+    try:
+        async with async_session() as session:
+            user = await session.get(User, message.from_user.id)
 
-    if user:
-        await message.answer(
-            t(user.language.value, "welcome_back", name=user.name),
-            reply_markup=_webapp_kb(user.language.value),
-        )
-        inline = _webapp_inline(user.language.value)
-        if inline:
-            await message.answer("Mini Appni ochish:", reply_markup=inline)
-        elif not settings.webapp_url:
-            await message.answer("⚠️ WEBAPP_URL bo'sh. .env ni tekshiring va botni qayta ishga tushiring.")
-        return
+        if user:
+            await message.answer(
+                t(user.language.value, "welcome_back", name=user.name),
+                reply_markup=_webapp_kb(user.language.value),
+            )
+            inline = _webapp_inline(user.language.value)
+            if inline:
+                await message.answer("Mini Appni ochish:", reply_markup=inline)
+            elif not settings.webapp_url:
+                await message.answer("⚠️ WEBAPP_URL bo'sh. .env ni tekshiring va botni qayta ishga tushiring.")
+            return
 
-    await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
-    await state.set_state(Registration.name)
+        await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
+        await state.set_state(Registration.name)
+    except Exception as e:
+        print(f"cmd_start ERROR: {e}", flush=True)
+        await message.answer(f"Xato: {e}\nQayta /start yuboring.")
 
 
 @router.message(Command("app"))
-async def cmd_app(message: Message):
+async def cmd_app(message: Message, state: FSMContext):
+    await state.clear()
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
     lang = user.language.value if user else "uz"
