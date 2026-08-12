@@ -88,3 +88,17 @@ LIVEKIT_API_SECRET=...
 - Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
 - Ikki tomonlama rozilik (taklif 120 soniya)
 - Bekor qilish / rad etish → ikkinchi tomon qayta qidiruvga
+
+## Production (doimiy hosting)
+
+Ngrok o‘rniga VPS + domen + HTTPS:
+
+→ batafsil: **[deploy/README.md](deploy/README.md)**
+
+Qisqa:
+```bash
+# VPS da
+cp .env.example .env   # DOMAIN + WEBAPP_URL=https://sizning.domen
+docker compose -f docker-compose.prod.yml up -d --build
+```
+BotFather Menu: `https://sizning.domen/webapp/`
