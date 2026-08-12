@@ -1,4 +1,3 @@
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,13 +12,7 @@ class Settings(BaseSettings):
 
     webapp_url: str = ""  # Mini App uchun ochiq HTTPS manzil (masalan ngrok / Render)
 
-    # Dev test mode — bitta Telegram akkaunt bilan match/call tekshirish
-    # PRODUCTIONDA hech qachon true qilmang!
-    dev_test_mode: bool = False
-    # Ixtiyoriy; bo'sh bo'lsa bot_token dan hosil qilinadi
-    dev_test_secret: str = ""
-
-    # LiveKit (audio/video qo'ng'iroq) — Bgalaxy dagi kabi
+    # LiveKit (audio/video qo'ng'iroq)
     livekit_url: str = ""  # wss://xxx.livekit.cloud
     livekit_api_key: str = ""
     livekit_api_secret: str = ""
@@ -35,16 +28,6 @@ class Settings(BaseSettings):
     admin_ids: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    @field_validator("dev_test_mode", mode="before")
-    @classmethod
-    def _parse_dev_test_mode(cls, v):
-        if isinstance(v, bool):
-            return v
-        if v is None:
-            return False
-        s = str(v).strip().strip('"').strip("'").lower()
-        return s in {"1", "true", "yes", "on", "y"}
 
     def admin_id_set(self) -> set[int]:
         ids: set[int] = set()

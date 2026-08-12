@@ -3,208 +3,569 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Suhbatdosh qidirish</title>
+<title>Soyla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.4/dist/livekit-client.umd.min.js"></script>
 <style>
   :root {
-    --bg: var(--tg-theme-bg-color, #0e1621);
-    --text: var(--tg-theme-text-color, #ffffff);
-    --hint: var(--tg-theme-hint-color, #7d8b99);
-    --accent: var(--tg-theme-button-color, #e8823c);
-    --accent-text: var(--tg-theme-button-text-color, #ffffff);
-    --card: rgba(255,255,255,0.05);
+    --bg0: #071512;
+    --bg1: #0d2420;
+    --ink: #f3f7f5;
+    --muted: #8aa39a;
+    --line: rgba(243, 247, 245, 0.1);
+    --accent: #e86f4a;
+    --accent-2: #f0a070;
+    --ok: #3dba7a;
+    --danger: #e5484d;
+    --panel: rgba(13, 36, 32, 0.72);
+    --nav-h: 68px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
   }
+
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    display: flex; flex-direction: column; min-height: 100vh;
+    margin: 0;
+    color: var(--ink);
+    font-family: "Outfit", system-ui, sans-serif;
+    background:
+      radial-gradient(900px 520px at 12% -10%, rgba(232, 111, 74, 0.22), transparent 55%),
+      radial-gradient(700px 480px at 100% 8%, rgba(61, 186, 122, 0.14), transparent 50%),
+      radial-gradient(600px 400px at 50% 110%, rgba(240, 160, 112, 0.1), transparent 45%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #0a1c19);
+    min-height: 100vh;
+    overflow-x: hidden;
   }
-  .view { display: none; flex: 1; flex-direction: column; align-items: center; padding: 24px 16px 90px; }
+
+  .ambient {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.45;
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .orb.a { width: 180px; height: 180px; background: #e86f4a; top: 12%; left: -40px; }
+  .orb.b { width: 220px; height: 220px; background: #2f8f6b; bottom: 18%; right: -60px; animation-duration: 18s; }
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(18px, -24px, 0) scale(1.08); }
+  }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; }
+
+  .view {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 20px 20px calc(var(--nav-h) + var(--safe-b) + 16px);
+    animation: fadeUp 0.45s ease both;
+  }
   .view.active { display: flex; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-  .status-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--hint); margin-bottom: 40px; }
-  .circle-btn {
-    width: 190px; height: 190px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, var(--accent), #a15420);
-    border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;
-    box-shadow: 0 0 40px rgba(232, 130, 60, 0.35); transition: transform 0.15s ease;
+  /* —— Search hero —— */
+  .search-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    min-height: calc(100vh - var(--nav-h) - 80px);
   }
-  .circle-btn:active { transform: scale(0.96); }
-  .circle-btn svg { width: 60px; height: 60px; fill: #fff; }
-  .circle-btn.searching { animation: pulse 1.4s infinite ease-in-out; }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(232, 130, 60, 0.5); }
-    70% { box-shadow: 0 0 0 24px rgba(232, 130, 60, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(232, 130, 60, 0); }
+  .brand {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.6rem, 12vw, 3.4rem);
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    margin: 0;
+    background: linear-gradient(120deg, #fff 20%, var(--accent-2) 55%, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: brandIn 0.7s cubic-bezier(.2,.8,.2,1) both;
   }
-  h1 { font-size: 22px; margin: 26px 0 8px; text-align: center; }
-  p.hint { color: var(--hint); text-align: center; font-size: 14px; max-width: 280px; line-height: 1.4; }
-  .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
-  .test-btn {
-    margin-top: 18px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(232,130,60,0.55);
-    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
-    display: inline-block;
+  @keyframes brandIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); filter: blur(4px); }
+    to { opacity: 1; transform: none; filter: none; }
   }
-  .test-link-box {
-    display: none; width: 100%; max-width: 320px; margin-top: 14px; padding: 12px; border-radius: 12px;
-    background: var(--card); font-size: 12px; color: var(--hint); word-break: break-all; line-height: 1.4;
+  .greeting {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 500;
   }
-  .test-link-box a { color: var(--accent); }
-  .error-box { display: none; text-align: center; margin-top: 40px; color: var(--hint); font-size: 14px; }
+  .headline {
+    margin: 18px 0 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    max-width: 18rem;
+    line-height: 1.35;
+  }
+  .subhead {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    max-width: 17rem;
+    line-height: 1.45;
+  }
 
-  /* Taklif kartasi */
-  .proposal-card {
-    display: none; width: 100%; max-width: 320px; background: var(--card);
-    border-radius: 16px; padding: 22px; margin-top: 10px; text-align: center;
+  .search-orb {
+    margin-top: 28px;
+    width: 168px;
+    height: 168px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #fff;
+    background:
+      radial-gradient(circle at 32% 28%, #ff9a74, var(--accent) 42%, #b84328 100%);
+    box-shadow:
+      0 18px 40px rgba(232, 111, 74, 0.28),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    display: grid;
+    place-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: orbFloat 3.6s ease-in-out infinite;
   }
-  .proposal-card .p-name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-  .proposal-card .p-meta { color: var(--hint); font-size: 14px; margin-bottom: 18px; }
+  .search-orb:active { transform: scale(0.96); }
+  .search-orb svg { width: 42px; height: 42px; fill: currentColor; }
+  .search-orb.searching {
+    animation: pulseRing 1.5s ease-out infinite, orbFloat 3.6s ease-in-out infinite;
+  }
+  @keyframes orbFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(232, 111, 74, 0.45), 0 18px 40px rgba(232, 111, 74, 0.28); }
+    70% { box-shadow: 0 0 0 28px rgba(232, 111, 74, 0), 0 18px 40px rgba(232, 111, 74, 0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(232, 111, 74, 0), 0 18px 40px rgba(232, 111, 74, 0.28); }
+  }
+
+  .stop-link {
+    margin-top: 18px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    display: none;
+  }
+
+  .error-panel {
+    display: none;
+    margin-top: 24px;
+    max-width: 20rem;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(229, 72, 77, 0.12);
+    border: 1px solid rgba(229, 72, 77, 0.35);
+    color: #ffb4b4;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  /* Proposal — interaction surface */
+  .proposal {
+    display: none;
+    width: min(100%, 340px);
+    margin-top: 8px;
+    padding: 22px 18px 18px;
+    border-radius: 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(14px);
+    text-align: center;
+    animation: fadeUp 0.35s ease both;
+  }
+  .proposal .who {
+    font-family: "Syne", sans-serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+  .proposal .meta { color: var(--muted); font-size: 0.92rem; margin: 0 0 18px; }
   .proposal-actions { display: flex; gap: 10px; }
   .proposal-actions button {
-    flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+    flex: 1;
+    border: none;
+    border-radius: 14px;
+    padding: 13px 10px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
   }
-  .btn-accept { background: #3ba55c; color: #fff; }
-  .btn-decline { background: rgba(255,255,255,0.1); color: var(--text); }
+  .btn-decline { background: rgba(255,255,255,0.07); color: var(--ink); }
+  .btn-accept { background: linear-gradient(135deg, #45c484, #2f9a62); color: #fff; }
 
-  /* Qo'ng'iroq oynasi */
-  .call-view { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 24px 16px 100px; }
+  /* Settings / Saved */
+  .page-head {
+    margin: 8px 0 18px;
+  }
+  .page-head h1 {
+    margin: 0;
+    font-family: "Syne", sans-serif;
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .page-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.4;
+  }
+
+  .form {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: rgba(232, 111, 74, 0.55);
+  }
+  .field textarea { resize: vertical; min-height: 72px; }
+  .section-label {
+    margin: 10px 0 0;
+    font-family: "Syne", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .section-hint {
+    margin: -4px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .save-btn {
+    margin-top: 6px;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .save-status {
+    text-align: center;
+    min-height: 1.2em;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .saved-list {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .saved-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .saved-meta { min-width: 0; }
+  .saved-meta .name { font-weight: 650; font-size: 1.02rem; }
+  .saved-meta .sub { color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+  .saved-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .saved-actions button {
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .saved-actions button.invite {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+  }
+  .saved-actions button:disabled { opacity: 0.4; cursor: default; }
+  .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background: var(--ok);
+  }
+  .dot.off { background: #6b7f77; }
+  .empty-saved {
+    display: none;
+    text-align: center;
+    color: var(--muted);
+    margin-top: 48px;
+    font-size: 0.95rem;
+  }
+
+  /* Call */
+  .call-view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 24px 16px calc(28px + var(--safe-b));
+    background:
+      radial-gradient(700px 500px at 50% 20%, rgba(232,111,74,0.18), transparent 55%),
+      linear-gradient(180deg, #050e0c, #0c1f1b);
+  }
+  .call-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding-bottom: 140px;
+  }
+  #remoteVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    background: #000;
+  }
+  #localVideo {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: 16px;
+    width: 96px;
+    border-radius: 14px;
+    background: #000;
+    display: none;
+    z-index: 2;
+  }
   .call-avatar {
-    width: 120px; height: 120px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, var(--accent), #a15420);
-    display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff9a74, var(--accent));
+    display: grid;
+    place-items: center;
+    box-shadow: 0 16px 40px rgba(232,111,74,0.3);
   }
   .call-avatar svg { width: 48px; height: 48px; fill: #fff; }
-  .call-status { color: var(--hint); font-size: 14px; margin-bottom: 30px; }
-  video#remoteVideo { width: 100%; max-width: 320px; border-radius: 16px; background: #000; margin-bottom: 16px; display: none; }
-  video#localVideo { width: 90px; border-radius: 10px; background: #000; position: absolute; top: 20px; right: 20px; display: none; }
-  .call-controls { display: flex; gap: 16px; }
-  .call-btn {
-    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; background: var(--card);
+  .call-status {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 18px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 500;
   }
-  .call-btn svg { width: 24px; height: 24px; fill: var(--text); }
-  .call-btn.end { background: #e5484d; }
-  .call-btn.active-toggle { background: var(--accent); }
+  .call-controls {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .call-btn {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .call-btn svg { width: 24px; height: 24px; fill: var(--ink); }
+  .call-btn.end { background: var(--danger); border-color: transparent; }
+  .call-btn.active-toggle { background: var(--accent); border-color: transparent; }
   .safety-row {
-    display: flex; gap: 10px; margin-top: 18px; width: 100%; max-width: 320px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 8px;
+    width: min(100%, 340px);
   }
   .safety-btn {
-    flex: 1; padding: 10px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-    background: transparent; color: var(--hint); font-size: 13px; font-weight: 600; cursor: pointer;
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
   }
-  .safety-btn.danger { color: #ff8b8b; border-color: rgba(229,72,77,0.45); }
+  .safety-btn.danger { color: #ff9a9a; border-color: rgba(229,72,77,0.4); }
+
   .report-sheet {
-    display: none; position: fixed; inset: 0; z-index: 40;
-    background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0,0,0,0.55);
+    align-items: flex-end;
+    justify-content: center;
   }
   .report-sheet.open { display: flex; }
   .report-panel {
-    width: 100%; max-width: 420px; background: var(--bg);
-    border-radius: 16px 16px 0 0; padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+    width: 100%;
+    max-width: 440px;
+    background: #10261f;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px calc(18px + var(--safe-b));
+    border-top: 1px solid var(--line);
   }
-  .report-panel h3 { margin: 0 0 6px; font-size: 17px; }
-  .report-panel p { margin: 0 0 12px; color: var(--hint); font-size: 13px; }
+  .report-panel h3 { margin: 0 0 4px; font-family: "Syne", sans-serif; }
+  .report-panel p { margin: 0 0 14px; color: var(--muted); font-size: 0.88rem; }
   .report-reasons { display: flex; flex-direction: column; gap: 8px; }
   .report-reasons button {
-    padding: 12px; border-radius: 10px; border: none; background: var(--card);
-    color: var(--text); font-size: 14px; text-align: left; cursor: pointer;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.92rem;
+    text-align: left;
+    cursor: pointer;
   }
   .report-cancel {
-    margin-top: 12px; width: 100%; padding: 12px; border: none; border-radius: 10px;
-    background: rgba(255,255,255,0.08); color: var(--hint); font-size: 14px; cursor: pointer;
+    margin-top: 12px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
   }
-
-  /* Profil */
-  .profile-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
-  .field label { display: block; font-size: 13px; color: var(--hint); margin-bottom: 6px; }
-  .field input, .field textarea, .field select {
-    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-    background: var(--card); color: var(--text); font-size: 14px; font-family: inherit;
-  }
-  .field textarea { resize: vertical; min-height: 60px; }
-  .save-btn { margin-top: 4px; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-size: 15px; font-weight: 600; cursor: pointer; }
-  .save-status { text-align: center; font-size: 13px; color: var(--hint); min-height: 18px; }
-
-  .saved-list { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; }
-  .saved-item {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 12px; border-radius: 12px; background: var(--card);
-  }
-  .saved-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .saved-meta .name { font-weight: 600; font-size: 15px; }
-  .saved-meta .sub { color: var(--hint); font-size: 12px; }
-  .saved-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .saved-actions button {
-    padding: 8px 10px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer;
-    background: rgba(255,255,255,0.08); color: var(--text);
-  }
-  .saved-actions button.invite { background: var(--accent); color: var(--accent-text); }
-  .saved-actions button:disabled { opacity: 0.45; cursor: default; }
-  .online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3ba55c; margin-right: 6px; }
-  .online-dot.off { background: #7d8b99; }
-  .empty-saved { color: var(--hint); text-align: center; font-size: 14px; margin-top: 40px; }
 
   .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--bg);
-    border-top: 1px solid rgba(255,255,255,0.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px calc(8px + var(--safe-b));
+    background: rgba(7, 21, 18, 0.88);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(16px);
   }
-  .nav-btn { flex: 1; background: none; border: none; color: var(--hint); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
-  .nav-btn.active { color: var(--accent); }
+  .nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  .nav-btn.active { color: var(--accent-2); }
   .nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
 </style>
 </head>
 <body>
+<div class="ambient" aria-hidden="true">
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+</div>
 
+<div class="app">
   <!-- QIDIRISH -->
   <div class="view active" id="searchView">
-    <div class="status-bar">
-      <span id="userLabel">...</span>
-      <span id="stateLabel"></span>
-    </div>
+    <div class="search-hero" id="searchHero">
+      <h1 class="brand">Soyla</h1>
+      <p class="greeting" id="userLabel">…</p>
+      <p class="headline" id="titleText">Yangi suhbatni boshlang</p>
+      <p class="subhead" id="hintText">Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.</p>
 
-    <button class="circle-btn" id="mainBtn">
-      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
-    </button>
+      <button type="button" class="search-orb" id="mainBtn" aria-label="Qidirish">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <button type="button" class="stop-link" id="cancelLink">To‘xtatish</button>
+      <div class="error-panel" id="errorBox"></div>
 
-    <h1 id="titleText">Boshlash uchun bosing</h1>
-    <p class="hint" id="hintText">Sizga mos suhbatdoshni topib beramiz.</p>
-    <span class="cancel-link" id="cancelLink">Bekor qilish</span>
-    <button type="button" class="test-btn" id="testMatchBtn">🧪 Test match (1 akkaunt)</button>
-    <div class="test-link-box" id="testLinkBox">
-      <div id="testLinkHint"></div>
-      <a id="testPeerLink" href="#" target="_blank" rel="noopener"></a>
-      <button type="button" class="test-btn" id="copyTestLinkBtn" style="display:inline-block;margin-top:10px;">Nusxa olish</button>
-    </div>
-    <div class="error-box" id="errorBox"></div>
-
-    <!-- Taklif kartasi -->
-    <div class="proposal-card" id="proposalCard">
-      <div class="p-name" id="pName"></div>
-      <div class="p-meta" id="pMeta"></div>
-      <div class="proposal-actions">
-        <button class="btn-decline" id="pDeclineBtn">❌</button>
-        <button class="btn-accept" id="pAcceptBtn">✅</button>
+      <div class="proposal" id="proposalCard">
+        <p class="who" id="pName"></p>
+        <p class="meta" id="pMeta"></p>
+        <div class="proposal-actions">
+          <button type="button" class="btn-decline" id="pDeclineBtn">Yo‘q</button>
+          <button type="button" class="btn-accept" id="pAcceptBtn">Roziman</button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- QO'NG'IROQ -->
   <div class="call-view" id="callView">
-    <video id="remoteVideo" autoplay playsinline></video>
+    <div class="call-stage">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <div class="call-avatar" id="callAvatar">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </div>
+    </div>
     <video id="localVideo" autoplay playsinline muted></video>
     <audio id="remoteAudio" autoplay></audio>
-    <div class="call-avatar">
-      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
-    </div>
-    <div class="call-status" id="callStatus">Ulanmoqda...</div>
-    <div class="test-link-box" id="testCallBanner" style="display:none;margin-bottom:12px;">
-      <div id="testCallHint"></div>
-      <a id="testCallLink" href="#" target="_blank" rel="noopener"></a>
-      <button type="button" class="test-btn" id="copyTestCallLinkBtn" style="display:inline-block;margin-top:10px;">Nusxa olish</button>
-    </div>
-    <div id="debugLog" style="width:100%;max-width:320px;max-height:140px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;font-size:11px;color:var(--hint);margin-bottom:16px;font-family:monospace;"></div>
+    <div class="call-status" id="callStatus">Ulanmoqda…</div>
     <div class="call-controls">
       <button class="call-btn" id="muteBtn" title="Mute">
         <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
@@ -226,10 +587,10 @@
   <div class="report-sheet" id="reportSheet">
     <div class="report-panel">
       <h3 id="reportTitle">Shikoyat sababi</h3>
-      <p id="reportHint">Hamroh bloklanadi va qo'ng'iroq tugaydi.</p>
+      <p id="reportHint">Hamroh bloklanadi va qo‘ng‘iroq tugaydi.</p>
       <div class="report-reasons" id="reportReasons">
         <button type="button" data-reason="spam">Spam / reklama</button>
-        <button type="button" data-reason="harassment">Haqorat / ta'qib</button>
+        <button type="button" data-reason="harassment">Haqorat / ta’qib</button>
         <button type="button" data-reason="inappropriate">Nomaqbul kontent</button>
         <button type="button" data-reason="underage">Yoshga mos emas</button>
         <button type="button" data-reason="other">Boshqa</button>
@@ -240,8 +601,11 @@
 
   <!-- SOZLAMALAR -->
   <div class="view" id="profileView">
-    <h1 id="profileTitle">Sozlamalar</h1>
-    <div class="profile-form">
+    <div class="page-head">
+      <h1 id="profileTitle">Sozlamalar</h1>
+      <p id="profileLead">Profilingiz va qidiruv afzalliklari</p>
+    </div>
+    <div class="form">
       <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
       <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="18" max="99" step="1"></div>
       <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
@@ -249,7 +613,9 @@
       <div class="field">
         <label id="lblLanguage">Til</label>
         <select id="profileLanguage">
-          <option value="uz">O'zbek</option><option value="ru">Русский</option><option value="en">English</option>
+          <option value="uz">O‘zbek</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
         </select>
       </div>
       <div class="field">
@@ -259,19 +625,19 @@
       <div class="field">
         <label id="lblScope">Qidiruv doirasi</label>
         <select id="profileSearchScope">
-          <option value="country" id="scopeCountryOpt">Butun O'zbekiston bo'yicha</option>
-          <option value="city" id="scopeCityOpt">Faqat o'z shahrim bo'yicha</option>
+          <option value="country" id="scopeCountryOpt">Butun O‘zbekiston</option>
+          <option value="city" id="scopeCityOpt">Faqat o‘z shahrim</option>
         </select>
       </div>
 
-      <h2 id="prefsSectionTitle" style="font-size:16px;margin:8px 0 0;font-weight:600;">Aloqa sozlamalari</h2>
-      <p id="prefsSectionHint" style="margin:0;color:var(--hint);font-size:12px;line-height:1.4;">Kim bilan suhbatlashmoqchisiz</p>
+      <h2 class="section-label" id="prefsSectionTitle">Aloqa sozlamalari</h2>
+      <p class="section-hint" id="prefsSectionHint">Kim bilan suhbatlashmoqchisiz</p>
       <div class="field">
         <label id="lblLookingFor">Suhbatdosh</label>
         <select id="profileLookingFor">
           <option value="female" id="lfFemale">Ayol</option>
           <option value="male" id="lfMale">Erkak</option>
-          <option value="any" id="lfAny">Farqi yo'q</option>
+          <option value="any" id="lfAny">Farqi yo‘q</option>
         </select>
       </div>
       <div class="field">
@@ -286,44 +652,56 @@
 
   <!-- SAQLANGANLAR -->
   <div class="view" id="savedView">
-    <h1 id="savedTitle">Saqlanganlar</h1>
-    <p class="hint" id="savedHint" style="margin-bottom:18px;">Online bo'lsa suhbatga chaqirishingiz mumkin.</p>
+    <div class="page-head">
+      <h1 id="savedTitle">Saqlanganlar</h1>
+      <p id="savedHint">Online bo‘lsa suhbatga chaqirishingiz mumkin.</p>
+    </div>
     <div class="saved-list" id="savedList"></div>
-    <div class="empty-saved" id="savedEmpty" style="display:none;">Hali saqlangan suhbatdosh yo'q.</div>
+    <div class="empty-saved" id="savedEmpty">Hali saqlangan suhbatdosh yo‘q.</div>
   </div>
 
-  <div class="bottom-nav" id="bottomNav">
-    <button class="nav-btn active" data-view="searchView">
+  <nav class="bottom-nav" id="bottomNav">
+    <button type="button" class="nav-btn active" data-view="searchView">
       <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
       <span id="navSearchLabel">Qidirish</span>
     </button>
-    <button class="nav-btn" data-view="savedView">
+    <button type="button" class="nav-btn" data-view="savedView">
       <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
       <span id="navSavedLabel">Saqlangan</span>
     </button>
-    <button class="nav-btn" data-view="profileView">
+    <button type="button" class="nav-btn" data-view="profileView">
       <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
       <span id="navProfileLabel">Sozlamalar</span>
     </button>
-  </div>
+  </nav>
+</div>
 
 <script>
 const TRANSLATIONS = {
-  idle_title: { uz: "Boshlash uchun bosing", ru: "Нажмите, чтобы начать", en: "Tap to start" },
-  idle_hint: { uz: "Sizga mos suhbatdoshni topib beramiz.", ru: "Мы найдём вам подходящего собеседника.", en: "We'll find you a matching partner." },
-  searching_title: { uz: "Suhbatdosh qidirilmoqda...", ru: "Ищем собеседника...", en: "Searching for a partner..." },
-  searching_hint: { uz: "Bir necha soniya ichida mos suhbatdosh topiladi.", ru: "Подходящий собеседник будет найден через несколько секунд.", en: "A matching partner will be found shortly." },
-  requeued_hint: { uz: "Boshqa suhbatdosh qidirilmoqda...", ru: "Ищем другого собеседника...", en: "Looking for another partner..." },
-  proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло. Можно искать снова.", en: "Proposal expired. You can search again." },
-  proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "This proposal is no longer available." },
-  cancel_link: { uz: "To'xtatish", ru: "Остановить", en: "Stop" },
-  not_registered: { uz: "Avval botda /start buyrug'i orqali ro'yxatdan o'ting.", ru: "Сначала зарегистрируйтесь в боте через /start.", en: "Please register first in the bot via /start." },
+  idle_title: { uz: "Yangi suhbatni boshlang", ru: "Начните новый разговор", en: "Start a new chat" },
+  idle_hint: {
+    uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.",
+    ru: "Найдём собеседника и сразу подключим к видеозвонку.",
+    en: "We’ll find a match and connect you to a video call.",
+  },
+  searching_title: { uz: "Suhbatdosh qidirilmoqda…", ru: "Ищем собеседника…", en: "Searching…" },
+  searching_hint: {
+    uz: "Bir necha soniya ichida mos odam topiladi.",
+    ru: "Подходящий человек найдётся через несколько секунд.",
+    en: "A match will appear shortly.",
+  },
+  requeued_hint: { uz: "Boshqa suhbatdosh qidirilmoqda…", ru: "Ищем другого…", en: "Looking for another partner…" },
+  proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло.", en: "Proposal expired." },
+  proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "Proposal unavailable." },
+  cancel_link: { uz: "To‘xtatish", ru: "Остановить", en: "Stop" },
+  not_registered: { uz: "Avval botda /start orqali ro‘yxatdan o‘ting.", ru: "Сначала /start в боте.", en: "Register in the bot via /start first." },
   no_init_data: {
-    uz: "Telegram Mini App ichidan ochilmagan. Botga /start yuboring va «Qidirish / Qo'ng'iroq» tugmasini bosing (Chrome'da ishlamaydi).",
-    ru: "Откройте Mini App из бота: /start → кнопка «Поиск / Звонок» (в Chrome не работает).",
-    en: "Open the Mini App from the bot: /start → «Search / Call» (won't work in Chrome).",
+    uz: "Telegram Mini App ichidan oching: bot → Menu.",
+    ru: "Откройте Mini App из бота → Menu.",
+    en: "Open the Mini App from the bot menu.",
   },
   profile_title: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
+  profile_lead: { uz: "Profilingiz va qidiruv afzalliklari", ru: "Профиль и параметры поиска", en: "Your profile and search preferences" },
   lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
   lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age" },
   lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
@@ -337,59 +715,53 @@ const TRANSLATIONS = {
   prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to" },
   lf_male: { uz: "Erkak", ru: "Мужчина", en: "Male" },
   lf_female: { uz: "Ayol", ru: "Женщина", en: "Female" },
-  lf_any: { uz: "Farqi yo'q", ru: "Неважно", en: "Anyone" },
+  lf_any: { uz: "Farqi yo‘q", ru: "Неважно", en: "Anyone" },
   city_none: { uz: "Tanlanmagan", ru: "Не выбрано", en: "Not selected" },
-  scope_country: { uz: "Butun O'zbekiston bo'yicha", ru: "По всему Узбекистану", en: "All over Uzbekistan" },
-  scope_city: { uz: "Faqat o'z shahrim bo'yicha", ru: "Только в моём городе", en: "Only in my city" },
+  scope_country: { uz: "Butun O‘zbekiston", ru: "По всему Узбекистану", en: "All over Uzbekistan" },
+  scope_city: { uz: "Faqat o‘z shahrim", ru: "Только в моём городе", en: "Only in my city" },
   save_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
-  saved_ok: { uz: "✅ Saqlandi", ru: "✅ Сохранено", en: "✅ Saved" },
+  saved_ok: { uz: "Saqlandi", ru: "Сохранено", en: "Saved" },
   save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: " },
   nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search" },
   nav_profile: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
+  nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved" },
   gender_male: { uz: "Erkak", ru: "Мужской", en: "Male" },
   gender_female: { uz: "Ayol", ru: "Женский", en: "Female" },
-  p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} y.o. · {gender}" },
-  proposal_question: { uz: "Shu kishi bilan suhbatlashishga rozimisiz?", ru: "Хотите пообщаться с этим человеком?", en: "Would you like to chat with this person?" },
-  waiting_partner_title: { uz: "Javobingiz qabul qilindi", ru: "Ваш ответ принят", en: "Your response was received" },
-  waiting_partner_hint: { uz: "Hamsuhbatingiz javobini kutmoqdamiz...", ru: "Ждём ответа собеседника...", en: "Waiting for the other person's response..." },
-  connecting: { uz: "Ulanmoqda...", ru: "Подключение...", en: "Connecting..." },
+  p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} · {gender}" },
+  proposal_question: { uz: "Shu kishi bilan suhbatlashasizmi?", ru: "Поговорить с этим человеком?", en: "Chat with this person?" },
+  waiting_partner_title: { uz: "Javobingiz qabul qilindi", ru: "Ответ принят", en: "Response received" },
+  waiting_partner_hint: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
+  connecting: { uz: "Ulanmoqda…", ru: "Подключение…", en: "Connecting…" },
   connected: { uz: "Ulandi", ru: "Соединено", en: "Connected" },
-  call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "The call has ended." },
-  mic_error: { uz: "Mikrofonga ruxsat berilmadi. Sozlamalardan ruxsat bering.", ru: "Доступ к микрофону не разрешён. Разрешите в настройках.", en: "Microphone access denied. Please allow it in settings." },
-  tap_to_enable_audio: { uz: "Ovozni yoqish uchun shu yerga bosing", ru: "Нажмите здесь, чтобы включить звук", en: "Tap here to enable audio" },
-  test_match: { uz: "🧪 Test match (1 akkaunt)", ru: "🧪 Test match (1 аккаунт)", en: "🧪 Test match (1 account)" },
-  test_link_hint: {
-    uz: "Kompyuter brauzerida shu havolani oching → Start → keyin telefonda qo‘ng‘iroq:",
-    ru: "Откройте ссылку на ПК → Start → затем звонок на телефоне:",
-    en: "Open this link on PC → Start → then continue on phone:",
-  },
-  test_copy_ok: { uz: "Havola nusxalandi", ru: "Ссылка скопирована", en: "Link copied" },
-  test_copy_btn: { uz: "Nusxa olish", ru: "Копировать", en: "Copy" },
+  waiting_peer: { uz: "Ulandi — hamroh kutilmoqda", ru: "Подключено — ждём собеседника", en: "Connected — waiting for partner" },
+  call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "Call ended." },
   block_btn: { uz: "Bloklash", ru: "Блок", en: "Block" },
   report_btn: { uz: "Shikoyat", ru: "Жалоба", en: "Report" },
   report_title: { uz: "Shikoyat sababi", ru: "Причина жалобы", en: "Report reason" },
   report_hint: {
-    uz: "Hamroh bloklanadi va qo'ng'iroq tugaydi.",
+    uz: "Hamroh bloklanadi va qo‘ng‘iroq tugaydi.",
     ru: "Собеседник будет заблокирован, звонок завершится.",
     en: "Partner will be blocked and the call will end.",
   },
   report_cancel: { uz: "Bekor", ru: "Отмена", en: "Cancel" },
-  block_ok: { uz: "Bloklandi. Boshqa uchrashmaysiz.", ru: "Заблокирован.", en: "Blocked." },
-  report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent. Thank you." },
-  safety_need_partner: { uz: "Hamroh yo'q.", ru: "Нет собеседника.", en: "No partner." },
+  block_ok: { uz: "Bloklandi.", ru: "Заблокирован.", en: "Blocked." },
+  report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent." },
+  safety_need_partner: { uz: "Hamroh yo‘q.", ru: "Нет собеседника.", en: "No partner." },
   save_partner_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
-  save_partner_ok: { uz: "Saqlanganlarga qo'shildi", ru: "Добавлено в сохранённые", en: "Saved" },
+  save_partner_ok: { uz: "Saqlanganlarga qo‘shildi", ru: "Добавлено в сохранённые", en: "Saved" },
   saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved" },
-  saved_hint: { uz: "Online bo'lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "If online, you can invite them." },
-  saved_empty: { uz: "Hali saqlangan suhbatdosh yo'q.", ru: "Пока нет сохранённых.", en: "No saved partners yet." },
-  nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved" },
+  saved_hint: { uz: "Online bo‘lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "Invite when they are online." },
+  saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet." },
   invite_btn: { uz: "Chaqirish", ru: "Пригласить", en: "Invite" },
-  remove_btn: { uz: "O'chirish", ru: "Удалить", en: "Remove" },
-  invite_ok: { uz: "Taklif yuborildi — Mini Appda javob bering.", ru: "Приглашение отправлено.", en: "Invite sent — respond in Mini App." },
-  offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник сейчас не в сети.", en: "Partner is offline." },
+  remove_btn: { uz: "O‘chirish", ru: "Удалить", en: "Remove" },
+  invite_ok: { uz: "Taklif yuborildi.", ru: "Приглашение отправлено.", en: "Invite sent." },
+  offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник не в сети.", en: "Partner is offline." },
   busy_err: { uz: "Suhbatdosh band.", ru: "Собеседник занят.", en: "Partner is busy." },
   online_label: { uz: "online", ru: "онлайн", en: "online" },
   offline_label: { uz: "offline", ru: "офлайн", en: "offline" },
+  hi: { uz: "Salom, {name}", ru: "Привет, {name}", en: "Hi, {name}" },
+  accept: { uz: "Roziman", ru: "Принять", en: "Accept" },
+  decline: { uz: "Yo‘q", ru: "Нет", en: "No" },
 };
 
 let currentLang = "uz";
@@ -407,6 +779,7 @@ function applyStaticTranslations() {
   };
   setText("cancelLink", "cancel_link");
   setText("profileTitle", "profile_title");
+  setText("profileLead", "profile_lead");
   setText("lblName", "lbl_name");
   setText("lblAge", "lbl_age");
   setText("lblBio", "lbl_bio");
@@ -432,13 +805,13 @@ function applyStaticTranslations() {
   setText("savedHint", "saved_hint");
   setText("savedEmpty", "saved_empty");
   setText("savePartnerBtn", "save_partner_btn");
-  setText("testMatchBtn", "test_match");
-  setText("copyTestLinkBtn", "test_copy_btn");
   setText("blockBtn", "block_btn");
   setText("reportBtn", "report_btn");
   setText("reportTitle", "report_title");
   setText("reportHint", "report_hint");
   setText("reportCancelBtn", "report_cancel");
+  setText("pAcceptBtn", "accept");
+  setText("pDeclineBtn", "decline");
   if (!searching) {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
@@ -448,27 +821,25 @@ function applyStaticTranslations() {
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
+try {
+  tg?.setHeaderColor?.("#071512");
+  tg?.setBackgroundColor?.("#071512");
+} catch (_) {}
 
 function readInitDataFromHash() {
   const hash = (location.hash || "").replace(/^#/, "");
   if (!hash) return "";
   const params = new URLSearchParams(hash);
-  // Telegram: tgWebAppData=... yoki to'g'ridan-to'g'ri query-string
   const raw = params.get("tgWebAppData");
   if (raw) {
     try { return decodeURIComponent(raw); } catch (_) { return raw; }
   }
-  // ba'zi clientlar hashni to'g'ridan-to'g'ri user=...&hash=... qilib beradi
-  if (params.get("hash") && params.get("user")) {
-    return hash;
-  }
+  if (params.get("hash") && params.get("user")) return hash;
   return "";
 }
 
 function getInitData() {
-  const fromTg = window.Telegram?.WebApp?.initData || "";
-  if (fromTg) return fromTg;
-  return readInitDataFromHash();
+  return window.Telegram?.WebApp?.initData || readInitDataFromHash();
 }
 
 let initData = getInitData();
@@ -491,7 +862,6 @@ const titleText = document.getElementById("titleText");
 const hintText = document.getElementById("hintText");
 const cancelLink = document.getElementById("cancelLink");
 const userLabel = document.getElementById("userLabel");
-const stateLabel = document.getElementById("stateLabel");
 const errorBox = document.getElementById("errorBox");
 const proposalCard = document.getElementById("proposalCard");
 const searchView = document.getElementById("searchView");
@@ -501,6 +871,7 @@ const bottomNav = document.getElementById("bottomNav");
 let pollTimer = null;
 let searching = false;
 let currentProposalId = null;
+let proposalWaitUntil = 0;
 
 async function api(path, options = {}) {
   refreshTelegramContext();
@@ -526,11 +897,13 @@ function showError(msg) {
   mainBtn.style.display = "none";
   titleText.style.display = "none";
   hintText.style.display = "none";
+  proposalCard.style.display = "none";
 }
 
 function resetSearchUIElements() {
   proposalCard.style.display = "none";
-  mainBtn.style.display = "flex";
+  errorBox.style.display = "none";
+  mainBtn.style.display = "grid";
   titleText.style.display = "block";
   hintText.style.display = "block";
 }
@@ -538,7 +911,7 @@ function resetSearchUIElements() {
 function setSearchingUI(isSearching) {
   searching = isSearching;
   mainBtn.classList.toggle("searching", isSearching);
-  cancelLink.style.display = isSearching ? "block" : "none";
+  cancelLink.style.display = isSearching ? "inline" : "none";
   titleText.textContent = isSearching ? tr("searching_title") : tr("idle_title");
   hintText.textContent = isSearching ? tr("searching_hint") : tr("idle_hint");
   resetSearchUIElements();
@@ -549,12 +922,15 @@ function showProposal(proposalId, name, age, gender) {
   currentProposalId = proposalId;
   searching = true;
   mainBtn.style.display = "none";
+  titleText.style.display = "block";
   titleText.textContent = tr("proposal_question");
   hintText.style.display = "none";
-  // Bekor qilish mumkin — aks holda "tiqilib" qoladi
-  cancelLink.style.display = "block";
+  cancelLink.style.display = "inline";
   document.getElementById("pName").textContent = name;
-  document.getElementById("pMeta").textContent = tr("p_meta", { age, gender: tr(gender === "male" ? "gender_male" : "gender_female") });
+  document.getElementById("pMeta").textContent = tr("p_meta", {
+    age,
+    gender: tr(gender === "male" ? "gender_male" : "gender_female"),
+  });
   proposalCard.style.display = "block";
 }
 
@@ -577,14 +953,13 @@ async function respondToProposal(decision) {
       titleText.textContent = tr("waiting_partner_title");
       hintText.textContent = tr("waiting_partner_hint");
       hintText.style.display = "block";
-      cancelLink.style.display = "block";
+      cancelLink.style.display = "inline";
       proposalWaitUntil = Date.now() + 130000;
       pollTimer = setInterval(pollStatus, 2000);
     } else if (result.outcome === "invalid") {
       tg?.showAlert?.(tr("proposal_invalid"));
       setSearchingUI(false);
     } else {
-      // "declined" (men rad etdim)
       setSearchingUI(false);
     }
   } catch (e) {
@@ -601,10 +976,11 @@ async function loadCities() {
     const select = document.getElementById("profileCity");
     for (const city of data.cities) {
       const opt = document.createElement("option");
-      opt.value = city; opt.textContent = city;
+      opt.value = city;
+      opt.textContent = city;
       select.appendChild(opt);
     }
-  } catch (e) { /* ignore */ }
+  } catch (_) {}
 }
 
 async function loadAgeRanges() {
@@ -617,20 +993,17 @@ async function loadAgeRanges() {
       const opt = document.createElement("option");
       opt.value = `${r.min}-${r.max}`;
       opt.textContent = r.label;
-      opt.dataset.min = r.min;
-      opt.dataset.max = r.max;
       select.appendChild(opt);
     }
-  } catch (e) {
+  } catch (_) {
     const fallback = [
-      ["18-99", "18+ (hammasi)"],
-      ["18-19", "18–19"], ["20-24", "20–24"], ["25-29", "25–29"],
-      ["30-34", "30–34"], ["35-39", "35–39"], ["40-49", "40–49"],
-      ["50-59", "50–59"], ["60-99", "60–99"],
+      ["18-99", "18+"], ["18-19", "18–19"], ["20-24", "20–24"], ["25-29", "25–29"],
+      ["30-34", "30–34"], ["35-39", "35–39"], ["40-49", "40–49"], ["50-59", "50–59"], ["60-99", "60–99"],
     ];
     for (const [v, label] of fallback) {
       const opt = document.createElement("option");
-      opt.value = v; opt.textContent = label;
+      opt.value = v;
+      opt.textContent = label;
       select.appendChild(opt);
     }
   }
@@ -644,10 +1017,7 @@ function setPreferAgeSelect(minV, maxV) {
   for (const opt of select.options) {
     if (opt.value === key) { select.value = key; found = true; break; }
   }
-  if (!found) {
-    // eng yaqin / any
-    select.value = "18-99";
-  }
+  if (!found) select.value = "18-99";
 }
 
 async function loadMe() {
@@ -660,12 +1030,8 @@ async function loadMe() {
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     currentLang = me.language || "uz";
-    // Test match tugmasi doim ko'rinadi (API DEV_TEST_MODE ni tekshiradi)
-    const testBtn = document.getElementById("testMatchBtn");
-    if (testBtn) testBtn.style.display = "inline-block";
     applyStaticTranslations();
-    userLabel.textContent = me.name;
-    stateLabel.textContent = me.test_mode ? "TEST" : "";
+    userLabel.textContent = tr("hi", { name: me.name || "" });
     document.getElementById("profileName").value = me.name || "";
     document.getElementById("profileAge").value = me.age || "";
     document.getElementById("profileBio").value = me.bio || "";
@@ -675,14 +1041,12 @@ async function loadMe() {
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
     setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
-    if (!me.test_mode) {
-      console.warn("API: DEV_TEST_MODE=false — tugma bosilsa xato chiqadi. .env ni tekshiring.");
-    }
-  } catch (e) { showError(e.message); }
+  } catch (e) {
+    showError(e.message);
+  }
 }
 
 async function bootApp() {
-  // Telegram WebApp ba'zan biroz kechikishi mumkin
   for (let i = 0; i < 10; i++) {
     refreshTelegramContext();
     if (initData) break;
@@ -696,57 +1060,6 @@ async function bootApp() {
   startPresencePing();
 }
 
-let lastTestPeerUrl = "";
-
-async function startTestMatch() {
-  const box = document.getElementById("testLinkBox");
-  const link = document.getElementById("testPeerLink");
-  const hint = document.getElementById("testLinkHint");
-  const callBanner = document.getElementById("testCallBanner");
-  const callHint = document.getElementById("testCallHint");
-  const callLink = document.getElementById("testCallLink");
-  try {
-    const result = await api("/api/test/match", { method: "POST" });
-    lastTestPeerUrl = result.test_peer_url || (location.origin + result.test_peer_path);
-    hint.textContent = tr("test_link_hint");
-    link.href = lastTestPeerUrl;
-    link.textContent = lastTestPeerUrl;
-    box.style.display = "block";
-
-    callHint.textContent = tr("test_link_hint");
-    callLink.href = lastTestPeerUrl;
-    callLink.textContent = lastTestPeerUrl;
-    callBanner.style.display = "block";
-
-    try { await navigator.clipboard.writeText(lastTestPeerUrl); } catch (_) {}
-
-    enterCall(result.room_id, result.partner_id, {
-      url: result.livekit_url,
-      token: result.livekit_token,
-    });
-  } catch (e) {
-    const msg = e.message || String(e);
-    if (/test mode|o'chirilgan|404/i.test(msg)) {
-      showError("DEV_TEST_MODE o'chirilgan. .env ga DEV_TEST_MODE=true yozing, keyin: docker compose up -d --force-recreate");
-    } else {
-      showError(msg);
-    }
-  }
-}
-
-document.getElementById("testMatchBtn").addEventListener("click", startTestMatch);
-async function copyTestUrl() {
-  if (!lastTestPeerUrl) return;
-  try {
-    await navigator.clipboard.writeText(lastTestPeerUrl);
-    tg?.showAlert?.(tr("test_copy_ok"));
-  } catch (_) {
-    prompt(tr("test_copy_ok"), lastTestPeerUrl);
-  }
-}
-document.getElementById("copyTestLinkBtn").addEventListener("click", copyTestUrl);
-document.getElementById("copyTestCallLinkBtn").addEventListener("click", copyTestUrl);
-
 async function startSearch() {
   try {
     proposalWaitUntil = 0;
@@ -759,8 +1072,6 @@ async function startSearch() {
     showError(e.message);
   }
 }
-
-let proposalWaitUntil = 0;
 
 async function pollStatus() {
   try {
@@ -786,17 +1097,16 @@ async function pollStatus() {
         token: result.livekit_token,
       });
     } else if (result.outcome === "requeued") {
-      // Hamroh rad etdi / bekor qildi — biz allaqachon navbatdamiz, qidiruvni davom ettiramiz
       proposalWaitUntil = 0;
       currentProposalId = null;
       searching = true;
-      mainBtn.style.display = "flex";
+      mainBtn.style.display = "grid";
       mainBtn.classList.add("searching");
       titleText.style.display = "block";
       titleText.textContent = tr("searching_title");
       hintText.textContent = tr("requeued_hint");
       hintText.style.display = "block";
-      cancelLink.style.display = "block";
+      cancelLink.style.display = "inline";
       proposalCard.style.display = "none";
     }
   } catch (e) {
@@ -810,16 +1120,15 @@ async function cancelSearch() {
   proposalWaitUntil = 0;
   currentProposalId = null;
   setSearchingUI(false);
-  try { await api("/api/search/cancel", { method: "POST" }); } catch (e) { /* ignore */ }
+  try { await api("/api/search/cancel", { method: "POST" }); } catch (_) {}
 }
 
 mainBtn.addEventListener("click", () => { if (!searching) startSearch(); });
 cancelLink.addEventListener("click", cancelSearch);
 
-// --- Profil ---
 document.getElementById("saveProfileBtn").addEventListener("click", async () => {
   const statusEl = document.getElementById("saveStatus");
-  statusEl.textContent = "...";
+  statusEl.textContent = "…";
   try {
     const newLang = document.getElementById("profileLanguage").value;
     const preferVal = document.getElementById("profilePreferAge").value || "18-99";
@@ -843,7 +1152,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
     currentLang = newLang;
     applyStaticTranslations();
     statusEl.textContent = tr("saved_ok");
-    userLabel.textContent = document.getElementById("profileName").value;
+    userLabel.textContent = tr("hi", { name: document.getElementById("profileName").value });
     setTimeout(() => { statusEl.textContent = ""; }, 2000);
   } catch (e) {
     statusEl.textContent = tr("save_error") + e.message;
@@ -878,6 +1187,7 @@ async function loadSavedList() {
     const items = data.items || [];
     if (!items.length) {
       empty.style.display = "block";
+      empty.textContent = tr("saved_empty");
       return;
     }
     empty.style.display = "none";
@@ -885,8 +1195,8 @@ async function loadSavedList() {
       const row = document.createElement("div");
       row.className = "saved-item";
       const status = it.online
-        ? `<span class="online-dot"></span>${tr("online_label")}`
-        : `<span class="online-dot off"></span>${tr("offline_label")}`;
+        ? `<span class="dot"></span>${tr("online_label")}`
+        : `<span class="dot off"></span>${tr("offline_label")}`;
       const city = it.city ? ` · ${it.city}` : "";
       row.innerHTML = `
         <div class="saved-meta">
@@ -917,7 +1227,6 @@ document.getElementById("savedList")?.addEventListener("click", async (e) => {
         body: JSON.stringify({ partner_id: pid }),
       });
       tg?.showAlert?.(tr("invite_ok"));
-      // Qidiruv ekraniga o'tib polling
       document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
       document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
       document.querySelector('.nav-btn[data-view="searchView"]')?.classList.add("active");
@@ -944,26 +1253,12 @@ document.getElementById("savedList")?.addEventListener("click", async (e) => {
   }
 });
 
-// ============================================================
-// Qo'ng'iroq — LiveKit (Bgalaxy / Zoom tipidagi SFU)
-// ============================================================
 let lkRoom = null;
 let callPartnerId = null;
 let callRoomId = null;
 let callPollTimer = null;
 let isMuted = false;
 let videoOn = false;
-
-function dlog(msg) {
-  const el = document.getElementById("debugLog");
-  if (!el) return;
-  const line = document.createElement("div");
-  const t = new Date().toLocaleTimeString();
-  line.textContent = `[${t}] ${msg}`;
-  el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
-  console.log(msg);
-}
 
 function attachRemoteTrack(track) {
   if (track.kind === "audio") {
@@ -974,17 +1269,14 @@ function attachRemoteTrack(track) {
     box.replaceWith(el);
     el.id = "remoteAudio";
     el.play?.().catch(() => {});
-    dlog("Remote audio");
   } else if (track.kind === "video") {
     const el = track.attach();
     el.autoplay = true;
     el.playsInline = true;
-    el.style.cssText = document.getElementById("remoteVideo").style.cssText || "width:100%;max-width:320px;border-radius:16px;background:#000;margin-bottom:16px;display:block;";
-    el.style.display = "block";
-    document.getElementById("remoteVideo").replaceWith(el);
     el.id = "remoteVideo";
-    document.querySelector(".call-avatar").style.display = "none";
-    dlog("Remote video");
+    el.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;background:#000;";
+    document.getElementById("remoteVideo").replaceWith(el);
+    document.getElementById("callAvatar").style.display = "none";
   }
 }
 
@@ -994,18 +1286,16 @@ async function enterCall(roomId, partnerId, lk = {}) {
   isMuted = false;
   videoOn = false;
 
-  document.getElementById("debugLog").innerHTML = "";
-  dlog(`LiveKit call room=${roomId} me=${myId} partner=${partnerId}`);
   searchView.classList.remove("active");
   bottomNav.style.display = "none";
   callView.style.display = "flex";
   document.getElementById("callStatus").textContent = tr("connecting");
   document.getElementById("muteBtn").classList.remove("active-toggle");
   document.getElementById("videoBtn").classList.remove("active-toggle");
+  document.getElementById("callAvatar").style.display = "grid";
 
   if (!window.LivekitClient) {
     document.getElementById("callStatus").textContent = "LiveKit JS yuklanmadi";
-    dlog("LivekitClient yo'q");
     return;
   }
 
@@ -1021,7 +1311,6 @@ async function enterCall(roomId, partnerId, lk = {}) {
       token = join.livekit_token;
     } catch (e) {
       document.getElementById("callStatus").textContent = e.message;
-      dlog("Token xato: " + e.message);
       return;
     }
   }
@@ -1036,25 +1325,19 @@ async function enterCall(roomId, partnerId, lk = {}) {
   lkRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
     track.detach().forEach((el) => el.remove());
   });
-  lkRoom.on(RoomEvent.ParticipantConnected, (p) => {
-    dlog("Peer: " + (p.identity || p.sid));
+  lkRoom.on(RoomEvent.ParticipantConnected, () => {
     document.getElementById("callStatus").textContent = tr("connected");
   });
   lkRoom.on(RoomEvent.Disconnected, () => {
-    dlog("LiveKit disconnected");
     document.getElementById("callStatus").textContent = "Uzildi";
   });
-  lkRoom.on(RoomEvent.ConnectionStateChanged, (s) => dlog("LK state: " + s));
 
   try {
-    dlog("Connect: " + url);
     await lkRoom.connect(url, token);
     await lkRoom.localParticipant.setMicrophoneEnabled(true);
     document.getElementById("callStatus").textContent =
-      lkRoom.remoteParticipants.size > 0 ? tr("connected") : "Ulandi — hamroh kutilmoqda";
-    dlog("Participants: " + (1 + lkRoom.remoteParticipants.size));
+      lkRoom.remoteParticipants.size > 0 ? tr("connected") : tr("waiting_peer");
   } catch (e) {
-    dlog("Connect xato: " + e.message);
     document.getElementById("callStatus").textContent = "LiveKit: " + e.message;
     return;
   }
@@ -1066,7 +1349,7 @@ async function enterCall(roomId, partnerId, lk = {}) {
         tg?.showAlert(tr("call_ended_alert"));
         cleanupCall(false);
       }
-    } catch (e) { /* ignore */ }
+    } catch (_) {}
   }, 2500);
 }
 
@@ -1086,12 +1369,8 @@ function cleanupCall(notifyServer) {
   if (rv) rv.style.display = "none";
   const lv = document.getElementById("localVideo");
   if (lv) { lv.style.display = "none"; lv.srcObject = null; }
-  const avatar = document.querySelector(".call-avatar");
-  if (avatar) avatar.style.display = "flex";
-  const banner = document.getElementById("testCallBanner");
-  const box = document.getElementById("testLinkBox");
-  if (banner) banner.style.display = "none";
-  if (box) box.style.display = "none";
+  const avatar = document.getElementById("callAvatar");
+  if (avatar) avatar.style.display = "grid";
   callView.style.display = "none";
   bottomNav.style.display = "flex";
   searchView.classList.add("active");
@@ -1158,7 +1437,6 @@ document.getElementById("reportSheet").addEventListener("click", (e) => {
 document.getElementById("reportReasons").addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-reason]");
   if (!btn || !callPartnerId) return;
-  const reason = btn.dataset.reason;
   closeReportSheet();
   try {
     await api("/api/report", {
@@ -1166,7 +1444,7 @@ document.getElementById("reportReasons").addEventListener("click", async (e) => 
       body: JSON.stringify({
         partner_id: callPartnerId,
         room_id: callRoomId,
-        reason,
+        reason: btn.dataset.reason,
         also_block: true,
       }),
     });
@@ -1200,17 +1478,14 @@ document.getElementById("videoBtn").addEventListener("click", async () => {
         el.autoplay = true;
         el.playsInline = true;
         el.id = "localVideo";
-        el.style.cssText = "width:90px;border-radius:10px;background:#000;position:absolute;top:20px;right:20px;display:block;";
+        el.style.cssText = "position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:96px;border-radius:14px;background:#000;display:block;z-index:2;";
         localVideo.replaceWith(el);
       }
-      dlog("Video yoqildi");
     } else if (localVideo) {
       localVideo.style.display = "none";
-      dlog("Video o'chirildi");
     }
   } catch (e) {
     videoOn = false;
-    dlog("Kamera: " + e.message);
     tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
   }
 });

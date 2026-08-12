@@ -21,7 +21,6 @@ from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_us
 from app.matching.respond import respond_to_proposal
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
-from app import test_mode
 
 router = Router()
 
@@ -91,8 +90,6 @@ async def cmd_start(message: Message, state: FSMContext):
                 await message.answer("Mini Appni ochish:", reply_markup=inline)
             elif not settings.webapp_url:
                 await message.answer("⚠️ WEBAPP_URL bo'sh. .env ni tekshiring va botni qayta ishga tushiring.")
-            if test_mode.is_enabled():
-                await message.answer("🧪 DEV_TEST_MODE yoqilgan — Mini Appda «Test match» tugmasi chiqadi.")
             return
 
         await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
@@ -167,16 +164,6 @@ async def on_proposal_callback(callback: CallbackQuery):
 
     await callback.answer()
 
-
-@router.message(Command("testmode"))
-async def cmd_testmode(message: Message):
-    """DEV_TEST_MODE holatini ko'rsatadi (diagnostika)."""
-    on = test_mode.is_enabled()
-    await message.answer(
-        f"{'✅' if on else '❌'} DEV_TEST_MODE = <b>{'true' if on else 'false'}</b>\n"
-        f"{'Mini Appda Test match ishlashi kerak.' if on else '.env ga DEV_TEST_MODE=true yozing va docker compose up -d --force-recreate'}",
-        parse_mode="HTML",
-    )
 
 
 @router.message(Registration.name)
