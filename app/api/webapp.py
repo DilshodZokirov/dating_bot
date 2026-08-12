@@ -1,10 +1,19 @@
 import uuid
 
 import httpx
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, File, Header, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
+from app.avatars import (
+    ALLOWED_TYPES,
+    MAX_AVATAR_BYTES,
+    avatar_url,
+    delete_avatar_files,
+    ensure_avatar_dir,
+    find_avatar_file,
+)
 from app.cities import UZBEKISTAN_CITIES
 from app.config import settings
 from app.database import async_session
@@ -92,6 +101,7 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
 
     return {
         "registered": True,
+        "id": user.id,
         "name": user.name,
         "age": user.age,
         "gender": user.gender.value,
@@ -104,6 +114,8 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
         "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
         "is_banned": user.is_banned,
+        "has_avatar": bool(getattr(user, "has_avatar", False)),
+        "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
     }
 
 
@@ -219,6 +231,68 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
     return {"status": "ok"}
 
 
+@router.post("/profile/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    uid = int(tg_user["id"])
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Faqat JPG, PNG yoki WEBP")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Bo'sh fayl")
+    if len(data) > MAX_AVATAR_BYTES:
+        raise HTTPException(status_code=400, detail="Rasm 2 MB dan oshmasin")
+
+    ext = ALLOWED_TYPES[content_type]
+    ensure_avatar_dir()
+    delete_avatar_files(uid)
+    path = ensure_avatar_dir() / f"{uid}{ext}"
+    path.write_bytes(data)
+
+    async with async_session() as session:
+        user = await session.get(User, uid)
+        if not user:
+            path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="Avval ro'yxatdan o'ting")
+        user.has_avatar = True
+        await session.commit()
+
+    return {"status": "ok", "avatar_url": avatar_url(uid, True)}
+
+
+@router.delete("/profile/avatar")
+async def remove_avatar(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    uid = int(tg_user["id"])
+    delete_avatar_files(uid)
+    async with async_session() as session:
+        user = await session.get(User, uid)
+        if user:
+            user.has_avatar = False
+            await session.commit()
+    return {"status": "removed", "avatar_url": None}
+
+
+@router.get("/avatar/{user_id}")
+async def get_avatar(user_id: int):
+    """Profil rasmi — <img src> uchun (auth header'siz)."""
+    path = find_avatar_file(user_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="Avatar yo'q")
+    media = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }.get(path.suffix.lower(), "application/octet-stream")
+    return FileResponse(path, media_type=media, headers={"Cache-Control": "public, max-age=3600"})
+
+
 @router.post("/search/start")
 async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
@@ -314,19 +388,25 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
 
     await set_result(
         user.id, "proposal", proposal_id=proposal_id,
+        other_id=candidate_user.id,
         other_name=candidate_user.name, other_age=candidate_user.age, other_gender=candidate_user.gender.value,
+        other_avatar_url=avatar_url(candidate_user.id, bool(getattr(candidate_user, "has_avatar", False))),
     )
     await set_result(
         candidate["user_id"], "proposal", proposal_id=proposal_id,
+        other_id=user.id,
         other_name=user.name, other_age=user.age, other_gender=user.gender.value,
+        other_avatar_url=avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
     )
 
     return {
         "outcome": "proposal",
         "proposal_id": proposal_id,
+        "other_id": candidate_user.id,
         "other_name": candidate_user.name,
         "other_age": candidate_user.age,
         "other_gender": candidate_user.gender.value,
+        "other_avatar_url": avatar_url(candidate_user.id, bool(getattr(candidate_user, "has_avatar", False))),
     }
 
 
@@ -543,6 +623,8 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
             "language": partner.language.value,
             "online": online.get(partner.id, False),
             "busy": bool(partner.is_in_call),
+            "has_avatar": bool(getattr(partner, "has_avatar", False)),
+            "avatar_url": avatar_url(partner.id, bool(getattr(partner, "has_avatar", False))),
             "saved_at": saved.created_at.isoformat() if saved.created_at else None,
         })
     return {"items": items}
@@ -643,11 +725,15 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
     )
     await set_result(
         me.id, "proposal", proposal_id=proposal_id,
+        other_id=partner.id,
         other_name=partner.name, other_age=partner.age, other_gender=partner.gender.value,
+        other_avatar_url=avatar_url(partner.id, bool(getattr(partner, "has_avatar", False))),
     )
     await set_result(
         partner.id, "proposal", proposal_id=proposal_id,
+        other_id=me.id,
         other_name=me.name, other_age=me.age, other_gender=me.gender.value,
+        other_avatar_url=avatar_url(me.id, bool(getattr(me, "has_avatar", False))),
     )
 
     return {

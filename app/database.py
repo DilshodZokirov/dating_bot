@@ -47,3 +47,6 @@ async def init_db():
         )
         # Tiqilib qolgan qo'ng'iroq holati
         await conn.execute(text("UPDATE users SET is_in_call = false WHERE is_in_call = true"))
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_avatar BOOLEAN DEFAULT false")
+        )
