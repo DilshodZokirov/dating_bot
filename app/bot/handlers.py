@@ -162,7 +162,7 @@ async def on_proposal_callback(callback: CallbackQuery):
 
     if outcome == "matched":
         await callback.answer()
-        # notify_call_ready allaqachon yuborilgan (ikkala tomonga)
+        await callback.message.answer(t(lang, "search_check_app"))
         return
 
     await callback.answer()

@@ -36,7 +36,7 @@ from app.models import (
 from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids, is_blocked_pair
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
-from app.telegram_client import notify_admins, notify_match_found, notify_saved_invite
+from app.telegram_client import notify_admins
 
 router = APIRouter(prefix="/api")
 
@@ -271,7 +271,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
 
     proposal_id = await create_mutual_proposal(requester=_queue_payload(user), candidate=candidate)
 
-    # Mini App polling + Telegram inline xabar (ikkala tomonga)
+    # Taklif faqat Mini App polling orqali (Telegram xabar yo'q)
     await set_result(
         user.id, "proposal", proposal_id=proposal_id,
         other_name=candidate_user.name, other_age=candidate_user.age, other_gender=candidate_user.gender.value,
@@ -280,19 +280,6 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         candidate["user_id"], "proposal", proposal_id=proposal_id,
         other_name=user.name, other_age=user.age, other_gender=user.gender.value,
     )
-
-    # Mini App ochiq (online) → faqat webapp; yopiq → Telegram bot inline
-    if not await is_online(user.id):
-        await notify_match_found(
-            user.id, user.language.value, candidate_user.name, candidate_user.age,
-            candidate_user.gender.value, proposal_id,
-        )
-    if not await is_online(candidate_user.id):
-        await notify_match_found(
-            candidate_user.id, candidate_user.language.value, user.name, user.age,
-            user.gender.value, proposal_id,
-        )
-
     return {"status": "proposal_sent"}
 
 
@@ -690,10 +677,7 @@ class InviteRequest(BaseModel):
 
 @router.post("/saved/invite")
 async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None = Header(default=None)):
-    """
-    Saqlangan online suhbatdoshni suhbatga chaqirish.
-    Taklif yaratiladi + Telegram xabar; ikkala tomon Mini Appda qabul qiladi.
-    """
+    """Saqlangan online suhbatdoshni suhbatga chaqirish (faqat Mini App)."""
     tg_user = _auth(x_telegram_init_data)
     me_id = int(tg_user["id"])
     await touch_presence(me_id)
@@ -722,8 +706,8 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         raise HTTPException(status_code=403, detail="Hisob cheklangan")
     if partner.is_in_call:
         raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
-
-    partner_online = await is_online(payload.partner_id)
+    if not await is_online(payload.partner_id):
+        raise HTTPException(status_code=409, detail="Suhbatdosh hozir online emas")
 
     # Navbatdan chiqarib, to'g'ridan-to'g'ri taklif
     for lf in ("male", "female", "any"):
@@ -743,14 +727,9 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         other_name=me.name, other_age=me.age, other_gender=me.gender.value,
     )
 
-    # Chaqiruvchi Mini Appda → Telegram kerak emas.
-    # Hamroh online → webapp; offline → Telegram bot.
-    if not partner_online:
-        await notify_saved_invite(partner.id, partner.language.value, me.name, me.age, proposal_id)
-
     return {
         "status": "invited",
         "proposal_id": proposal_id,
         "partner_id": partner.id,
-        "partner_online": partner_online,
+        "partner_online": True,
     }

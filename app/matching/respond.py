@@ -1,4 +1,4 @@
-"""Taklifga javob — API va bot (Telegram inline) uchun umumiy."""
+"""Taklifga javob — API va (ixtiyoriy) bot uchun umumiy. Xabarlar faqat Mini App orqali."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from app.database import async_session
 from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.matching.queue import requeue_user, set_decision, set_result
 from app.models import CallSession, User
-from app.telegram_client import notify_call_ready, notify_text
 
 
 def _other_side(proposal: dict, responder_id: int) -> dict:
@@ -30,11 +29,6 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
 
 
 async def respond_to_proposal(user_id: int, proposal_id: str, decision: str) -> dict:
-    """
-    Qaytaradi:
-      outcome: invalid | waiting_partner | declined | matched | livekit_missing
-      + matched bo'lsa room/livekit maydonlari
-    """
     if decision not in ("accepted", "declined"):
         return {"outcome": "invalid"}
 
@@ -52,14 +46,8 @@ async def respond_to_proposal(user_id: int, proposal_id: str, decision: str) -> 
     if result["status"] == "declined":
         await requeue_user(other)
         await set_result(other["user_id"], "requeued")
-        # Boshqa tomonga Telegram xabar
-        async with async_session() as session:
-            other_user = await session.get(User, other["user_id"])
-        if other_user:
-            await notify_text(other_user.id, other_user.language.value, "declined_other")
         return {"outcome": "declined"}
 
-    # matched
     if not livekit_configured():
         return {"outcome": "livekit_missing"}
 
@@ -98,12 +86,6 @@ async def respond_to_proposal(user_id: int, proposal_id: str, decision: str) -> 
         livekit_url=me_join["livekit_url"],
         livekit_token=me_join["livekit_token"],
     )
-
-    # Ikkalasiga Telegram: Mini Appni ochib qo'ng'iroqqa kiring
-    if me:
-        await notify_call_ready(me.id, me.language.value, room_id)
-    if other_user:
-        await notify_call_ready(other_user.id, other_user.language.value, room_id)
 
     return {
         "outcome": "matched",
