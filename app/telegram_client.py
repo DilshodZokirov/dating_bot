@@ -20,3 +20,11 @@ async def send_message(chat_id: int, text: str, reply_markup: dict | None = None
         resp = await client.post(f"{TELEGRAM_API_BASE}/sendMessage", json=payload)
         resp.raise_for_status()
         return resp.json()
+
+
+async def notify_admins(text: str):
+    for admin_id in settings.admin_id_set():
+        try:
+            await send_message(admin_id, text)
+        except Exception as e:
+            print(f"notify admin {admin_id}: {e}", flush=True)

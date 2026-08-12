@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -32,6 +32,20 @@ class SearchScope(str, enum.Enum):
 class SessionStatus(str, enum.Enum):
     active = "active"
     ended = "ended"
+
+
+class ReportReason(str, enum.Enum):
+    spam = "spam"
+    harassment = "harassment"
+    inappropriate = "inappropriate"
+    underage = "underage"
+    other = "other"
+
+
+class ReportStatus(str, enum.Enum):
+    open = "open"
+    reviewed = "reviewed"
+    dismissed = "dismissed"
 
 
 class User(Base):
@@ -69,3 +83,31 @@ class CallSession(Base):
 
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Block(Base):
+    """Foydalanuvchi boshqa foydalanuvchini bloklagan."""
+
+    __tablename__ = "blocks"
+    __table_args__ = (UniqueConstraint("blocker_id", "blocked_id", name="uq_block_pair"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    blocker_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    blocked_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Report(Base):
+    """Shikoyat — admin ko'rib chiqadi."""
+
+    __tablename__ = "reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    reporter_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    reported_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    room_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reason: Mapped[ReportReason] = mapped_column(Enum(ReportReason), default=ReportReason.other)
+    details: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    status: Mapped[ReportStatus] = mapped_column(Enum(ReportStatus), default=ReportStatus.open)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+

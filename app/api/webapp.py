@@ -20,8 +20,19 @@ from app.matching.queue import (
     set_result,
 )
 from app.livekit_tokens import livekit_configured, livekit_join_payload
-from app.models import CallSession, Gender, Language, LookingFor, SearchScope, SessionStatus, User
+from app.models import (
+    CallSession,
+    Gender,
+    Language,
+    LookingFor,
+    ReportReason,
+    SearchScope,
+    SessionStatus,
+    User,
+)
+from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids
 from app.telegram_auth import InitDataError, validate_init_data
+from app.telegram_client import notify_admins
 
 router = APIRouter(prefix="/api")
 
@@ -187,6 +198,10 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     if user.is_banned:
         raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
 
+    exclude = await get_blocked_ids(user.id)
+    exclude |= await get_banned_ids()
+    exclude.add(user.id)
+
     candidate = await find_candidate(
         gender=user.gender.value,
         looking_for=user.looking_for.value,
@@ -194,6 +209,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         language=user.language.value,
         city=user.city,
         search_scope=user.search_scope.value,
+        exclude_ids=exclude,
     )
 
     if not candidate:
@@ -205,6 +221,13 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
 
     async with async_session() as session:
         candidate_user = await session.get(User, candidate["user_id"])
+
+    if not candidate_user or candidate_user.is_banned:
+        await join_queue(
+            user.id, user.gender.value, user.looking_for.value, user.age,
+            user.language.value, user.city, user.search_scope.value,
+        )
+        return {"status": "waiting"}
 
     proposal_id = await create_mutual_proposal(requester=_queue_payload(user), candidate=candidate)
 
@@ -472,3 +495,88 @@ async def test_call_end(payload: TestCallEndRequest):
 
     await _end_call_session(payload.room_id, payload.partner_id)
     return {"status": "ended"}
+
+
+# ---------------------------------------------------------------------------
+# Moderatsiya — bloklash / shikoyat
+# ---------------------------------------------------------------------------
+
+class BlockRequest(BaseModel):
+    partner_id: int
+    room_id: str | None = None
+
+
+class ReportRequest(BaseModel):
+    partner_id: int
+    reason: ReportReason = ReportReason.other
+    details: str | None = Field(default=None, max_length=500)
+    room_id: str | None = None
+    also_block: bool = True
+
+
+@router.post("/block")
+async def block_user(payload: BlockRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizni bloklab bo'lmaydi")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, payload.partner_id)
+    if not me:
+        raise HTTPException(status_code=400, detail="Avval ro'yxatdan o'ting")
+    if not partner:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    await add_block(me_id, payload.partner_id)
+    if payload.room_id:
+        await _end_call_session(payload.room_id, payload.partner_id)
+
+    return {"status": "blocked", "partner_id": payload.partner_id}
+
+
+@router.post("/report")
+async def report_user(payload: ReportRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizga shikoyat qilib bo'lmaydi")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, payload.partner_id)
+    if not me:
+        raise HTTPException(status_code=400, detail="Avval ro'yxatdan o'ting")
+    if not partner:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    report = await add_report(
+        reporter_id=me_id,
+        reported_id=payload.partner_id,
+        reason=payload.reason,
+        details=payload.details,
+        room_id=payload.room_id,
+    )
+    if payload.also_block:
+        await add_block(me_id, payload.partner_id)
+    if payload.room_id:
+        await _end_call_session(payload.room_id, payload.partner_id)
+
+    await notify_admins(
+        f"🚨 Yangi shikoyat #{report.id}\n"
+        f"Kim: <code>{me_id}</code> ({me.name})\n"
+        f"Kimga: <code>{payload.partner_id}</code> ({partner.name})\n"
+        f"Sabab: <b>{payload.reason.value}</b>\n"
+        f"Xona: {payload.room_id or '—'}\n"
+        f"Izoh: {(payload.details or '—')[:200]}\n\n"
+        f"/ban {payload.partner_id} — ban\n"
+        f"/reports — ochiq shikoyatlar"
+    )
+
+    return {
+        "status": "reported",
+        "report_id": report.id,
+        "blocked": payload.also_block,
+        "partner_id": payload.partner_id,
+    }

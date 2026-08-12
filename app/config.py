@@ -30,7 +30,18 @@ class Settings(BaseSettings):
     turn_username: str = ""
     turn_password: str = ""
 
+    # Admin Telegram ID lar (vergul bilan): 123,456
+    admin_ids: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    def admin_id_set(self) -> set[int]:
+        ids: set[int] = set()
+        for part in (self.admin_ids or "").split(","):
+            part = part.strip()
+            if part.isdigit():
+                ids.add(int(part))
+        return ids
 
 
 settings = Settings()
