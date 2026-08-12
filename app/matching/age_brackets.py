@@ -22,10 +22,7 @@ def age_bracket(age: int) -> str:
 
 
 def default_prefer_ages(age: int) -> tuple[int, int]:
-    """Ro'yxatdan o'tganda default: o'z yosh oralig'i."""
-    for low, high in AGE_BRACKETS:
-        if low <= age <= high:
-            return low, high
+    """Ro'yxatdan o'tganda default: barcha yoshlar (18+)."""
     return 18, 99
 
 
