@@ -22,14 +22,41 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
    - `WEBAPP_URL` (HTTPS, ngrok) — **oxirida `/webapp/` yo'q**
    - `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET`
    - `ADMIN_IDS` — o'zingizning Telegram ID (vergul bilan bir nechta)
+   - `.env` da `DEV_TEST_MODE` bo'lsa **o'chiring** (endi kerak emas)
 
 2. Docker:
-   ```bash
+   ```powershell
+   git pull origin main
    docker compose up -d --force-recreate
    ```
    (To'liq `--build` ba'zan PyPI tarmoq xatosi beradi — kod volume orqali yangilanadi.)
 
-3. Telegram: `/start` → Mini App → Qidirish.
+3. ngrok (URL o'zgarsa `.env` + BotFather Menu URL ni yangilang):
+   ```powershell
+   ngrok http 8000
+   ```
+   `WEBAPP_URL=https://xxxx.ngrok-free.app`  
+   BotFather Menu: `https://xxxx.ngrok-free.app/webapp/`
+
+4. Tekshiruv:
+   ```powershell
+   curl.exe http://localhost:8000/health
+   docker compose logs api --tail 30
+   docker compose logs bot --tail 30
+   ```
+   `livekit_configured: true` va logda `Soyla API up` bo'lishi kerak.
+
+5. Telegram: `/start` → Mini App → **Soyla** → Qidirish.
+
+## 2 akkaunt bilan match test
+
+1. Biri **erkak**, biri **ayol** (yoki Sozlamalarda Suhbatdosh = **Farqi yo'q**)
+2. Til **bir xil**
+3. Sozlamalar → Suhbatdosh yoshi → **18+ (hammasi)** → Saqlash
+4. Ikkalasi Mini Appni ochib **Qidirish**
+5. Taklif chiqsa → Roziman → LiveKit qo'ng'iroq
+
+Agar topilmasa: ikkalasida ham qidiruvni To'xtatish → Sozlamalarni qayta saqlash → yana Qidirish.
 
 ## Moderatsiya
 
@@ -61,5 +88,3 @@ LIVEKIT_API_SECRET=...
 - Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
 - Ikki tomonlama rozilik (taklif 120 soniya)
 - Bekor qilish / rad etish → ikkinchi tomon qayta qidiruvga
-
-**2 akkaunt bilan test:** biri erkak, biri ayol (yoki ikkalasida Suhbatdosh = Farqi yo'q); til bir xil; Sozlamalarda suhbatdosh yoshi **18+ (hammasi)**.
