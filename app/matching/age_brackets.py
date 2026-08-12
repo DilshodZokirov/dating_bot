@@ -1,6 +1,5 @@
 """
-Yosh oraliqlari (bracket'lar). Foydalanuvchilar faqat bir xil oraliqdagilar bilan
-moslashadi — masalan 18 yoshli foydalanuvchi 50 yoshli bilan moslashmaydi.
+Yosh oraliqlari — sozlamalarda tanlanadi va matchingda qo'llaniladi.
 """
 
 AGE_BRACKETS = [
@@ -11,7 +10,7 @@ AGE_BRACKETS = [
     (35, 39),
     (40, 49),
     (50, 59),
-    (60, 120),
+    (60, 99),
 ]
 
 
@@ -19,4 +18,28 @@ def age_bracket(age: int) -> str:
     for low, high in AGE_BRACKETS:
         if low <= age <= high:
             return f"{low}-{high}"
-    return "60-120"
+    return "60-99"
+
+
+def default_prefer_ages(age: int) -> tuple[int, int]:
+    """Ro'yxatdan o'tganda default: o'z yosh oralig'i."""
+    for low, high in AGE_BRACKETS:
+        if low <= age <= high:
+            return low, high
+    return 18, 99
+
+
+def age_range_options() -> list[dict]:
+    """API / UI uchun ro'yxat."""
+    opts = [{"id": "any", "min": 18, "max": 99, "label": "18+ (hammasi)"}]
+    for low, high in AGE_BRACKETS:
+        opts.append({"id": f"{low}-{high}", "min": low, "max": high, "label": f"{low}–{high}"})
+    return opts
+
+
+def clamp_prefer(age_min: int, age_max: int, min_age: int = 18) -> tuple[int, int]:
+    lo = max(min_age, min(age_min, age_max))
+    hi = min(99, max(age_min, age_max))
+    if hi < lo:
+        hi = lo
+    return lo, hi

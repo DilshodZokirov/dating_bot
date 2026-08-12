@@ -15,6 +15,7 @@ from app.bot.states import Registration
 from app.config import settings
 from app.database import async_session
 from app.i18n import t
+from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
@@ -26,7 +27,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=search1"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=prefs1"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -165,6 +166,7 @@ async def process_language(message: Message, state: FSMContext):
     data = await state.update_data(language=LANGUAGE_MAP[message.text])
 
     async with async_session() as session:
+        pref_min, pref_max = default_prefer_ages(data["age"])
         user = User(
             id=message.from_user.id,
             name=data["name"],
@@ -172,6 +174,8 @@ async def process_language(message: Message, state: FSMContext):
             gender=data["gender"],
             looking_for=data["looking_for"],
             language=data["language"],
+            prefer_age_min=pref_min,
+            prefer_age_max=pref_max,
             is_verified=False,  # keyinchalik yosh tasdiqlash bosqichi qo'shiladi
         )
         session.add(user)
@@ -228,6 +232,8 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "language": proposal["candidate_language"],
                     "city": proposal.get("candidate_city"),
                     "search_scope": proposal.get("candidate_search_scope", "country"),
+                    "prefer_age_min": proposal.get("candidate_prefer_age_min", 18),
+                    "prefer_age_max": proposal.get("candidate_prefer_age_max", 99),
                 }
             else:
                 other = {
@@ -238,6 +244,8 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "language": proposal["requester_language"],
                     "city": proposal.get("requester_city"),
                     "search_scope": proposal.get("requester_search_scope", "country"),
+                    "prefer_age_min": proposal.get("requester_prefer_age_min", 18),
+                    "prefer_age_max": proposal.get("requester_prefer_age_max", 99),
                 }
             await requeue_user(other)
             await set_result(other["user_id"], "requeued")
