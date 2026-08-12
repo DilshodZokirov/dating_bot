@@ -41,6 +41,15 @@
   h1 { font-size: 22px; margin: 26px 0 8px; text-align: center; }
   p.hint { color: var(--hint); text-align: center; font-size: 14px; max-width: 280px; line-height: 1.4; }
   .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
+  .test-btn {
+    margin-top: 18px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(232,130,60,0.55);
+    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; display: none;
+  }
+  .test-link-box {
+    display: none; width: 100%; max-width: 320px; margin-top: 14px; padding: 12px; border-radius: 12px;
+    background: var(--card); font-size: 12px; color: var(--hint); word-break: break-all; line-height: 1.4;
+  }
+  .test-link-box a { color: var(--accent); }
   .error-box { display: none; text-align: center; margin-top: 40px; color: var(--hint); font-size: 14px; }
 
   /* Taklif kartasi */
@@ -113,6 +122,12 @@
     <h1 id="titleText">Boshlash uchun bosing</h1>
     <p class="hint" id="hintText">Sizga mos suhbatdoshni topib beramiz.</p>
     <span class="cancel-link" id="cancelLink">Bekor qilish</span>
+    <button type="button" class="test-btn" id="testMatchBtn">🧪 Test match (1 akkaunt)</button>
+    <div class="test-link-box" id="testLinkBox">
+      <div id="testLinkHint"></div>
+      <a id="testPeerLink" href="#" target="_blank" rel="noopener"></a>
+      <button type="button" class="test-btn" id="copyTestLinkBtn" style="display:inline-block;margin-top:10px;">Nusxa olish</button>
+    </div>
     <div class="error-box" id="errorBox"></div>
 
     <!-- Taklif kartasi -->
@@ -135,6 +150,11 @@
       <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
     </div>
     <div class="call-status" id="callStatus">Ulanmoqda...</div>
+    <div class="test-link-box" id="testCallBanner" style="display:none;margin-bottom:12px;">
+      <div id="testCallHint"></div>
+      <a id="testCallLink" href="#" target="_blank" rel="noopener"></a>
+      <button type="button" class="test-btn" id="copyTestCallLinkBtn" style="display:inline-block;margin-top:10px;">Nusxa olish</button>
+    </div>
     <div id="debugLog" style="width:100%;max-width:320px;max-height:140px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;font-size:11px;color:var(--hint);margin-bottom:16px;font-family:monospace;"></div>
     <div class="call-controls">
       <button class="call-btn" id="muteBtn" title="Mute">
@@ -224,6 +244,14 @@ const TRANSLATIONS = {
   call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "The call has ended." },
   mic_error: { uz: "Mikrofonga ruxsat berilmadi. Sozlamalardan ruxsat bering.", ru: "Доступ к микрофону не разрешён. Разрешите в настройках.", en: "Microphone access denied. Please allow it in settings." },
   tap_to_enable_audio: { uz: "Ovozni yoqish uchun shu yerga bosing", ru: "Нажмите здесь, чтобы включить звук", en: "Tap here to enable audio" },
+  test_match: { uz: "🧪 Test match (1 akkaunt)", ru: "🧪 Test match (1 аккаунт)", en: "🧪 Test match (1 account)" },
+  test_link_hint: {
+    uz: "Kompyuter brauzerida shu havolani oching → Start → keyin telefonda qo‘ng‘iroq:",
+    ru: "Откройте ссылку на ПК → Start → затем звонок на телефоне:",
+    en: "Open this link on PC → Start → then continue on phone:",
+  },
+  test_copy_ok: { uz: "Havola nusxalandi", ru: "Ссылка скопирована", en: "Link copied" },
+  test_copy_btn: { uz: "Nusxa olish", ru: "Копировать", en: "Copy" },
 };
 
 let currentLang = "uz";
@@ -249,6 +277,8 @@ function applyStaticTranslations() {
   document.getElementById("saveProfileBtn").textContent = tr("save_btn");
   document.getElementById("navSearchLabel").textContent = tr("nav_search");
   document.getElementById("navProfileLabel").textContent = tr("nav_profile");
+  document.getElementById("testMatchBtn").textContent = tr("test_match");
+  document.getElementById("copyTestLinkBtn").textContent = tr("test_copy_btn");
   if (!searching) {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
@@ -377,7 +407,8 @@ async function loadMe() {
     currentLang = me.language || "uz";
     applyStaticTranslations();
     userLabel.textContent = me.name;
-    stateLabel.textContent = "";
+    stateLabel.textContent = me.test_mode ? "TEST" : "";
+    document.getElementById("testMatchBtn").style.display = me.test_mode ? "inline-block" : "none";
     document.getElementById("profileName").value = me.name || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";
@@ -386,6 +417,49 @@ async function loadMe() {
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
   } catch (e) { showError(e.message); }
 }
+
+let lastTestPeerUrl = "";
+
+async function startTestMatch() {
+  const box = document.getElementById("testLinkBox");
+  const link = document.getElementById("testPeerLink");
+  const hint = document.getElementById("testLinkHint");
+  const callBanner = document.getElementById("testCallBanner");
+  const callHint = document.getElementById("testCallHint");
+  const callLink = document.getElementById("testCallLink");
+  try {
+    const result = await api("/api/test/match", { method: "POST" });
+    lastTestPeerUrl = result.test_peer_url || (location.origin + result.test_peer_path);
+    hint.textContent = tr("test_link_hint");
+    link.href = lastTestPeerUrl;
+    link.textContent = lastTestPeerUrl;
+    box.style.display = "block";
+
+    callHint.textContent = tr("test_link_hint");
+    callLink.href = lastTestPeerUrl;
+    callLink.textContent = lastTestPeerUrl;
+    callBanner.style.display = "block";
+
+    try { await navigator.clipboard.writeText(lastTestPeerUrl); } catch (_) {}
+
+    enterCall(result.room_id, result.partner_id);
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+document.getElementById("testMatchBtn").addEventListener("click", startTestMatch);
+async function copyTestUrl() {
+  if (!lastTestPeerUrl) return;
+  try {
+    await navigator.clipboard.writeText(lastTestPeerUrl);
+    tg?.showAlert?.(tr("test_copy_ok"));
+  } catch (_) {
+    prompt(tr("test_copy_ok"), lastTestPeerUrl);
+  }
+}
+document.getElementById("copyTestLinkBtn").addEventListener("click", copyTestUrl);
+document.getElementById("copyTestCallLinkBtn").addEventListener("click", copyTestUrl);
 
 async function startSearch() {
   try {
@@ -707,6 +781,8 @@ function cleanupCall(notifyServer) {
   document.getElementById("remoteVideo").style.display = "none";
   document.getElementById("localVideo").style.display = "none";
   document.querySelector(".call-avatar").style.display = "flex";
+  document.getElementById("testCallBanner").style.display = "none";
+  document.getElementById("testLinkBox").style.display = "none";
   callView.style.display = "none";
   bottomNav.style.display = "flex";
   searchView.classList.add("active");

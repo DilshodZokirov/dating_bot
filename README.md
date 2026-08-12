@@ -39,3 +39,18 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **audio/vi
 - Shikoyat / bloklash
 - Admin panel
 - Yosh tasdiqlash
+
+## Dev test mode (1 Telegram akkaunt)
+
+Ikkinchi raqam bo‘lmasa, match + WebRTC ni shunday tekshirasiz:
+
+1. `.env` da:
+   ```bash
+   DEV_TEST_MODE=true
+   ```
+2. `docker compose up --build`
+3. Telefonda Mini App → **🧪 Test match**
+4. Chiqqan havolani **kompyuter brauzerida** oching → **Start**
+5. Telefon + kompyuter bir-biriga audio/video ulanishi kerak
+
+**Muhim:** productionda `DEV_TEST_MODE=false` qoldiring.

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 
+from app import test_mode
 from app.cities import UZBEKISTAN_CITIES
 from app.config import settings
 from app.database import async_session
@@ -18,7 +19,7 @@ from app.matching.queue import (
     set_decision,
     set_result,
 )
-from app.models import CallSession, Language, SearchScope, SessionStatus, User
+from app.models import CallSession, Gender, Language, LookingFor, SearchScope, SessionStatus, User
 from app.telegram_auth import InitDataError, validate_init_data
 
 router = APIRouter(prefix="/api")
@@ -83,6 +84,7 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "city": user.city,
         "search_scope": user.search_scope.value,
         "is_banned": user.is_banned,
+        "test_mode": test_mode.is_enabled(),
     }
 
 
@@ -100,10 +102,7 @@ async def get_cities():
     return {"cities": UZBEKISTAN_CITIES}
 
 
-@router.get("/turn-credentials")
-async def get_turn_credentials(x_telegram_init_data: str | None = Header(default=None)):
-    _auth(x_telegram_init_data)  # faqat ro'yxatdan o'tgan/haqiqiy Telegram foydalanuvchisi so'rasin
-
+async def _build_ice_servers() -> dict:
     ice_servers: list[dict] = [{"urls": "stun:stun.l.google.com:19302"}]
 
     # 1) O'z TURN (coturn / static) — eng oddiy yo'l
@@ -142,6 +141,12 @@ async def get_turn_credentials(x_telegram_init_data: str | None = Header(default
     except Exception as e:
         print(f"TURN credentials error: {e}")
         return {"iceServers": ice_servers}
+
+
+@router.get("/turn-credentials")
+async def get_turn_credentials(x_telegram_init_data: str | None = Header(default=None)):
+    _auth(x_telegram_init_data)  # faqat ro'yxatdan o'tgan/haqiqiy Telegram foydalanuvchisi so'rasin
+    return await _build_ice_servers()
 
 
 @router.post("/profile")
@@ -288,22 +293,113 @@ class CallEndRequest(BaseModel):
     partner_id: int
 
 
-@router.post("/call/end")
-async def call_end(payload: CallEndRequest, x_telegram_init_data: str | None = Header(default=None)):
-    tg_user = _auth(x_telegram_init_data)
-
+async def _end_call_session(room_id: str, notify_partner_id: int) -> None:
     async with async_session() as session:
         result = await session.execute(
-            CallSession.__table__.select().where(CallSession.room_id == payload.room_id)
+            CallSession.__table__.select().where(CallSession.room_id == room_id)
         )
         row = result.first()
         if row:
             await session.execute(
                 CallSession.__table__.update()
-                .where(CallSession.room_id == payload.room_id)
+                .where(CallSession.room_id == room_id)
                 .values(status=SessionStatus.ended, ended_at=func.now())
             )
             await session.commit()
 
-    await set_result(payload.partner_id, "call_ended")
+    await set_result(notify_partner_id, "call_ended")
+
+
+@router.post("/call/end")
+async def call_end(payload: CallEndRequest, x_telegram_init_data: str | None = Header(default=None)):
+    _auth(x_telegram_init_data)
+    await _end_call_session(payload.room_id, payload.partner_id)
+    return {"status": "ended"}
+
+
+# ---------------------------------------------------------------------------
+# Dev test mode — 1 Telegram akkaunt + kompyuter brauzeri
+# ---------------------------------------------------------------------------
+
+class TestCallEndRequest(BaseModel):
+    room_id: str
+    partner_id: int
+    token: str
+
+
+@router.post("/test/match")
+async def test_match(x_telegram_init_data: str | None = Header(default=None)):
+    if not test_mode.is_enabled():
+        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
+
+    tg_user = _auth(x_telegram_init_data)
+    async with async_session() as session:
+        user = await session.get(User, tg_user["id"])
+        if not user:
+            raise HTTPException(status_code=400, detail="Avval botda /start orqali ro'yxatdan o'ting")
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
+
+        # Opposite gender for realistic proposal UI (age rule: female younger)
+        if user.gender == Gender.male:
+            peer_gender = Gender.female
+            peer_age = max(settings.min_age, user.age - 1)
+        else:
+            peer_gender = Gender.male
+            peer_age = user.age + 1
+
+        peer = await test_mode.ensure_test_peer(session, language=user.language)
+        peer.name = test_mode.TEST_PEER_NAME
+        peer.gender = peer_gender
+        peer.age = peer_age
+        peer.looking_for = LookingFor.any
+        peer.language = user.language
+        await session.commit()
+
+        room_id = f"test_{uuid.uuid4().hex[:12]}"
+        call = CallSession(user1_id=user.id, user2_id=peer.id, room_id=room_id)
+        session.add(call)
+        await session.commit()
+
+    token = test_mode.create_test_token(room_id, user_id=test_mode.TEST_PEER_ID)
+    base = (settings.webapp_url or "").rstrip("/")
+    peer_path = f"/webapp/test-peer.html?token={token}&partner_id={user.id}"
+    peer_url = f"{base}{peer_path}" if base else peer_path
+
+    return {
+        "status": "matched",
+        "room_id": room_id,
+        "partner_id": test_mode.TEST_PEER_ID,
+        "partner_name": test_mode.TEST_PEER_NAME,
+        "test_token": token,
+        "test_peer_url": peer_url,
+        "test_peer_path": peer_path,
+    }
+
+
+@router.get("/test/turn-credentials")
+async def test_turn_credentials(token: str):
+    if not test_mode.is_enabled():
+        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
+    try:
+        test_mode.verify_test_token(token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    return await _build_ice_servers()
+
+
+@router.post("/test/call/end")
+async def test_call_end(payload: TestCallEndRequest):
+    if not test_mode.is_enabled():
+        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
+    try:
+        claims = test_mode.verify_test_token(payload.token, expected_room_id=payload.room_id)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    # Test peer only notifies the real Telegram user
+    if claims["user_id"] != test_mode.TEST_PEER_ID:
+        raise HTTPException(status_code=403, detail="faqat test peer")
+
+    await _end_call_session(payload.room_id, payload.partner_id)
     return {"status": "ended"}
