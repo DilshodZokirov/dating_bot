@@ -44,7 +44,8 @@
   .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
   .test-btn {
     margin-top: 18px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(232,130,60,0.55);
-    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; display: none;
+    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
+    display: inline-block;
   }
   .test-link-box {
     display: none; width: 100%; max-width: 320px; margin-top: 14px; padding: 12px; border-radius: 12px;
@@ -522,11 +523,9 @@ async function loadMe() {
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     currentLang = me.language || "uz";
-    // Test tugma — tarjimalardan OLDIN (xato bo'lsa ham ko'rinsin)
+    // Test match tugmasi doim ko'rinadi (API DEV_TEST_MODE ni tekshiradi)
     const testBtn = document.getElementById("testMatchBtn");
-    if (testBtn) {
-      testBtn.style.display = me.test_mode ? "inline-block" : "none";
-    }
+    if (testBtn) testBtn.style.display = "inline-block";
     applyStaticTranslations();
     userLabel.textContent = me.name;
     stateLabel.textContent = me.test_mode ? "TEST" : "";
@@ -537,7 +536,7 @@ async function loadMe() {
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     if (!me.test_mode) {
-      console.info("Test match yashirin: .env da DEV_TEST_MODE=true qilib api ni recreate qiling");
+      console.warn("API: DEV_TEST_MODE=false — tugma bosilsa xato chiqadi. .env ni tekshiring.");
     }
   } catch (e) { showError(e.message); }
 }
@@ -584,7 +583,12 @@ async function startTestMatch() {
       token: result.livekit_token,
     });
   } catch (e) {
-    showError(e.message);
+    const msg = e.message || String(e);
+    if (/test mode|o'chirilgan|404/i.test(msg)) {
+      showError("DEV_TEST_MODE o'chirilgan. .env ga DEV_TEST_MODE=true yozing, keyin: docker compose up -d --force-recreate");
+    } else {
+      showError(msg);
+    }
   }
 }
 

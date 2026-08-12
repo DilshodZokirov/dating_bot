@@ -43,7 +43,8 @@ class Settings(BaseSettings):
             return v
         if v is None:
             return False
-        return str(v).strip().lower() in {"1", "true", "yes", "on", "y"}
+        s = str(v).strip().strip('"').strip("'").lower()
+        return s in {"1", "true", "yes", "on", "y"}
 
     def admin_id_set(self) -> set[int]:
         ids: set[int] = set()

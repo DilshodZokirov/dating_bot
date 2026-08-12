@@ -26,7 +26,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=mod2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=mod3"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -112,6 +112,17 @@ async def cmd_app(message: Message, state: FSMContext):
     inline = _webapp_inline(lang)
     if inline:
         await message.answer("Yoki shu tugma:", reply_markup=inline)
+
+
+@router.message(Command("testmode"))
+async def cmd_testmode(message: Message):
+    """DEV_TEST_MODE holatini ko'rsatadi (diagnostika)."""
+    on = test_mode.is_enabled()
+    await message.answer(
+        f"{'✅' if on else '❌'} DEV_TEST_MODE = <b>{'true' if on else 'false'}</b>\n"
+        f"{'Mini Appda Test match ishlashi kerak.' if on else '.env ga DEV_TEST_MODE=true yozing va docker compose up -d --force-recreate'}",
+        parse_mode="HTML",
+    )
 
 
 @router.message(Registration.name)
