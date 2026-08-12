@@ -86,6 +86,34 @@
   .call-btn svg { width: 24px; height: 24px; fill: var(--text); }
   .call-btn.end { background: #e5484d; }
   .call-btn.active-toggle { background: var(--accent); }
+  .safety-row {
+    display: flex; gap: 10px; margin-top: 18px; width: 100%; max-width: 320px;
+  }
+  .safety-btn {
+    flex: 1; padding: 10px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+    background: transparent; color: var(--hint); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .safety-btn.danger { color: #ff8b8b; border-color: rgba(229,72,77,0.45); }
+  .report-sheet {
+    display: none; position: fixed; inset: 0; z-index: 40;
+    background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+  }
+  .report-sheet.open { display: flex; }
+  .report-panel {
+    width: 100%; max-width: 420px; background: var(--bg);
+    border-radius: 16px 16px 0 0; padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+  }
+  .report-panel h3 { margin: 0 0 6px; font-size: 17px; }
+  .report-panel p { margin: 0 0 12px; color: var(--hint); font-size: 13px; }
+  .report-reasons { display: flex; flex-direction: column; gap: 8px; }
+  .report-reasons button {
+    padding: 12px; border-radius: 10px; border: none; background: var(--card);
+    color: var(--text); font-size: 14px; text-align: left; cursor: pointer;
+  }
+  .report-cancel {
+    margin-top: 12px; width: 100%; padding: 12px; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.08); color: var(--hint); font-size: 14px; cursor: pointer;
+  }
 
   /* Profil */
   .profile-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
@@ -167,6 +195,25 @@
       <button class="call-btn end" id="endCallBtn" title="End">
         <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.71c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.66c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
       </button>
+    </div>
+    <div class="safety-row">
+      <button type="button" class="safety-btn" id="blockBtn">Bloklash</button>
+      <button type="button" class="safety-btn danger" id="reportBtn">Shikoyat</button>
+    </div>
+  </div>
+
+  <div class="report-sheet" id="reportSheet">
+    <div class="report-panel">
+      <h3 id="reportTitle">Shikoyat sababi</h3>
+      <p id="reportHint">Hamroh bloklanadi va qo'ng'iroq tugaydi.</p>
+      <div class="report-reasons" id="reportReasons">
+        <button type="button" data-reason="spam">Spam / reklama</button>
+        <button type="button" data-reason="harassment">Haqorat / ta'qib</button>
+        <button type="button" data-reason="inappropriate">Nomaqbul kontent</button>
+        <button type="button" data-reason="underage">Yoshga mos emas</button>
+        <button type="button" data-reason="other">Boshqa</button>
+      </div>
+      <button type="button" class="report-cancel" id="reportCancelBtn">Bekor</button>
     </div>
   </div>
 
@@ -258,6 +305,18 @@ const TRANSLATIONS = {
   },
   test_copy_ok: { uz: "Havola nusxalandi", ru: "Ссылка скопирована", en: "Link copied" },
   test_copy_btn: { uz: "Nusxa olish", ru: "Копировать", en: "Copy" },
+  block_btn: { uz: "Bloklash", ru: "Блок", en: "Block" },
+  report_btn: { uz: "Shikoyat", ru: "Жалоба", en: "Report" },
+  report_title: { uz: "Shikoyat sababi", ru: "Причина жалобы", en: "Report reason" },
+  report_hint: {
+    uz: "Hamroh bloklanadi va qo'ng'iroq tugaydi.",
+    ru: "Собеседник будет заблокирован, звонок завершится.",
+    en: "Partner will be blocked and the call will end.",
+  },
+  report_cancel: { uz: "Bekor", ru: "Отмена", en: "Cancel" },
+  block_ok: { uz: "Bloklandi. Boshqa uchrashmaysiz.", ru: "Заблокирован.", en: "Blocked." },
+  report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent. Thank you." },
+  safety_need_partner: { uz: "Hamroh yo'q.", ru: "Нет собеседника.", en: "No partner." },
 };
 
 let currentLang = "uz";
@@ -285,6 +344,11 @@ function applyStaticTranslations() {
   document.getElementById("navProfileLabel").textContent = tr("nav_profile");
   document.getElementById("testMatchBtn").textContent = tr("test_match");
   document.getElementById("copyTestLinkBtn").textContent = tr("test_copy_btn");
+  document.getElementById("blockBtn").textContent = tr("block_btn");
+  document.getElementById("reportBtn").textContent = tr("report_btn");
+  document.getElementById("reportTitle").textContent = tr("report_title");
+  document.getElementById("reportHint").textContent = tr("report_hint");
+  document.getElementById("reportCancelBtn").textContent = tr("report_cancel");
   if (!searching) {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
@@ -761,6 +825,65 @@ function cleanupCall(notifyServer) {
 }
 
 document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
+
+function openReportSheet() {
+  document.getElementById("reportSheet").classList.add("open");
+}
+function closeReportSheet() {
+  document.getElementById("reportSheet").classList.remove("open");
+}
+
+document.getElementById("blockBtn").addEventListener("click", async () => {
+  if (!callPartnerId) {
+    tg?.showAlert(tr("safety_need_partner"));
+    return;
+  }
+  try {
+    await api("/api/block", {
+      method: "POST",
+      body: JSON.stringify({ partner_id: callPartnerId, room_id: callRoomId }),
+    });
+    cleanupCall(false);
+    tg?.showAlert(tr("block_ok"));
+  } catch (e) {
+    tg?.showAlert(e.message || String(e));
+  }
+});
+
+document.getElementById("reportBtn").addEventListener("click", () => {
+  if (!callPartnerId) {
+    tg?.showAlert(tr("safety_need_partner"));
+    return;
+  }
+  openReportSheet();
+});
+
+document.getElementById("reportCancelBtn").addEventListener("click", closeReportSheet);
+document.getElementById("reportSheet").addEventListener("click", (e) => {
+  if (e.target.id === "reportSheet") closeReportSheet();
+});
+
+document.getElementById("reportReasons").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-reason]");
+  if (!btn || !callPartnerId) return;
+  const reason = btn.dataset.reason;
+  closeReportSheet();
+  try {
+    await api("/api/report", {
+      method: "POST",
+      body: JSON.stringify({
+        partner_id: callPartnerId,
+        room_id: callRoomId,
+        reason,
+        also_block: true,
+      }),
+    });
+    cleanupCall(false);
+    tg?.showAlert(tr("report_ok"));
+  } catch (err) {
+    tg?.showAlert(err.message || String(err));
+  }
+});
 
 document.getElementById("muteBtn").addEventListener("click", async () => {
   if (!lkRoom) return;

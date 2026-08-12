@@ -76,17 +76,22 @@ def _city_compatible(a_city: str | None, a_scope: str, b_city: str | None, b_sco
 
 
 async def find_candidate(gender: str, looking_for: str, age: int, language: str,
-                          city: str | None, search_scope: str) -> dict | None:
+                          city: str | None, search_scope: str,
+                          exclude_ids: set[int] | None = None) -> dict | None:
     """
     Navbatdan mos kandidatni qidiradi (yosh qoidasi: qiz yigitdan kichik + bir xil til +
     shahar afzalligi) va topilsa navbatdan olib tashlaydi. Topilmasa None qaytaradi.
+    exclude_ids — bloklangan / o'zini o'tkazib yuborish.
     """
+    exclude_ids = exclude_ids or set()
     token = await _acquire_lock()
     try:
         opposite_queue = _queue_key(gender)  # bizning gender'imizni qidirayotganlar shu navbatda
         raw_candidates = await redis_client.lrange(opposite_queue, 0, -1)
         for raw in raw_candidates:
             candidate = json.loads(raw)
+            if candidate.get("user_id") in exclude_ids:
+                continue
             if not _age_compatible(gender, age, candidate["gender"], candidate["age"]):
                 continue
             if candidate.get("language") != language:

@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.signaling import router as signaling_router
 from app.api.webapp import router as webapp_api_router
 from app.database import init_db
+import app.models  # noqa: F401 — create_all uchun jadvallar
 
 app = FastAPI(title="Dating Bot API")
 

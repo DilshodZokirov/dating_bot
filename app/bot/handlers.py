@@ -16,7 +16,8 @@ from app.config import settings
 from app.database import async_session
 from app.i18n import t
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, set_result
-from app.models import Gender, Language, LookingFor, User
+from app.models import Gender, Language, LookingFor, ReportStatus, User
+from app.moderation import list_open_reports, mark_report, set_user_banned
 
 router = Router()
 
@@ -24,7 +25,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=lk2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=mod1"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -222,3 +223,123 @@ async def cmd_reset(message: Message, state: FSMContext):
 
     await state.clear()
     await message.answer(t(lang, "reset_confirm"), reply_markup=ReplyKeyboardRemove())
+
+
+def _is_admin(user_id: int | None) -> bool:
+    return bool(user_id) and user_id in settings.admin_id_set()
+
+
+@router.message(Command("admin"))
+async def cmd_admin(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    await message.answer(
+        "🛡 <b>Admin</b>\n\n"
+        "/reports — ochiq shikoyatlar\n"
+        "/ban &lt;user_id&gt; — ban\n"
+        "/unban &lt;user_id&gt; — bandan chiqarish\n"
+        "/report_done &lt;id&gt; — shikoyatni yopish\n"
+        "/report_dismiss &lt;id&gt; — rad etish",
+        parse_mode="HTML",
+    )
+
+
+@router.message(Command("reports"))
+async def cmd_reports(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    reports = await list_open_reports(limit=15)
+    if not reports:
+        await message.answer("Ochiq shikoyat yo'q.")
+        return
+    lines = ["📋 <b>Ochiq shikoyatlar</b>\n"]
+    for r in reports:
+        lines.append(
+            f"#{r.id} · {r.reason.value}\n"
+            f"  kim: <code>{r.reporter_id}</code> → <code>{r.reported_id}</code>\n"
+            f"  xona: {r.room_id or '—'}\n"
+            f"  /ban {r.reported_id} · /report_done {r.id}"
+        )
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@router.message(Command("ban"))
+async def cmd_ban(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("Foydalanish: /ban &lt;user_id&gt;", parse_mode="HTML")
+        return
+    uid = int(parts[1])
+    user = await set_user_banned(uid, True)
+    if not user:
+        await message.answer(f"User {uid} topilmadi.")
+        return
+    await message.answer(f"🚫 Ban: <code>{uid}</code> ({user.name})", parse_mode="HTML")
+
+
+@router.message(Command("unban"))
+async def cmd_unban(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("Foydalanish: /unban &lt;user_id&gt;", parse_mode="HTML")
+        return
+    uid = int(parts[1])
+    user = await set_user_banned(uid, False)
+    if not user:
+        await message.answer(f"User {uid} topilmadi.")
+        return
+    await message.answer(f"✅ Unban: <code>{uid}</code> ({user.name})", parse_mode="HTML")
+
+
+@router.message(Command("report_done"))
+async def cmd_report_done(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("Foydalanish: /report_done &lt;id&gt;", parse_mode="HTML")
+        return
+    report = await mark_report(int(parts[1]), ReportStatus.reviewed)
+    if not report:
+        await message.answer("Shikoyat topilmadi.")
+        return
+    await message.answer(f"✅ Shikoyat #{report.id} yopildi.")
+
+
+@router.message(Command("report_dismiss"))
+async def cmd_report_dismiss(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    parts = (message.text or "").split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        await message.answer("Foydalanish: /report_dismiss &lt;id&gt;", parse_mode="HTML")
+        return
+    report = await mark_report(int(parts[1]), ReportStatus.dismissed)
+    if not report:
+        await message.answer("Shikoyat topilmadi.")
+        return
+    await message.answer(f"🗑 Shikoyat #{report.id} rad etildi.")
+
+
+@router.message(F.text)
+async def fallback_text(message: Message, state: FSMContext):
+    """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz."""
+    current = await state.get_state()
+    print(f"fallback: text={message.text!r} state={current}", flush=True)
+    if current:
+        await message.answer("Joriy bosqich uchun javob noto'g'ri. /start bilan boshidan boshlang.")
+        return
+    await message.answer(
+        "Buyruqlar: /start — boshlash, /app — Mini App, /reset — profilni o'chirish",
+        reply_markup=_webapp_kb("uz"),
+    )

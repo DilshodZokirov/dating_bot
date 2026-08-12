@@ -6,10 +6,11 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
 
 - ✅ Ro'yxatdan o'tish (aiogram FSM, 18+)
 - ✅ Redis matching (yosh/jins/til/shahar) + ikki tomonlama rozilik
-- ✅ PostgreSQL (user + CallSession)
+- ✅ PostgreSQL (user + CallSession + Block + Report)
 - ✅ Telegram Mini App (qidiruv, profil, qo'ng'iroq)
 - ✅ **LiveKit** audio + video (mute/camera)
 - ✅ Dev test mode (1 Telegram akkaunt + kompyuter)
+- ✅ **Shikoyat / bloklash** + admin buyruqlar (`ADMIN_IDS`)
 
 ## Ishga tushirish
 
@@ -19,16 +20,30 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
    ```
    To'ldiring:
    - `BOT_TOKEN`
-   - `WEBAPP_URL` (HTTPS, ngrok)
+   - `WEBAPP_URL` (HTTPS, ngrok) — **oxirida `/webapp/` yo'q**
    - `LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET`
+   - `ADMIN_IDS` — o'zingizning Telegram ID (vergul bilan bir nechta)
    - test uchun `DEV_TEST_MODE=true`
 
 2. Docker:
    ```bash
-   docker compose up --build
+   docker compose up -d --force-recreate
    ```
+   (To'liq `--build` ba'zan PyPI tarmoq xatosi beradi — kod volume orqali yangilanadi.)
 
 3. Telegram: `/start` → Mini App → Qidirish yoki **Test match**.
+
+## Moderatsiya
+
+Qo'ng'iroqda: **Bloklash** / **Shikoyat** (sabab tanlanadi → avtomatik blok + qo'ng'iroq tugaydi).
+
+Admin (faqat `ADMIN_IDS`):
+- `/admin` — yordam
+- `/reports` — ochiq shikoyatlar
+- `/ban <user_id>` / `/unban <user_id>`
+- `/report_done <id>` / `/report_dismiss <id>`
+
+Shikoyat kelganda adminlarga Telegram xabar ketadi.
 
 ## LiveKit
 
@@ -48,6 +63,5 @@ LIVEKIT_API_SECRET=...
 
 ## Keyingi qadamlar
 
-- Shikoyat / bloklash
-- Admin panel
 - Yosh tasdiqlash
+- Admin web panel
