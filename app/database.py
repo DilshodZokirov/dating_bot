@@ -33,3 +33,17 @@ async def init_db():
         await conn.execute(
             text("UPDATE users SET prefer_age_max = 99 WHERE prefer_age_max IS NULL")
         )
+        # Eski default (faqat o'z yosh bracketi) matchingni bloklagan — 18+ ga ochamiz
+        await conn.execute(
+            text(
+                """
+                UPDATE users SET prefer_age_min = 18, prefer_age_max = 99
+                WHERE (prefer_age_min, prefer_age_max) IN (
+                    (18, 19), (20, 24), (25, 29), (30, 34),
+                    (35, 39), (40, 49), (50, 59), (60, 99)
+                )
+                """
+            )
+        )
+        # Tiqilib qolgan qo'ng'iroq holati
+        await conn.execute(text("UPDATE users SET is_in_call = false WHERE is_in_call = true"))
