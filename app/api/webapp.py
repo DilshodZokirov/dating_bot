@@ -5,7 +5,6 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from app import test_mode
 from app.cities import UZBEKISTAN_CITIES
 from app.config import settings
 from app.database import async_session
@@ -24,7 +23,6 @@ from app.matching.age_brackets import age_range_options, clamp_prefer
 from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.models import (
     CallSession,
-    Gender,
     Language,
     LookingFor,
     ReportReason,
@@ -106,7 +104,6 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
         "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
         "is_banned": user.is_banned,
-        "test_mode": test_mode.is_enabled(),
     }
 
 
@@ -360,92 +357,6 @@ async def call_end(payload: CallEndRequest, x_telegram_init_data: str | None = H
     return {"status": "ended"}
 
 
-# ---------------------------------------------------------------------------
-# Dev test mode — 1 Telegram akkaunt + kompyuter brauzeri
-# ---------------------------------------------------------------------------
-
-class TestCallEndRequest(BaseModel):
-    room_id: str
-    partner_id: int
-    token: str
-
-
-@router.post("/test/match")
-async def test_match(x_telegram_init_data: str | None = Header(default=None)):
-    if not test_mode.is_enabled():
-        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
-
-    tg_user = _auth(x_telegram_init_data)
-    async with async_session() as session:
-        user = await session.get(User, tg_user["id"])
-        if not user:
-            raise HTTPException(status_code=400, detail="Avval botda /start orqali ro'yxatdan o'ting")
-        if user.is_banned:
-            raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
-
-        # Opposite gender for realistic proposal UI (age rule: female younger)
-        if user.gender == Gender.male:
-            peer_gender = Gender.female
-            peer_age = max(settings.min_age, user.age - 1)
-        else:
-            peer_gender = Gender.male
-            peer_age = user.age + 1
-
-        peer = await test_mode.ensure_test_peer(session, language=user.language)
-        peer.name = test_mode.TEST_PEER_NAME
-        peer.gender = peer_gender
-        peer.age = peer_age
-        peer.looking_for = LookingFor.any
-        peer.language = user.language
-        await session.commit()
-
-        room_id = f"test_{uuid.uuid4().hex[:12]}"
-        call = CallSession(user1_id=user.id, user2_id=peer.id, room_id=room_id)
-        session.add(call)
-        await session.commit()
-
-    token = test_mode.create_test_token(room_id, user_id=test_mode.TEST_PEER_ID)
-    base = (settings.webapp_url or "").rstrip("/")
-    peer_path = f"/webapp/test-peer.html?token={token}&partner_id={user.id}"
-    peer_url = f"{base}{peer_path}" if base else peer_path
-
-    if not livekit_configured():
-        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan (.env ga LIVEKIT_* qo'shing)")
-
-    me_join = livekit_join_payload(identity=str(user.id), name=user.name, room_id=room_id)
-
-    return {
-        "status": "matched",
-        "room_id": room_id,
-        "partner_id": test_mode.TEST_PEER_ID,
-        "partner_name": test_mode.TEST_PEER_NAME,
-        "test_token": token,
-        "test_peer_url": peer_url,
-        "test_peer_path": peer_path,
-        "livekit_url": me_join["livekit_url"],
-        "livekit_token": me_join["livekit_token"],
-    }
-
-
-@router.get("/test/livekit-token")
-async def test_livekit_token(token: str):
-    """Test peer (kompyuter) uchun LiveKit token."""
-    if not test_mode.is_enabled():
-        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
-    try:
-        claims = test_mode.verify_test_token(token)
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    if not livekit_configured():
-        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
-    join = livekit_join_payload(
-        identity=str(test_mode.TEST_PEER_ID),
-        name=test_mode.TEST_PEER_NAME,
-        room_id=claims["room_id"],
-    )
-    return join
-
-
 class LiveKitTokenRequest(BaseModel):
     room_id: str
 
@@ -460,34 +371,6 @@ async def livekit_token(payload: LiveKitTokenRequest, x_telegram_init_data: str 
         if not user:
             raise HTTPException(status_code=400, detail="Ro'yxatdan o'ting")
     return livekit_join_payload(identity=str(user.id), name=user.name, room_id=payload.room_id)
-
-
-@router.get("/test/turn-credentials")
-async def test_turn_credentials(token: str):
-    if not test_mode.is_enabled():
-        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
-    try:
-        test_mode.verify_test_token(token)
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    return await _build_ice_servers()
-
-
-@router.post("/test/call/end")
-async def test_call_end(payload: TestCallEndRequest):
-    if not test_mode.is_enabled():
-        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
-    try:
-        claims = test_mode.verify_test_token(payload.token, expected_room_id=payload.room_id)
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-
-    # Test peer only notifies the real Telegram user
-    if claims["user_id"] != test_mode.TEST_PEER_ID:
-        raise HTTPException(status_code=403, detail="faqat test peer")
-
-    await _end_call_session(payload.room_id, payload.partner_id)
-    return {"status": "ended"}
 
 
 # ---------------------------------------------------------------------------
