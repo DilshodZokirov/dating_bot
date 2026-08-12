@@ -42,8 +42,13 @@
   p.hint { color: var(--hint); text-align: center; font-size: 14px; max-width: 280px; line-height: 1.4; }
   .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
   .test-btn {
-    margin-top: 18px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(232,130,60,0.55);
-    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; display: none;
+    margin-top: 18px; padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(232,130,60,0.8);
+    background: rgba(232,130,60,0.15); color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; display: none;
+  }
+  .test-banner {
+    display: none; width: 100%; max-width: 320px; margin: 0 0 16px; padding: 10px 12px;
+    border-radius: 10px; background: rgba(232,130,60,0.2); color: var(--accent);
+    font-size: 13px; font-weight: 600; text-align: center;
   }
   .test-link-box {
     display: none; width: 100%; max-width: 320px; margin-top: 14px; padding: 12px; border-radius: 12px;
@@ -114,6 +119,7 @@
       <span id="userLabel">...</span>
       <span id="stateLabel"></span>
     </div>
+    <div class="test-banner" id="testBanner">TEST MODE — 1 akkaunt bilan sinash</div>
 
     <button class="circle-btn" id="mainBtn">
       <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
@@ -460,7 +466,10 @@ async function loadMe() {
     applyStaticTranslations();
     userLabel.textContent = me.name;
     stateLabel.textContent = me.test_mode ? "TEST" : "";
-    document.getElementById("testMatchBtn").style.display = me.test_mode ? "inline-block" : "none";
+    const showTest = !!me.test_mode;
+    document.getElementById("testMatchBtn").style.display = showTest ? "inline-block" : "none";
+    document.getElementById("testBanner").style.display = showTest ? "block" : "none";
+    console.log("me.test_mode =", me.test_mode);
     document.getElementById("profileName").value = me.name || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";

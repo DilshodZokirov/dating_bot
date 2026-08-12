@@ -14,9 +14,19 @@ app.mount("/webapp", StaticFiles(directory="app/webapp", html=True), name="webap
 
 @app.on_event("startup")
 async def on_startup():
+    from app.config import settings
+    from app import test_mode
+
+    print(
+        f"API startup: DEV_TEST_MODE={settings.dev_test_mode} "
+        f"enabled={test_mode.is_enabled()} WEBAPP_URL={settings.webapp_url!r}",
+        flush=True,
+    )
     await init_db()
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    from app import test_mode
+
+    return {"status": "ok", "test_mode": test_mode.is_enabled()}
