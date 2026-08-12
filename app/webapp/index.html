@@ -218,11 +218,12 @@
     </div>
   </div>
 
-  <!-- PROFIL -->
+  <!-- SOZLAMALAR -->
   <div class="view" id="profileView">
-    <h1 id="profileTitle">Profil</h1>
+    <h1 id="profileTitle">Sozlamalar</h1>
     <div class="profile-form">
       <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
+      <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="18" max="99" step="1"></div>
       <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
       <div class="field"><label id="lblLocation">Yashash joyi</label><input type="text" id="profileLocation" maxlength="100"></div>
       <div class="field">
@@ -242,6 +243,22 @@
           <option value="city" id="scopeCityOpt">Faqat o'z shahrim bo'yicha</option>
         </select>
       </div>
+
+      <h2 id="prefsSectionTitle" style="font-size:16px;margin:8px 0 0;font-weight:600;">Aloqa sozlamalari</h2>
+      <p id="prefsSectionHint" style="margin:0;color:var(--hint);font-size:12px;line-height:1.4;">Kim bilan suhbatlashmoqchisiz</p>
+      <div class="field">
+        <label id="lblLookingFor">Suhbatdosh</label>
+        <select id="profileLookingFor">
+          <option value="female" id="lfFemale">Ayol</option>
+          <option value="male" id="lfMale">Erkak</option>
+          <option value="any" id="lfAny">Farqi yo'q</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="lblPreferAge">Suhbatdosh yoshi</label>
+        <select id="profilePreferAge"></select>
+      </div>
+
       <button class="save-btn" id="saveProfileBtn">Saqlash</button>
       <div class="save-status" id="saveStatus"></div>
     </div>
@@ -254,7 +271,7 @@
     </button>
     <button class="nav-btn" data-view="profileView">
       <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
-      <span id="navProfileLabel">Profil</span>
+      <span id="navProfileLabel">Sozlamalar</span>
     </button>
   </div>
 
@@ -263,24 +280,32 @@ const TRANSLATIONS = {
   idle_title: { uz: "Boshlash uchun bosing", ru: "Нажмите, чтобы начать", en: "Tap to start" },
   idle_hint: { uz: "Sizga mos suhbatdoshni topib beramiz.", ru: "Мы найдём вам подходящего собеседника.", en: "We'll find you a matching partner." },
   searching_title: { uz: "Suhbatdosh qidirilmoqda...", ru: "Ищем собеседника...", en: "Searching for a partner..." },
-  searching_hint: { uz: "Bir oz kuting, sizga mos kishi topilishi bilan xabar beramiz.", ru: "Подождите немного, мы сообщим, как только найдём подходящего человека.", en: "Please wait, we'll notify you once a match is found." },
-  requeued_hint: { uz: "Hamsuhbatingiz rad etdi, sizni qayta qidiruvga qo'shdik...", ru: "Собеседник отказался, вы снова добавлены в поиск...", en: "The other person declined, you've been added back to the search..." },
+  searching_hint: { uz: "Bir necha soniya ichida mos suhbatdosh topiladi.", ru: "Подходящий собеседник будет найден через несколько секунд.", en: "A matching partner will be found shortly." },
+  requeued_hint: { uz: "Boshqa suhbatdosh qidirilmoqda...", ru: "Ищем другого собеседника...", en: "Looking for another partner..." },
   proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло. Можно искать снова.", en: "Proposal expired. You can search again." },
   proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "This proposal is no longer available." },
-  cancel_link: { uz: "Bekor qilish", ru: "Отменить", en: "Cancel" },
+  cancel_link: { uz: "To'xtatish", ru: "Остановить", en: "Stop" },
   not_registered: { uz: "Avval botda /start buyrug'i orqali ro'yxatdan o'ting.", ru: "Сначала зарегистрируйтесь в боте через /start.", en: "Please register first in the bot via /start." },
   no_init_data: {
     uz: "Telegram Mini App ichidan ochilmagan. Botga /start yuboring va «Qidirish / Qo'ng'iroq» tugmasini bosing (Chrome'da ishlamaydi).",
     ru: "Откройте Mini App из бота: /start → кнопка «Поиск / Звонок» (в Chrome не работает).",
     en: "Open the Mini App from the bot: /start → «Search / Call» (won't work in Chrome).",
   },
-  profile_title: { uz: "Profil", ru: "Профиль", en: "Profile" },
+  profile_title: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
   lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
+  lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age" },
   lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
   lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location" },
   lbl_language: { uz: "Til", ru: "Язык", en: "Language" },
   lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region" },
   lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
+  lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for" },
+  lbl_prefer_age: { uz: "Suhbatdosh yoshi", ru: "Возраст собеседника", en: "Partner age" },
+  prefs_title: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat preferences" },
+  prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to" },
+  lf_male: { uz: "Erkak", ru: "Мужчина", en: "Male" },
+  lf_female: { uz: "Ayol", ru: "Женщина", en: "Female" },
+  lf_any: { uz: "Farqi yo'q", ru: "Неважно", en: "Anyone" },
   city_none: { uz: "Tanlanmagan", ru: "Не выбрано", en: "Not selected" },
   scope_country: { uz: "Butun O'zbekiston bo'yicha", ru: "По всему Узбекистану", en: "All over Uzbekistan" },
   scope_city: { uz: "Faqat o'z shahrim bo'yicha", ru: "Только в моём городе", en: "Only in my city" },
@@ -288,7 +313,7 @@ const TRANSLATIONS = {
   saved_ok: { uz: "✅ Saqlandi", ru: "✅ Сохранено", en: "✅ Saved" },
   save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: " },
   nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search" },
-  nav_profile: { uz: "Profil", ru: "Профиль", en: "Profile" },
+  nav_profile: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
   gender_male: { uz: "Erkak", ru: "Мужской", en: "Male" },
   gender_female: { uz: "Ayol", ru: "Женский", en: "Female" },
   p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} y.o. · {gender}" },
@@ -338,11 +363,19 @@ function applyStaticTranslations() {
   setText("cancelLink", "cancel_link");
   setText("profileTitle", "profile_title");
   setText("lblName", "lbl_name");
+  setText("lblAge", "lbl_age");
   setText("lblBio", "lbl_bio");
   setText("lblLocation", "lbl_location");
   setText("lblLanguage", "lbl_language");
   setText("lblCity", "lbl_city");
   setText("lblScope", "lbl_scope");
+  setText("lblLookingFor", "lbl_looking_for");
+  setText("lblPreferAge", "lbl_prefer_age");
+  setText("prefsSectionTitle", "prefs_title");
+  setText("prefsSectionHint", "prefs_hint");
+  setText("lfMale", "lf_male");
+  setText("lfFemale", "lf_female");
+  setText("lfAny", "lf_any");
   setText("cityNoneOpt", "city_none");
   setText("scopeCountryOpt", "scope_country");
   setText("scopeCityOpt", "scope_city");
@@ -524,6 +557,49 @@ async function loadCities() {
   } catch (e) { /* ignore */ }
 }
 
+async function loadAgeRanges() {
+  const select = document.getElementById("profilePreferAge");
+  if (!select) return;
+  select.innerHTML = "";
+  try {
+    const data = await api("/api/age-ranges");
+    for (const r of data.ranges) {
+      const opt = document.createElement("option");
+      opt.value = `${r.min}-${r.max}`;
+      opt.textContent = r.label;
+      opt.dataset.min = r.min;
+      opt.dataset.max = r.max;
+      select.appendChild(opt);
+    }
+  } catch (e) {
+    const fallback = [
+      ["18-99", "18+ (hammasi)"],
+      ["18-19", "18–19"], ["20-24", "20–24"], ["25-29", "25–29"],
+      ["30-34", "30–34"], ["35-39", "35–39"], ["40-49", "40–49"],
+      ["50-59", "50–59"], ["60-99", "60–99"],
+    ];
+    for (const [v, label] of fallback) {
+      const opt = document.createElement("option");
+      opt.value = v; opt.textContent = label;
+      select.appendChild(opt);
+    }
+  }
+}
+
+function setPreferAgeSelect(minV, maxV) {
+  const select = document.getElementById("profilePreferAge");
+  if (!select) return;
+  const key = `${minV}-${maxV}`;
+  let found = false;
+  for (const opt of select.options) {
+    if (opt.value === key) { select.value = key; found = true; break; }
+  }
+  if (!found) {
+    // eng yaqin / any
+    select.value = "18-99";
+  }
+}
+
 async function loadMe() {
   try {
     refreshTelegramContext();
@@ -541,11 +617,14 @@ async function loadMe() {
     userLabel.textContent = me.name;
     stateLabel.textContent = me.test_mode ? "TEST" : "";
     document.getElementById("profileName").value = me.name || "";
+    document.getElementById("profileAge").value = me.age || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";
     document.getElementById("profileLanguage").value = me.language || "uz";
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
+    document.getElementById("profileLookingFor").value = me.looking_for || "any";
+    setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
     if (!me.test_mode) {
       console.warn("API: DEV_TEST_MODE=false — tugma bosilsa xato chiqadi. .env ni tekshiring.");
     }
@@ -562,6 +641,7 @@ async function bootApp() {
   window.Telegram?.WebApp?.ready?.();
   window.Telegram?.WebApp?.expand?.();
   await loadCities();
+  await loadAgeRanges();
   await loadMe();
 }
 
@@ -691,6 +771,9 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
   statusEl.textContent = "...";
   try {
     const newLang = document.getElementById("profileLanguage").value;
+    const preferVal = document.getElementById("profilePreferAge").value || "18-99";
+    const [pMin, pMax] = preferVal.split("-").map((x) => parseInt(x, 10));
+    const ageVal = parseInt(document.getElementById("profileAge").value, 10);
     await api("/api/profile", {
       method: "POST",
       body: JSON.stringify({
@@ -700,6 +783,10 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
         language: newLang,
         city: document.getElementById("profileCity").value,
         search_scope: document.getElementById("profileSearchScope").value,
+        age: Number.isFinite(ageVal) ? ageVal : undefined,
+        looking_for: document.getElementById("profileLookingFor").value,
+        prefer_age_min: pMin,
+        prefer_age_max: pMax,
       }),
     });
     currentLang = newLang;

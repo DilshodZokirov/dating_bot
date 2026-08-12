@@ -20,7 +20,7 @@ from app.matching.queue import (
     set_decision,
     set_result,
 )
-from app.livekit_tokens import livekit_configured, livekit_join_payload
+from app.matching.age_brackets import age_range_options, clamp_prefer
 from app.models import (
     CallSession,
     Gender,
@@ -56,6 +56,8 @@ def _queue_payload(user: User) -> dict:
         "language": user.language.value,
         "city": user.city,
         "search_scope": user.search_scope.value,
+        "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
+        "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
     }
 
 
@@ -73,6 +75,8 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
         "language": proposal[f"{prefix}_language"],
         "city": proposal[f"{prefix}_city"],
         "search_scope": proposal[f"{prefix}_search_scope"],
+        "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 18),
+        "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 99),
     }
 
 
@@ -96,6 +100,8 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "location": user.location,
         "city": user.city,
         "search_scope": user.search_scope.value,
+        "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
+        "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
         "is_banned": user.is_banned,
         "test_mode": test_mode.is_enabled(),
     }
@@ -108,11 +114,20 @@ class ProfileUpdate(BaseModel):
     language: Language | None = None
     city: str | None = Field(default=None, max_length=64)
     search_scope: SearchScope | None = None
+    age: int | None = Field(default=None, ge=18, le=99)
+    looking_for: LookingFor | None = None
+    prefer_age_min: int | None = Field(default=None, ge=18, le=99)
+    prefer_age_max: int | None = Field(default=None, ge=18, le=99)
 
 
 @router.get("/cities")
 async def get_cities():
     return {"cities": UZBEKISTAN_CITIES}
+
+
+@router.get("/age-ranges")
+async def get_age_ranges():
+    return {"ranges": age_range_options(), "min_age": settings.min_age}
 
 
 async def _build_ice_servers() -> dict:
@@ -182,8 +197,24 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             user.city = update.city.strip()[:64] or None
         if update.search_scope is not None:
             user.search_scope = update.search_scope
+        if update.age is not None:
+            if update.age < settings.min_age:
+                raise HTTPException(status_code=400, detail=f"Minimal yosh: {settings.min_age}")
+            user.age = update.age
+        if update.looking_for is not None:
+            user.looking_for = update.looking_for
+        if update.prefer_age_min is not None or update.prefer_age_max is not None:
+            lo = update.prefer_age_min if update.prefer_age_min is not None else (user.prefer_age_min or settings.min_age)
+            hi = update.prefer_age_max if update.prefer_age_max is not None else (user.prefer_age_max or 99)
+            lo, hi = clamp_prefer(lo, hi, settings.min_age)
+            user.prefer_age_min = lo
+            user.prefer_age_max = hi
 
         await session.commit()
+
+        # Sozlamalar o'zgarsa eski qidiruv yozuvini tozalash
+        for lf in ("male", "female", "any"):
+            await cancel_wait(user.id, lf)
 
     return {"status": "ok"}
 
@@ -210,6 +241,8 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         language=user.language.value,
         city=user.city,
         search_scope=user.search_scope.value,
+        prefer_age_min=user.prefer_age_min or settings.min_age,
+        prefer_age_max=user.prefer_age_max or 99,
         exclude_ids=exclude,
     )
 
@@ -217,6 +250,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         await join_queue(
             user.id, user.gender.value, user.looking_for.value, user.age,
             user.language.value, user.city, user.search_scope.value,
+            user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
         )
         return {"status": "waiting"}
 
@@ -227,6 +261,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         await join_queue(
             user.id, user.gender.value, user.looking_for.value, user.age,
             user.language.value, user.city, user.search_scope.value,
+            user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
         )
         return {"status": "waiting"}
 

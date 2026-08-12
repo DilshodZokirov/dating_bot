@@ -68,8 +68,9 @@ LIVEKIT_API_SECRET=...
 
 ## Matching qoidalari
 
-- Jins: ro'yxatda qarama-qarshi jins
-- Yosh: qiz yigitdan kichik + farq `MAX_AGE_GAP` (default 5)
+- Jins: sozlamalardagi **Suhbatdosh** (erkak / ayol / farqi yo'q)
+- Yosh: sozlamalardagi **Suhbatdosh yoshi** oralig'i (ikki tomonlama)
 - Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
 - Ikki tomonlama rozilik (taklif 120 soniya)
-- Bekor qilish / rad etish → ikkinchi tomon qayta navbatga
+- Bekor qilish / rad etish → ikkinchi tomon qayta qidiruvga
+- Foydalanuvchiga "navbat" ko'rsatilmaydi — faqat qidiruv holati
