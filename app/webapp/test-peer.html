@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dating Bot — Test Peer</title>
+<title>Dating Bot — Test Peer (LiveKit)</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.4/dist/livekit-client.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0e1621;
-    --text: #f5f7fa;
-    --hint: #7d8b99;
-    --accent: #e8823c;
-    --card: rgba(255,255,255,0.06);
+    --bg: #0e1621; --text: #f5f7fa; --hint: #7d8b99; --accent: #e8823c; --card: rgba(255,255,255,0.06);
   }
   * { box-sizing: border-box; }
   body {
@@ -22,12 +19,11 @@
   .hint { color: var(--hint); text-align: center; max-width: 420px; line-height: 1.45; margin-bottom: 20px; }
   .badge {
     display: inline-block; padding: 4px 10px; border-radius: 999px;
-    background: rgba(232,130,60,0.2); color: var(--accent); font-size: 12px; font-weight: 600;
-    margin-bottom: 16px;
+    background: rgba(232,130,60,0.2); color: var(--accent); font-size: 12px; font-weight: 600; margin-bottom: 16px;
   }
   .stage {
     position: relative; width: 100%; max-width: 520px;
-    background: #000; border-radius: 16px; overflow: hidden; min-height: 320px;
+    background: #000; border-radius: 16px; overflow: hidden; min-height: 280px;
     display: flex; align-items: center; justify-content: center;
   }
   #remoteVideo { width: 100%; max-height: 60vh; display: none; background: #000; }
@@ -36,7 +32,7 @@
     background: #111; display: none; border: 1px solid rgba(255,255,255,0.2);
   }
   .status { margin: 16px 0; color: var(--hint); font-size: 14px; }
-  .controls { display: flex; gap: 12px; margin-top: 8px; }
+  .controls { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
   button {
     border: none; border-radius: 12px; padding: 12px 18px; cursor: pointer;
     font-weight: 600; font-size: 14px; background: var(--card); color: var(--text);
@@ -44,21 +40,21 @@
   button.primary { background: var(--accent); color: #fff; }
   button.danger { background: #e5484d; color: #fff; }
   button.active { outline: 2px solid var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   #log {
-    width: 100%; max-width: 520px; margin-top: 16px; max-height: 160px; overflow: auto;
+    width: 100%; max-width: 520px; margin-top: 16px; max-height: 180px; overflow: auto;
     background: rgba(0,0,0,0.35); border-radius: 12px; padding: 10px;
     font-family: ui-monospace, monospace; font-size: 11px; color: var(--hint);
   }
 </style>
 </head>
 <body>
-  <div class="badge">DEV TEST PEER</div>
+  <div class="badge">DEV TEST PEER · LIVEKIT</div>
   <h1>Soxta suhbatdosh</h1>
   <p class="hint">
-    Bu sahifa faqat <b>DEV_TEST_MODE</b> uchun. Telefoningizdagi Mini Appda qo‘ng‘iroq ochilgach,
-    shu yerda Start bosing — audio/video ulanishi kerak.
+    Telefon Mini Appda Test match qiling, shu yerda <b>Start</b> bosing.
+    LiveKit orqali ulanasiz (TURN bilan ovora bo‘lmaysiz).
   </p>
-
   <div class="stage">
     <video id="remoteVideo" autoplay playsinline></video>
     <video id="localVideo" autoplay playsinline muted></video>
@@ -76,21 +72,13 @@
 <script>
 const params = new URLSearchParams(location.search);
 const token = params.get("token") || "";
-const TEST_PEER_ID = 999000001;
+const partnerId = Number(params.get("partner_id") || 0);
 
+let lkRoom = null;
 let roomId = null;
-let partnerId = null; // real Telegram user — call/end da xabar beriladi
-let pc = null;
-let ws = null;
-let localStream = null;
-let videoTrack = null;
-let videoOn = false;
+let starting = false;
 let isMuted = false;
-let makingOffer = false;
-let ignoreOffer = false;
-let polite = false;
-let pendingIce = [];
-let pendingLocalSdp = null;
+let videoOn = false;
 
 function dlog(msg) {
   const el = document.getElementById("log");
@@ -104,8 +92,7 @@ function dlog(msg) {
 function decodeToken(t) {
   const body = t.split(".")[0];
   const pad = "=".repeat((4 - (body.length % 4)) % 4);
-  const json = atob(body.replace(/-/g, "+").replace(/_/g, "/"));
-  return JSON.parse(json);
+  return JSON.parse(atob(body.replace(/-/g, "+").replace(/_/g, "/")));
 }
 
 async function api(path, options = {}) {
@@ -124,199 +111,144 @@ async function api(path, options = {}) {
   return res.json();
 }
 
-async function flushIce() {
-  while (pendingIce.length && pc && pc.remoteDescription) {
-    const c = pendingIce.shift();
-    try { await pc.addIceCandidate(c); } catch (e) { dlog("ICE: " + e.message); }
+function attachRemote(track) {
+  if (track.kind === "audio") {
+    const el = track.attach();
+    el.autoplay = true;
+    document.getElementById("remoteAudio").replaceWith(el);
+    el.id = "remoteAudio";
+    el.play?.().catch(() => {});
+    dlog("Remote audio");
+  } else if (track.kind === "video") {
+    const el = track.attach();
+    el.autoplay = true;
+    el.playsInline = true;
+    el.style.cssText = "width:100%;max-height:60vh;display:block;background:#000;";
+    document.getElementById("remoteVideo").replaceWith(el);
+    el.id = "remoteVideo";
+    dlog("Remote video");
   }
 }
 
 async function startCall() {
+  if (starting) return;
+  starting = true;
+  document.getElementById("startBtn").disabled = true;
+
   if (!token) {
     document.getElementById("status").textContent = "URL da token yo'q";
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
     return;
   }
-  let payload;
+  if (!window.LivekitClient) {
+    document.getElementById("status").textContent = "LiveKit JS yuklanmadi";
+    return;
+  }
+
   try {
-    payload = decodeToken(token);
+    roomId = decodeToken(token).room;
   } catch (e) {
     document.getElementById("status").textContent = "Token yaroqsiz";
     return;
   }
-  roomId = payload.room;
-  // Real user ID token ichida yo'q — server CallSession da. Peer end qilganda
-  // partner_id ni room dan bilmaymiz; Mini App o'zi ham tugatishi mumkin.
-  // Token faqat peer uid + room. partner_id ni query dan olamiz yoki 0.
-  partnerId = Number(params.get("partner_id") || 0);
 
-  polite = TEST_PEER_ID > (partnerId || 0);
-  document.getElementById("status").textContent = `Room: ${roomId}`;
-  dlog(`start room=${roomId} polite=${polite}`);
+  dlog(`start room=${roomId}`);
+  document.getElementById("status").textContent = "LiveKit token...";
 
+  let join;
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
-      video: false,
-    });
-    dlog("Mikrofon OK");
+    join = await api(`/api/test/livekit-token?token=${encodeURIComponent(token)}`);
   } catch (e) {
-    document.getElementById("status").textContent = "Mikrofon ruxsati kerak";
+    document.getElementById("status").textContent = e.message;
     dlog(e.message);
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
     return;
   }
 
-  let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+  const { Room, RoomEvent } = LivekitClient;
+  lkRoom = new Room({ adaptiveStream: true, dynacast: true });
+  lkRoom.on(RoomEvent.TrackSubscribed, (track) => {
+    attachRemote(track);
+    document.getElementById("status").textContent = "Ulandi";
+  });
+  lkRoom.on(RoomEvent.ParticipantConnected, (p) => {
+    dlog("Peer: " + p.identity);
+    document.getElementById("status").textContent = "Ulandi";
+  });
+  lkRoom.on(RoomEvent.Disconnected, () => {
+    document.getElementById("status").textContent = "Uzildi";
+    dlog("disconnected");
+  });
+  lkRoom.on(RoomEvent.ConnectionStateChanged, (s) => dlog("LK: " + s));
+
   try {
-    const turnData = await api(`/api/test/turn-credentials?token=${encodeURIComponent(token)}`);
-    if (turnData.iceServers?.length) iceServers = turnData.iceServers;
+    dlog("Connect " + join.livekit_url);
+    await lkRoom.connect(join.livekit_url, join.livekit_token);
+    await lkRoom.localParticipant.setMicrophoneEnabled(true);
+    document.getElementById("status").textContent =
+      lkRoom.remoteParticipants.size > 0 ? "Ulandi" : "Ulandi — telefon kutilmoqda";
+    dlog("OK participants=" + (1 + lkRoom.remoteParticipants.size));
   } catch (e) {
-    dlog("TURN: " + e.message);
+    dlog("Connect xato: " + e.message);
+    document.getElementById("status").textContent = e.message;
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
   }
-
-  pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
-  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate && ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
-    }
-  };
-
-  pc.ontrack = (event) => {
-    dlog("Remote track: " + event.track.kind);
-    const stream = event.streams[0] || new MediaStream([event.track]);
-    if (event.track.kind === "audio") {
-      const a = document.getElementById("remoteAudio");
-      a.srcObject = stream;
-      a.play().catch(() => {});
-    }
-    if (event.track.kind === "video") {
-      const v = document.getElementById("remoteVideo");
-      v.srcObject = stream;
-      v.style.display = "block";
-    }
-  };
-
-  pc.onnegotiationneeded = async () => {
-    try {
-      makingOffer = true;
-      await pc.setLocalDescription();
-      const payloadMsg = JSON.stringify({ type: "sdp", description: pc.localDescription });
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(payloadMsg);
-        dlog("SDP yuborildi: " + pc.localDescription.type);
-      } else {
-        pendingLocalSdp = payloadMsg;
-      }
-    } catch (e) {
-      dlog("nego: " + e.message);
-    } finally {
-      makingOffer = false;
-    }
-  };
-
-  pc.oniceconnectionstatechange = () => {
-    dlog("ICE: " + pc.iceConnectionState);
-    document.getElementById("status").textContent = "ICE: " + pc.iceConnectionState;
-  };
-
-  const wsProto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${wsProto}://${location.host}/ws/call/${roomId}?test_token=${encodeURIComponent(token)}`);
-  ws.onopen = () => {
-    dlog("WS ochildi");
-    if (pendingLocalSdp) {
-      ws.send(pendingLocalSdp);
-      pendingLocalSdp = null;
-    }
-  };
-  ws.onclose = (e) => dlog(`WS yopildi ${e.code}`);
-  ws.onerror = () => dlog("WS xato");
-
-  ws.onmessage = async (event) => {
-    let msg;
-    try { msg = JSON.parse(event.data); } catch { return; }
-    if (msg.type === "offer" || msg.type === "answer") {
-      msg = { type: "sdp", description: msg.sdp };
-    }
-    if (msg.type === "sdp" && msg.description) {
-      const desc = msg.description;
-      const offerCollision = desc.type === "offer" && (makingOffer || pc.signalingState !== "stable");
-      ignoreOffer = !polite && offerCollision;
-      if (ignoreOffer) { dlog("collision ignore"); return; }
-      try {
-        await pc.setRemoteDescription(desc);
-        await flushIce();
-        if (desc.type === "offer") {
-          await pc.setLocalDescription();
-          ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
-          dlog("Answer yuborildi");
-        }
-      } catch (e) { dlog("SDP: " + e.message); }
-    } else if (msg.type === "ice" && msg.candidate) {
-      if (!pc.remoteDescription) pendingIce.push(msg.candidate);
-      else {
-        try { await pc.addIceCandidate(msg.candidate); } catch (e) { dlog(e.message); }
-      }
-    }
-  };
 }
 
-function cleanup(notify) {
-  if (notify && roomId && partnerId) {
+async function cleanup(notify) {
+  if (notify && roomId && partnerId && token) {
     api("/api/test/call/end", {
       method: "POST",
       body: JSON.stringify({ room_id: roomId, partner_id: partnerId, token }),
     }).catch(() => {});
   }
-  if (videoTrack) { try { videoTrack.stop(); } catch (_) {} videoTrack = null; }
-  if (pc) { pc.close(); pc = null; }
-  if (ws) { ws.close(); ws = null; }
-  if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
+  if (lkRoom) {
+    try { await lkRoom.disconnect(); } catch (_) {}
+    lkRoom = null;
+  }
   document.getElementById("status").textContent = "Tugadi";
+  starting = false;
+  document.getElementById("startBtn").disabled = false;
   dlog("cleanup");
 }
 
 document.getElementById("startBtn").onclick = () => startCall();
 document.getElementById("endBtn").onclick = () => cleanup(true);
 
-document.getElementById("muteBtn").onclick = () => {
-  if (!localStream) return;
+document.getElementById("muteBtn").onclick = async () => {
+  if (!lkRoom) return;
   isMuted = !isMuted;
-  localStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
+  await lkRoom.localParticipant.setMicrophoneEnabled(!isMuted);
   document.getElementById("muteBtn").classList.toggle("active", isMuted);
 };
 
 document.getElementById("videoBtn").onclick = async () => {
-  if (!pc || !localStream) return;
-  const btn = document.getElementById("videoBtn");
-  const localVideo = document.getElementById("localVideo");
-  if (!videoOn) {
-    try {
-      const vs = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-      });
-      videoTrack = vs.getVideoTracks()[0];
-      localStream.addTrack(videoTrack);
-      pc.addTrack(videoTrack, localStream);
-      localVideo.srcObject = new MediaStream([videoTrack]);
-      localVideo.style.display = "block";
-      videoOn = true;
-      btn.classList.add("active");
-    } catch (e) {
-      dlog("Kamera: " + e.message);
+  if (!lkRoom) return;
+  try {
+    videoOn = !videoOn;
+    await lkRoom.localParticipant.setCameraEnabled(videoOn);
+    document.getElementById("videoBtn").classList.toggle("active", videoOn);
+    const localVideo = document.getElementById("localVideo");
+    if (videoOn) {
+      const pub = lkRoom.localParticipant.getTrackPublication(LivekitClient.Track.Source.Camera);
+      if (pub?.track) {
+        const el = pub.track.attach();
+        el.muted = true;
+        el.autoplay = true;
+        el.playsInline = true;
+        el.id = "localVideo";
+        el.style.cssText = "position:absolute;top:12px;right:12px;width:120px;border-radius:10px;display:block;";
+        localVideo.replaceWith(el);
+      }
+    } else if (localVideo) {
+      localVideo.style.display = "none";
     }
-  } else {
-    const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
-    if (sender) try { pc.removeTrack(sender); } catch (_) {}
-    if (videoTrack) {
-      videoTrack.stop();
-      localStream.removeTrack(videoTrack);
-      videoTrack = null;
-    }
-    localVideo.srcObject = null;
-    localVideo.style.display = "none";
+  } catch (e) {
+    dlog("Kamera: " + e.message);
     videoOn = false;
-    btn.classList.remove("active");
   }
 };
 
@@ -324,8 +256,7 @@ if (!token) {
   document.getElementById("status").textContent = "Token yo'q — Mini Appdan Test match bosing";
 } else {
   try {
-    const p = decodeToken(token);
-    document.getElementById("status").textContent = `Tayyor. Room: ${p.room}. Start bosing.`;
+    document.getElementById("status").textContent = `Tayyor. Room: ${decodeToken(token).room}. Start bosing.`;
   } catch {
     document.getElementById("status").textContent = "Token o'qilmadi";
   }
