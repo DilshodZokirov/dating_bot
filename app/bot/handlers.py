@@ -7,6 +7,8 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardRemove,
     WebAppInfo,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
 )
 
 from app.bot.states import Registration
@@ -19,19 +21,38 @@ from app.models import Gender, Language, LookingFor, User
 router = Router()
 
 
+def _webapp_url() -> str | None:
+    if not settings.webapp_url:
+        return None
+    return f"{settings.webapp_url.rstrip('/')}/webapp/"
+
+
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
     """Mini App ochish tugmasi — video qo'ng'iroq shu yerda."""
-    if not settings.webapp_url:
+    url = _webapp_url()
+    if not url:
         print("WARNING: WEBAPP_URL bo'sh — Mini App tugmasi yuborilmaydi")
         return ReplyKeyboardRemove()
     label = {"uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call"}.get(
         lang, "🔍 Qidirish / Qo'ng'iroq"
     )
-    url = f"{settings.webapp_url.rstrip('/')}/webapp/"
     print(f"Mini App URL: {url}")
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=url))]],
         resize_keyboard=True,
+    )
+
+
+def _webapp_inline(lang: str = "uz") -> InlineKeyboardMarkup | None:
+    """Inline WebApp tugma — ba'zi klientlarda reply keyboarddan ishonchliroq."""
+    url = _webapp_url()
+    if not url:
+        return None
+    label = {"uz": "📱 Mini Appni ochish", "ru": "📱 Открыть Mini App", "en": "📱 Open Mini App"}.get(
+        lang, "📱 Mini Appni ochish"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=label, web_app=WebAppInfo(url=url))]]
     )
 
 gender_kb = ReplyKeyboardMarkup(
@@ -59,10 +80,33 @@ async def cmd_start(message: Message, state: FSMContext):
             t(user.language.value, "welcome_back", name=user.name),
             reply_markup=_webapp_kb(user.language.value),
         )
+        inline = _webapp_inline(user.language.value)
+        if inline:
+            await message.answer(
+                "Mini Appni ochish uchun pastdagi tugmani bosing:",
+                reply_markup=inline,
+            )
+        elif not settings.webapp_url:
+            await message.answer("⚠️ WEBAPP_URL sozlanmagan. .env ni tekshiring.")
         return
 
     await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
     await state.set_state(Registration.name)
+
+
+@router.message(Command("app"))
+async def cmd_app(message: Message):
+    """Mini App tugmasini qayta yuborish."""
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    lang = user.language.value if user else "uz"
+    if not settings.webapp_url:
+        await message.answer("WEBAPP_URL bo'sh. .env ga HTTPS manzilni yozing va botni qayta ishga tushiring.")
+        return
+    await message.answer("Mini App:", reply_markup=_webapp_kb(lang))
+    inline = _webapp_inline(lang)
+    if inline:
+        await message.answer("Yoki shu inline tugma:", reply_markup=inline)
 
 
 @router.message(Registration.name)
