@@ -131,9 +131,20 @@ async function flushIce() {
   }
 }
 
+let starting = false;
+
 async function startCall() {
+  if (starting) {
+    dlog("Start allaqachon ketmoqda — ignore");
+    return;
+  }
+  starting = true;
+  document.getElementById("startBtn").disabled = true;
+
   if (!token) {
     document.getElementById("status").textContent = "URL da token yo'q";
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
     return;
   }
   let payload;
@@ -141,17 +152,17 @@ async function startCall() {
     payload = decodeToken(token);
   } catch (e) {
     document.getElementById("status").textContent = "Token yaroqsiz";
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
     return;
   }
   roomId = payload.room;
-  // Real user ID token ichida yo'q — server CallSession da. Peer end qilganda
-  // partner_id ni room dan bilmaymiz; Mini App o'zi ham tugatishi mumkin.
-  // Token faqat peer uid + room. partner_id ni query dan olamiz yoki 0.
   partnerId = Number(params.get("partner_id") || 0);
+  const forceRelay = params.get("relay") === "1";
 
   polite = TEST_PEER_ID > (partnerId || 0);
   document.getElementById("status").textContent = `Room: ${roomId}`;
-  dlog(`start room=${roomId} polite=${polite}`);
+  dlog(`start room=${roomId} polite=${polite} forceRelay=${forceRelay}`);
 
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
@@ -162,6 +173,8 @@ async function startCall() {
   } catch (e) {
     document.getElementById("status").textContent = "Mikrofon ruxsati kerak";
     dlog(e.message);
+    starting = false;
+    document.getElementById("startBtn").disabled = false;
     return;
   }
 
@@ -176,7 +189,12 @@ async function startCall() {
     dlog("TURN: " + e.message);
   }
 
-  pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
+  const pcConfig = { iceServers, iceCandidatePoolSize: 4 };
+  if (forceRelay) {
+    pcConfig.iceTransportPolicy = "relay";
+    dlog("iceTransportPolicy=relay (faqat TURN)");
+  }
+  pc = new RTCPeerConnection(pcConfig);
   localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
 
   pc.onicecandidate = (event) => {

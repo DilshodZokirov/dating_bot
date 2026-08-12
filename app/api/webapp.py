@@ -103,18 +103,23 @@ async def get_cities():
 
 
 async def _build_ice_servers() -> dict:
-    ice_servers: list[dict] = [{"urls": "stun:stun.l.google.com:19302"}]
+    ice_servers: list[dict] = [
+        {"urls": "stun:stun.l.google.com:19302"},
+        {"urls": "stun:stun1.l.google.com:19302"},
+    ]
 
-    # 1) O'z TURN (coturn / static) — eng oddiy yo'l
+    # 1) Static TURN — har bir URL alohida (brauzerlar uchun ishonchliroq)
     if settings.turn_urls and settings.turn_username and settings.turn_password:
         urls = [u.strip() for u in settings.turn_urls.split(",") if u.strip()]
-        ice_servers.append(
-            {
-                "urls": urls if len(urls) > 1 else urls[0],
-                "username": settings.turn_username,
-                "credential": settings.turn_password,
-            }
-        )
+        for u in urls:
+            ice_servers.append(
+                {
+                    "urls": u,
+                    "username": settings.turn_username,
+                    "credential": settings.turn_password,
+                }
+            )
+        print(f"ICE servers ready: {len(ice_servers)} (TURN urls={len(urls)})", flush=True)
         return {"iceServers": ice_servers}
 
     # 2) Metered.ca dinamik credential
@@ -139,7 +144,7 @@ async def _build_ice_servers() -> dict:
             return {"iceServers": metered_servers}
         return {"iceServers": ice_servers}
     except Exception as e:
-        print(f"TURN credentials error: {e}")
+        print(f"TURN credentials error: {e}", flush=True)
         return {"iceServers": ice_servers}
 
 
