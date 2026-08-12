@@ -57,7 +57,9 @@ LIVEKIT_API_SECRET=...
 ## Matching qoidalari
 
 - Jins: sozlamalardagi **Suhbatdosh** (erkak / ayol / farqi yo'q)
-- Yosh: sozlamalardagi **Suhbatdosh yoshi** oralig'i (ikki tomonlama)
+- Yosh: sozlamalardagi **Suhbatdosh yoshi** oralig'i (ikki tomonlama) — default **18+**
 - Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
 - Ikki tomonlama rozilik (taklif 120 soniya)
 - Bekor qilish / rad etish → ikkinchi tomon qayta qidiruvga
+
+**2 akkaunt bilan test:** biri erkak, biri ayol (yoki ikkalasida Suhbatdosh = Farqi yo'q); til bir xil; Sozlamalarda suhbatdosh yoshi **18+ (hammasi)**.

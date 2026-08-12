@@ -231,6 +231,56 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     if user.is_banned:
         raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
 
+    # Eski navbat/takliflarni tozalab, yangi qidiruv
+    for lf in ("male", "female", "any"):
+        await cancel_wait(user.id, lf)
+
+    proposal = await _try_create_proposal(user)
+    if proposal:
+        return {"status": "proposal_sent"}
+
+    await join_queue(
+        user.id, user.gender.value, user.looking_for.value, user.age,
+        user.language.value, user.city, user.search_scope.value,
+        user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
+    )
+
+    # Ikkalasi bir vaqtda bosganda: men navbatga tushganimdan keyin yana bir marta
+    proposal = await _try_create_proposal(user, leave_queue_if_matched=True)
+    if proposal:
+        return {"status": "proposal_sent"}
+
+    return {"status": "waiting"}
+
+
+@router.get("/search/status")
+async def search_status(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    uid = int(tg_user["id"])
+    await touch_presence(uid)
+
+    result = await pop_result(uid)
+    if result:
+        return result
+
+    # Navbatda kutayotganda qayta match — ikkala akkaunt birga qidirganda tiqilib qolmasin
+    async with async_session() as session:
+        user = await session.get(User, uid)
+    if user and not user.is_banned:
+        proposal = await _try_create_proposal(user, leave_queue_if_matched=True)
+        if proposal:
+            # set_result o'zimizga ham yozilgan — shu poll javobida qaytaramiz, dublikat bo'lmasin
+            await pop_result(uid)
+            return proposal
+
+    return {"outcome": "waiting"}
+
+
+async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False) -> dict | None:
+    """
+    Navbatdan mos kandidat topsa — ikkalasiga proposal result yozadi.
+    Qaytaradi: polling uchun proposal dict yoki None.
+    """
     exclude = await get_blocked_ids(user.id)
     exclude |= await get_banned_ids()
     exclude.add(user.id)
@@ -246,29 +296,22 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         prefer_age_max=user.prefer_age_max or 99,
         exclude_ids=exclude,
     )
-
     if not candidate:
-        await join_queue(
-            user.id, user.gender.value, user.looking_for.value, user.age,
-            user.language.value, user.city, user.search_scope.value,
-            user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
-        )
-        return {"status": "waiting"}
+        return None
 
     async with async_session() as session:
         candidate_user = await session.get(User, candidate["user_id"])
 
     if not candidate_user or candidate_user.is_banned:
-        await join_queue(
-            user.id, user.gender.value, user.looking_for.value, user.age,
-            user.language.value, user.city, user.search_scope.value,
-            user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
-        )
-        return {"status": "waiting"}
+        # Kandidat yaroqsiz — qayta navbatga qo'ymaymiz (banned)
+        return None
+
+    if leave_queue_if_matched:
+        for lf in ("male", "female", "any"):
+            await cancel_wait(user.id, lf)
 
     proposal_id = await create_mutual_proposal(requester=_queue_payload(user), candidate=candidate)
 
-    # Taklif faqat Mini App polling orqali (Telegram xabar yo'q)
     await set_result(
         user.id, "proposal", proposal_id=proposal_id,
         other_name=candidate_user.name, other_age=candidate_user.age, other_gender=candidate_user.gender.value,
@@ -277,17 +320,14 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         candidate["user_id"], "proposal", proposal_id=proposal_id,
         other_name=user.name, other_age=user.age, other_gender=user.gender.value,
     )
-    return {"status": "proposal_sent"}
 
-
-@router.get("/search/status")
-async def search_status(x_telegram_init_data: str | None = Header(default=None)):
-    tg_user = _auth(x_telegram_init_data)
-    await touch_presence(int(tg_user["id"]))
-    result = await pop_result(tg_user["id"])
-    if result:
-        return result
-    return {"outcome": "waiting"}
+    return {
+        "outcome": "proposal",
+        "proposal_id": proposal_id,
+        "other_name": candidate_user.name,
+        "other_age": candidate_user.age,
+        "other_gender": candidate_user.gender.value,
+    }
 
 
 @router.post("/search/cancel")
