@@ -16,6 +16,7 @@ from app.matching.queue import (
     find_candidate,
     join_queue,
     pop_result,
+    requeue_user,
     set_decision,
     set_result,
 )
@@ -262,9 +263,14 @@ async def search_cancel(x_telegram_init_data: str | None = Header(default=None))
 
     if user:
         await cancel_wait(user.id, user.looking_for.value)
+        # boshqa looking_for navbatlarida ham qolmasin
+        for lf in ("male", "female", "any"):
+            if lf != user.looking_for.value:
+                await cancel_wait(user.id, lf)
         cancelled = await cancel_proposals_by_user(user.id)
         for proposal in cancelled:
             other = _other_side(proposal, user.id)
+            await requeue_user(other)
             await set_result(other["user_id"], "requeued")
 
     return {"status": "cancelled"}
@@ -294,10 +300,7 @@ async def proposal_respond(payload: ProposalResponse, x_telegram_init_data: str 
 
     if result["status"] == "declined":
         # boshqa tomonni avtomatik ravishda qayta qidiruvga qo'shamiz
-        await join_queue(
-            other["user_id"], other["gender"], other["looking_for"], other["age"],
-            other["language"], other["city"], other["search_scope"],
-        )
+        await requeue_user(other)
         await set_result(other["user_id"], "requeued")
         return {"outcome": "declined"}
 

@@ -65,3 +65,11 @@ LIVEKIT_API_SECRET=...
 
 - Yosh tasdiqlash
 - Admin web panel
+
+## Matching qoidalari
+
+- Jins: ro'yxatda qarama-qarshi jins
+- Yosh: qiz yigitdan kichik + farq `MAX_AGE_GAP` (default 5)
+- Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
+- Ikki tomonlama rozilik (taklif 120 soniya)
+- Bekor qilish / rad etish → ikkinchi tomon qayta navbatga

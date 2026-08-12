@@ -15,7 +15,7 @@ from app.bot.states import Registration
 from app.config import settings
 from app.database import async_session
 from app.i18n import t
-from app.matching.queue import cancel_proposals_by_user, cancel_wait, set_result
+from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
 from app import test_mode
@@ -26,7 +26,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=mod3"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=search1"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -214,10 +214,33 @@ async def cmd_stop(message: Message, state: FSMContext):
 
     if user:
         await cancel_wait(user.id, user.looking_for.value)
+        for lf in ("male", "female", "any"):
+            if lf != user.looking_for.value:
+                await cancel_wait(user.id, lf)
         cancelled = await cancel_proposals_by_user(user.id)
         for proposal in cancelled:
-            other_id = proposal["candidate_id"] if proposal["requester_id"] == user.id else proposal["requester_id"]
-            await set_result(other_id, "requeued")
+            if proposal["requester_id"] == user.id:
+                other = {
+                    "user_id": proposal["candidate_id"],
+                    "gender": proposal["candidate_gender"],
+                    "looking_for": proposal["candidate_looking_for"],
+                    "age": proposal["candidate_age"],
+                    "language": proposal["candidate_language"],
+                    "city": proposal.get("candidate_city"),
+                    "search_scope": proposal.get("candidate_search_scope", "country"),
+                }
+            else:
+                other = {
+                    "user_id": proposal["requester_id"],
+                    "gender": proposal["requester_gender"],
+                    "looking_for": proposal["requester_looking_for"],
+                    "age": proposal["requester_age"],
+                    "language": proposal["requester_language"],
+                    "city": proposal.get("requester_city"),
+                    "search_scope": proposal.get("requester_search_scope", "country"),
+                }
+            await requeue_user(other)
+            await set_result(other["user_id"], "requeued")
 
     await state.clear()
     lang = user.language.value if user else "uz"
