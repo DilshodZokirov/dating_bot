@@ -22,12 +22,15 @@ router = Router()
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
     """Mini App ochish tugmasi — video qo'ng'iroq shu yerda."""
     if not settings.webapp_url:
+        print("WARNING: WEBAPP_URL bo'sh — Mini App tugmasi yuborilmaydi")
         return ReplyKeyboardRemove()
     label = {"uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call"}.get(
         lang, "🔍 Qidirish / Qo'ng'iroq"
     )
+    url = f"{settings.webapp_url.rstrip('/')}/webapp/"
+    print(f"Mini App URL: {url}")
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=f"{settings.webapp_url.rstrip('/')}/webapp/"))]],
+        keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=url))]],
         resize_keyboard=True,
     )
 
