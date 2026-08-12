@@ -3,15 +3,14 @@ Matching queue — Redis orqali.
 
 Oqim (ikki tomonlama rozilik / mutual double opt-in):
 1. Foydalanuvchi qidiruvni boshlaganda, navbatda mos kandidat qidiriladi
-   (bir xil yosh oralig'i + bir xil til bo'yicha).
-2. Kandidat topilsa — ikkalasiga HAM ("so'rovchi" va "kandidat") bir-birining
-   profili bilan taklif yuboriladi: "Shu kishi bilan suhbatlashishga rozimisiz?"
+   (yosh qoidasi + bir xil til + shahar afzalligi).
+2. Kandidat topilsa — ikkalasiga HAM taklif yuboriladi.
 3. Ikkalasi ham "Roziman" desagina suhbat (CallSession) yaratiladi.
-4. Agar kimdir "Yo'q" desa — ikkinchi tomon avtomatik ravishda qayta
-   qidiruv navbatiga qo'shiladi (davom etadi).
+4. Agar kimdir "Yo'q" desa yoki bekor qilsa — ikkinchi tomon qayta navbatga.
 5. Mos kandidat topilmasa, foydalanuvchi navbatga qo'shiladi va kutadi.
 """
 
+import asyncio
 import json
 import uuid
 
@@ -38,9 +37,11 @@ async def _acquire_lock() -> str:
         ok = await redis_client.set(LOCK_KEY, token, nx=True, px=LOCK_TTL_MS)
         if ok:
             return token
+        await asyncio.sleep(0.05)
 
 
 async def _release_lock(token: str):
+    # Faqat o'z tokenimiz bo'lsa o'chiramiz (race-safe emas, lekin yetarli)
     current = await redis_client.get(LOCK_KEY)
     if current == token:
         await redis_client.delete(LOCK_KEY)
@@ -52,13 +53,17 @@ async def _release_lock(token: str):
 
 def _age_compatible(gender_a: str, age_a: int, gender_b: str, age_b: int) -> bool:
     """
-    Qoida: qiz bolaning yoshi yigitning yoshidan kichik bo'lishi kerak.
+    Qoida:
+    - qiz yoshi yigitnikidan kichik
+    - farq settings.max_age_gap dan oshmasin
     """
+    gap = settings.max_age_gap
     if gender_a == "male" and gender_b == "female":
-        return age_b < age_a
+        return age_b < age_a and (age_a - age_b) <= gap
     if gender_a == "female" and gender_b == "male":
-        return age_a < age_b
-    return True
+        return age_a < age_b and (age_b - age_a) <= gap
+    # bir xil jins (kelajak) — faqat gap
+    return abs(age_a - age_b) <= gap
 
 
 def _city_compatible(a_city: str | None, a_scope: str, b_city: str | None, b_scope: str) -> bool:
@@ -79,32 +84,39 @@ async def find_candidate(gender: str, looking_for: str, age: int, language: str,
                           city: str | None, search_scope: str,
                           exclude_ids: set[int] | None = None) -> dict | None:
     """
-    Navbatdan mos kandidatni qidiradi (yosh qoidasi: qiz yigitdan kichik + bir xil til +
-    shahar afzalligi) va topilsa navbatdan olib tashlaydi. Topilmasa None qaytaradi.
+    Navbatdan mos kandidatni qidiradi va topilsa navbatdan olib tashlaydi.
     exclude_ids — bloklangan / o'zini o'tkazib yuborish.
     """
     exclude_ids = exclude_ids or set()
     token = await _acquire_lock()
     try:
-        opposite_queue = _queue_key(gender)  # bizning gender'imizni qidirayotganlar shu navbatda
-        raw_candidates = await redis_client.lrange(opposite_queue, 0, -1)
-        for raw in raw_candidates:
-            candidate = json.loads(raw)
-            if candidate.get("user_id") in exclude_ids:
-                continue
-            if not _age_compatible(gender, age, candidate["gender"], candidate["age"]):
-                continue
-            if candidate.get("language") != language:
-                continue
-            if not _city_compatible(city, search_scope, candidate.get("city"), candidate.get("search_scope", "country")):
-                continue
-            if looking_for != "any" and candidate["gender"] != looking_for:
-                continue
-            if candidate["looking_for"] != "any" and candidate["looking_for"] != gender:
-                continue
+        # Bizning gender'imizni qidirayotganlar + looking_for=any navbati
+        queue_names = [_queue_key(gender)]
+        any_key = _queue_key("any")
+        if any_key not in queue_names:
+            queue_names.append(any_key)
 
-            await redis_client.lrem(opposite_queue, 1, raw)
-            return candidate
+        for opposite_queue in queue_names:
+            raw_candidates = await redis_client.lrange(opposite_queue, 0, -1)
+            for raw in raw_candidates:
+                candidate = json.loads(raw)
+                if candidate.get("user_id") in exclude_ids:
+                    continue
+                if not _age_compatible(gender, age, candidate["gender"], candidate["age"]):
+                    continue
+                if candidate.get("language") != language:
+                    continue
+                if not _city_compatible(
+                    city, search_scope, candidate.get("city"), candidate.get("search_scope", "country")
+                ):
+                    continue
+                if looking_for != "any" and candidate["gender"] != looking_for:
+                    continue
+                if candidate["looking_for"] != "any" and candidate["looking_for"] != gender:
+                    continue
+
+                await redis_client.lrem(opposite_queue, 1, raw)
+                return candidate
         return None
     finally:
         await _release_lock(token)
@@ -112,6 +124,13 @@ async def find_candidate(gender: str, looking_for: str, age: int, language: str,
 
 async def join_queue(user_id: int, gender: str, looking_for: str, age: int, language: str,
                       city: str | None, search_scope: str):
+    """Navbatga qo'shadi. Avval shu user'ning eski yozuvlarini tozalaydi (dedup)."""
+    await cancel_wait(user_id, looking_for)
+    # looking_for o'zgargan bo'lsa eski navbatlarda ham qolmasin
+    for lf in ("male", "female", "any"):
+        if lf != looking_for:
+            await cancel_wait(user_id, lf)
+
     my_queue = _queue_key(looking_for)
     payload = json.dumps({
         "user_id": user_id,
@@ -126,14 +145,26 @@ async def join_queue(user_id: int, gender: str, looking_for: str, age: int, lang
 
 
 async def cancel_wait(user_id: int, looking_for: str):
-    """Foydalanuvchi qidiruvni bekor qilsa, navbatdan chiqarib tashlaymiz."""
+    """Foydalanuvchini berilgan navbatdan to'liq chiqaradi (barcha yozuvlar)."""
     my_queue = _queue_key(looking_for)
     raw_candidates = await redis_client.lrange(my_queue, 0, -1)
     for raw in raw_candidates:
         candidate = json.loads(raw)
         if candidate["user_id"] == user_id:
-            await redis_client.lrem(my_queue, 1, raw)
-            break
+            await redis_client.lrem(my_queue, 0, raw)
+
+
+async def requeue_user(payload: dict):
+    """Taklifdagi tomon ma'lumotidan qayta navbatga qo'yish."""
+    await join_queue(
+        payload["user_id"],
+        payload["gender"],
+        payload["looking_for"],
+        payload["age"],
+        payload["language"],
+        payload.get("city"),
+        payload.get("search_scope", "country"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +248,7 @@ async def set_decision(proposal_id: str, user_id: int, decision: str) -> dict:
 
 async def cancel_proposals_by_user(user_id: int) -> list[dict]:
     """
-    Foydalanuvchi qidiruvni bekor qilganda, u ishtirok etayotgan (hali hal
+    Foydalanuvchi qidiruvni bekor qilganda, u ishtirok etayotgan (hali hali
     bo'lmagan) barcha takliflarni bekor qiladi. Boshqa tomonga xabar berish
     uchun ro'yxatini qaytaradi.
     """

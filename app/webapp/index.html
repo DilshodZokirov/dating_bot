@@ -265,6 +265,8 @@ const TRANSLATIONS = {
   searching_title: { uz: "Suhbatdosh qidirilmoqda...", ru: "Ищем собеседника...", en: "Searching for a partner..." },
   searching_hint: { uz: "Bir oz kuting, sizga mos kishi topilishi bilan xabar beramiz.", ru: "Подождите немного, мы сообщим, как только найдём подходящего человека.", en: "Please wait, we'll notify you once a match is found." },
   requeued_hint: { uz: "Hamsuhbatingiz rad etdi, sizni qayta qidiruvga qo'shdik...", ru: "Собеседник отказался, вы снова добавлены в поиск...", en: "The other person declined, you've been added back to the search..." },
+  proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло. Можно искать снова.", en: "Proposal expired. You can search again." },
+  proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "This proposal is no longer available." },
   cancel_link: { uz: "Bekor qilish", ru: "Отменить", en: "Cancel" },
   not_registered: { uz: "Avval botda /start buyrug'i orqali ro'yxatdan o'ting.", ru: "Сначала зарегистрируйтесь в боте через /start.", en: "Please register first in the bot via /start." },
   no_init_data: {
@@ -462,10 +464,12 @@ function setSearchingUI(isSearching) {
 function showProposal(proposalId, name, age, gender) {
   clearInterval(pollTimer);
   currentProposalId = proposalId;
+  searching = true;
   mainBtn.style.display = "none";
   titleText.textContent = tr("proposal_question");
   hintText.style.display = "none";
-  cancelLink.style.display = "none";
+  // Bekor qilish mumkin — aks holda "tiqilib" qoladi
+  cancelLink.style.display = "block";
   document.getElementById("pName").textContent = name;
   document.getElementById("pMeta").textContent = tr("p_meta", { age, gender: tr(gender === "male" ? "gender_male" : "gender_female") });
   proposalCard.style.display = "block";
@@ -485,12 +489,19 @@ async function respondToProposal(decision) {
         token: result.livekit_token,
       });
     } else if (result.outcome === "waiting_partner") {
+      searching = true;
+      titleText.style.display = "block";
       titleText.textContent = tr("waiting_partner_title");
       hintText.textContent = tr("waiting_partner_hint");
       hintText.style.display = "block";
+      cancelLink.style.display = "block";
+      proposalWaitUntil = Date.now() + 130000;
       pollTimer = setInterval(pollStatus, 2000);
+    } else if (result.outcome === "invalid") {
+      tg?.showAlert?.(tr("proposal_invalid"));
+      setSearchingUI(false);
     } else {
-      // "declined" (men rad etdim) yoki "invalid"
+      // "declined" (men rad etdim)
       setSearchingUI(false);
     }
   } catch (e) {
@@ -607,6 +618,8 @@ document.getElementById("copyTestCallLinkBtn").addEventListener("click", copyTes
 
 async function startSearch() {
   try {
+    proposalWaitUntil = 0;
+    currentProposalId = null;
     setSearchingUI(true);
     await api("/api/search/start", { method: "POST" });
     pollTimer = setInterval(pollStatus, 2000);
@@ -616,21 +629,44 @@ async function startSearch() {
   }
 }
 
+let proposalWaitUntil = 0;
+
 async function pollStatus() {
   try {
+    if (proposalWaitUntil && Date.now() > proposalWaitUntil) {
+      proposalWaitUntil = 0;
+      clearInterval(pollTimer);
+      await api("/api/search/cancel", { method: "POST" }).catch(() => {});
+      currentProposalId = null;
+      setSearchingUI(false);
+      tg?.showAlert?.(tr("proposal_expired"));
+      return;
+    }
     const result = await api("/api/search/status");
     if (result.outcome === "proposal") {
       clearInterval(pollTimer);
+      proposalWaitUntil = 0;
       showProposal(result.proposal_id, result.other_name, result.other_age, result.other_gender);
     } else if (result.outcome === "matched") {
       clearInterval(pollTimer);
+      proposalWaitUntil = 0;
       enterCall(result.room_id, result.partner_id, {
         url: result.livekit_url,
         token: result.livekit_token,
       });
     } else if (result.outcome === "requeued") {
+      // Hamroh rad etdi / bekor qildi — biz allaqachon navbatdamiz, qidiruvni davom ettiramiz
+      proposalWaitUntil = 0;
+      currentProposalId = null;
+      searching = true;
+      mainBtn.style.display = "flex";
+      mainBtn.classList.add("searching");
+      titleText.style.display = "block";
+      titleText.textContent = tr("searching_title");
       hintText.textContent = tr("requeued_hint");
       hintText.style.display = "block";
+      cancelLink.style.display = "block";
+      proposalCard.style.display = "none";
     }
   } catch (e) {
     clearInterval(pollTimer);
@@ -640,6 +676,8 @@ async function pollStatus() {
 
 async function cancelSearch() {
   clearInterval(pollTimer);
+  proposalWaitUntil = 0;
+  currentProposalId = null;
   setSearchingUI(false);
   try { await api("/api/search/cancel", { method: "POST" }); } catch (e) { /* ignore */ }
 }
