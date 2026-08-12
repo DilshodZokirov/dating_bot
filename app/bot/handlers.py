@@ -27,8 +27,8 @@ def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
     label = {"uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call"}.get(
         lang, "🔍 Qidirish / Qo'ng'iroq"
     )
-    url = f"{settings.webapp_url.rstrip('/')}/webapp/"
-    print(f"Mini App URL: {url}")
+    url = f"{settings.webapp_url.rstrip('/')}/webapp/?v=lk1"
+    print(f"Mini App URL: {url}", flush=True)
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=url))]],
         resize_keyboard=True,

@@ -19,6 +19,7 @@ from app.matching.queue import (
     set_decision,
     set_result,
 )
+from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.models import CallSession, Gender, Language, LookingFor, SearchScope, SessionStatus, User
 from app.telegram_auth import InitDataError, validate_init_data
 
@@ -284,8 +285,34 @@ async def proposal_respond(payload: ProposalResponse, x_telegram_init_data: str 
         session.add(call)
         await session.commit()
 
-    await set_result(other["user_id"], "matched", room_id=room_id, partner_id=tg_user["id"])
-    return {"outcome": "matched", "room_id": room_id, "partner_id": other["user_id"]}
+        me = await session.get(User, tg_user["id"])
+        other_user = await session.get(User, other["user_id"])
+
+    if not livekit_configured():
+        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
+
+    me_join = livekit_join_payload(identity=str(tg_user["id"]), name=me.name if me else str(tg_user["id"]), room_id=room_id)
+    other_join = livekit_join_payload(
+        identity=str(other["user_id"]),
+        name=other_user.name if other_user else str(other["user_id"]),
+        room_id=room_id,
+    )
+
+    await set_result(
+        other["user_id"],
+        "matched",
+        room_id=room_id,
+        partner_id=tg_user["id"],
+        livekit_url=other_join["livekit_url"],
+        livekit_token=other_join["livekit_token"],
+    )
+    return {
+        "outcome": "matched",
+        "room_id": room_id,
+        "partner_id": other["user_id"],
+        "livekit_url": me_join["livekit_url"],
+        "livekit_token": me_join["livekit_token"],
+    }
 
 
 class CallEndRequest(BaseModel):
@@ -366,6 +393,11 @@ async def test_match(x_telegram_init_data: str | None = Header(default=None)):
     peer_path = f"/webapp/test-peer.html?token={token}&partner_id={user.id}"
     peer_url = f"{base}{peer_path}" if base else peer_path
 
+    if not livekit_configured():
+        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan (.env ga LIVEKIT_* qo'shing)")
+
+    me_join = livekit_join_payload(identity=str(user.id), name=user.name, room_id=room_id)
+
     return {
         "status": "matched",
         "room_id": room_id,
@@ -374,7 +406,44 @@ async def test_match(x_telegram_init_data: str | None = Header(default=None)):
         "test_token": token,
         "test_peer_url": peer_url,
         "test_peer_path": peer_path,
+        "livekit_url": me_join["livekit_url"],
+        "livekit_token": me_join["livekit_token"],
     }
+
+
+@router.get("/test/livekit-token")
+async def test_livekit_token(token: str):
+    """Test peer (kompyuter) uchun LiveKit token."""
+    if not test_mode.is_enabled():
+        raise HTTPException(status_code=404, detail="Test mode o'chirilgan")
+    try:
+        claims = test_mode.verify_test_token(token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    if not livekit_configured():
+        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
+    join = livekit_join_payload(
+        identity=str(test_mode.TEST_PEER_ID),
+        name=test_mode.TEST_PEER_NAME,
+        room_id=claims["room_id"],
+    )
+    return join
+
+
+class LiveKitTokenRequest(BaseModel):
+    room_id: str
+
+
+@router.post("/livekit/token")
+async def livekit_token(payload: LiveKitTokenRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    if not livekit_configured():
+        raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
+    async with async_session() as session:
+        user = await session.get(User, tg_user["id"])
+        if not user:
+            raise HTTPException(status_code=400, detail="Ro'yxatdan o'ting")
+    return livekit_join_payload(identity=str(user.id), name=user.name, room_id=payload.room_id)
 
 
 @router.get("/test/turn-credentials")

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Suhbatdosh qidirish</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.4/dist/livekit-client.umd.min.js"></script>
 <style>
   :root {
     --bg: var(--tg-theme-bg-color, #0e1621);
@@ -410,7 +411,10 @@ async function respondToProposal(decision) {
     });
     currentProposalId = null;
     if (result.outcome === "matched") {
-      enterCall(result.room_id, result.partner_id);
+      enterCall(result.room_id, result.partner_id, {
+        url: result.livekit_url,
+        token: result.livekit_token,
+      });
     } else if (result.outcome === "waiting_partner") {
       titleText.textContent = tr("waiting_partner_title");
       hintText.textContent = tr("waiting_partner_hint");
@@ -500,7 +504,10 @@ async function startTestMatch() {
 
     try { await navigator.clipboard.writeText(lastTestPeerUrl); } catch (_) {}
 
-    enterCall(result.room_id, result.partner_id);
+    enterCall(result.room_id, result.partner_id, {
+      url: result.livekit_url,
+      token: result.livekit_token,
+    });
   } catch (e) {
     showError(e.message);
   }
@@ -538,7 +545,10 @@ async function pollStatus() {
       showProposal(result.proposal_id, result.other_name, result.other_age, result.other_gender);
     } else if (result.outcome === "matched") {
       clearInterval(pollTimer);
-      enterCall(result.room_id, result.partner_id);
+      enterCall(result.room_id, result.partner_id, {
+        url: result.livekit_url,
+        token: result.livekit_token,
+      });
     } else if (result.outcome === "requeued") {
       hintText.textContent = tr("requeued_hint");
       hintText.style.display = "block";
@@ -595,22 +605,14 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 });
 
 // ============================================================
-// Qo'ng'iroq (WebRTC audio/video) — perfect negotiation + ICE buffer
+// Qo'ng'iroq — LiveKit (Bgalaxy / Zoom tipidagi SFU)
 // ============================================================
-let pc = null;
-let ws = null;
-let localStream = null;
+let lkRoom = null;
 let callPartnerId = null;
 let callRoomId = null;
 let callPollTimer = null;
 let isMuted = false;
 let videoOn = false;
-let videoTrack = null;
-let makingOffer = false;
-let ignoreOffer = false;
-let polite = false;
-let pendingIce = [];
-let pendingLocalSdp = null;
 
 function dlog(msg) {
   const el = document.getElementById("debugLog");
@@ -623,32 +625,37 @@ function dlog(msg) {
   console.log(msg);
 }
 
-async function flushIce() {
-  while (pendingIce.length && pc && pc.remoteDescription) {
-    const c = pendingIce.shift();
-    try {
-      await pc.addIceCandidate(c);
-      dlog("ICE (buffer) qo'shildi.");
-    } catch (e) {
-      dlog("ICE buffer xato: " + e.message);
-    }
+function attachRemoteTrack(track) {
+  if (track.kind === "audio") {
+    const el = track.attach();
+    el.autoplay = true;
+    el.playsInline = true;
+    const box = document.getElementById("remoteAudio");
+    box.replaceWith(el);
+    el.id = "remoteAudio";
+    el.play?.().catch(() => {});
+    dlog("Remote audio");
+  } else if (track.kind === "video") {
+    const el = track.attach();
+    el.autoplay = true;
+    el.playsInline = true;
+    el.style.cssText = document.getElementById("remoteVideo").style.cssText || "width:100%;max-width:320px;border-radius:16px;background:#000;margin-bottom:16px;display:block;";
+    el.style.display = "block";
+    document.getElementById("remoteVideo").replaceWith(el);
+    el.id = "remoteVideo";
+    document.querySelector(".call-avatar").style.display = "none";
+    dlog("Remote video");
   }
 }
 
-async function enterCall(roomId, partnerId) {
+async function enterCall(roomId, partnerId, lk = {}) {
   callRoomId = roomId;
   callPartnerId = partnerId;
   isMuted = false;
   videoOn = false;
-  videoTrack = null;
-  pendingIce.length = 0;
-  makingOffer = false;
-  ignoreOffer = false;
-  // Past ID — impolite (offer beradi), katta ID — polite (collisionda chekinadi)
-  polite = myId > partnerId;
 
   document.getElementById("debugLog").innerHTML = "";
-  dlog(`Call start room=${roomId} me=${myId} partner=${partnerId} polite=${polite}`);
+  dlog(`LiveKit call room=${roomId} me=${myId} partner=${partnerId}`);
   searchView.classList.remove("active");
   bottomNav.style.display = "none";
   callView.style.display = "flex";
@@ -656,156 +663,61 @@ async function enterCall(roomId, partnerId) {
   document.getElementById("muteBtn").classList.remove("active-toggle");
   document.getElementById("videoBtn").classList.remove("active-toggle");
 
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
-      video: false,
-    });
-    dlog("Mikrofon OK.");
-  } catch (e) {
-    dlog("Mikrofon xatosi: " + e.message);
-    document.getElementById("callStatus").textContent = tr("mic_error");
+  if (!window.LivekitClient) {
+    document.getElementById("callStatus").textContent = "LiveKit JS yuklanmadi";
+    dlog("LivekitClient yo'q");
     return;
   }
 
-  let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
-  try {
-    const turnData = await api("/api/turn-credentials");
-    if (turnData.iceServers?.length) {
-      iceServers = turnData.iceServers;
-      dlog(`ICE servers: ${iceServers.length}`);
-    }
-  } catch (e) {
-    dlog("TURN olishda xato, STUN only: " + e.message);
-  }
-
-  pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
-  localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
-
-  pc.onicecandidate = (event) => {
-    if (!event.candidate) {
-      dlog("ICE gathering done.");
+  let url = lk.url;
+  let token = lk.token;
+  if (!url || !token) {
+    try {
+      const join = await api("/api/livekit/token", {
+        method: "POST",
+        body: JSON.stringify({ room_id: roomId }),
+      });
+      url = join.livekit_url;
+      token = join.livekit_token;
+    } catch (e) {
+      document.getElementById("callStatus").textContent = e.message;
+      dlog("Token xato: " + e.message);
       return;
     }
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
-    } else {
-      dlog("WS ochiq emas — ICE yo'qotildi!");
-    }
-  };
+  }
 
-  pc.ontrack = (event) => {
-    dlog("Remote track: " + event.track.kind);
-    const stream = event.streams[0] || new MediaStream([event.track]);
-    if (event.track.kind === "audio") {
-      const remoteAudio = document.getElementById("remoteAudio");
-      remoteAudio.srcObject = stream;
-      remoteAudio.play().catch(() => {
-        document.getElementById("callStatus").textContent = tr("tap_to_enable_audio");
-        document.getElementById("callStatus").onclick = () => {
-          remoteAudio.play().catch(() => {});
-          document.getElementById("callStatus").onclick = null;
-          document.getElementById("callStatus").textContent = tr("connected");
-        };
-      });
-    }
-    if (event.track.kind === "video") {
-      const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = stream;
-      remoteVideo.style.display = "block";
-      document.querySelector(".call-avatar").style.display = "none";
-    }
-  };
+  const { Room, RoomEvent } = LivekitClient;
+  lkRoom = new Room({ adaptiveStream: true, dynacast: true });
 
-  pc.onnegotiationneeded = async () => {
-    try {
-      makingOffer = true;
-      await pc.setLocalDescription();
-      const payload = JSON.stringify({ type: "sdp", description: pc.localDescription });
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(payload);
-        dlog("Local SDP yuborildi: " + pc.localDescription.type);
-      } else {
-        pendingLocalSdp = payload;
-        dlog("SDP WS ochilishini kutmoqda...");
-      }
-    } catch (e) {
-      dlog("negotiationneeded xato: " + e.message);
-    } finally {
-      makingOffer = false;
-    }
-  };
+  lkRoom.on(RoomEvent.TrackSubscribed, (track) => {
+    attachRemoteTrack(track);
+    document.getElementById("callStatus").textContent = tr("connected");
+  });
+  lkRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
+    track.detach().forEach((el) => el.remove());
+  });
+  lkRoom.on(RoomEvent.ParticipantConnected, (p) => {
+    dlog("Peer: " + (p.identity || p.sid));
+    document.getElementById("callStatus").textContent = tr("connected");
+  });
+  lkRoom.on(RoomEvent.Disconnected, () => {
+    dlog("LiveKit disconnected");
+    document.getElementById("callStatus").textContent = "Uzildi";
+  });
+  lkRoom.on(RoomEvent.ConnectionStateChanged, (s) => dlog("LK state: " + s));
 
-  pc.oniceconnectionstatechange = () => {
-    dlog("ICE: " + pc.iceConnectionState);
-    const statusEl = document.getElementById("callStatus");
-    if (["connected", "completed"].includes(pc.iceConnectionState)) {
-      statusEl.textContent = tr("connected");
-    } else if (pc.iceConnectionState === "failed") {
-      statusEl.textContent = "ICE failed — TURN kerak (mobil tarmoq)";
-    } else if (pc.iceConnectionState === "checking") {
-      statusEl.textContent = tr("connecting");
-    }
-  };
-
-  const wsProto = location.protocol === "https:" ? "wss" : "ws";
-  const wsUrl = `${wsProto}://${location.host}/ws/call/${roomId}?init_data=${encodeURIComponent(initData)}`;
-  ws = new WebSocket(wsUrl);
-
-  ws.onopen = () => {
-    dlog("WebSocket ochildi.");
-    if (pendingLocalSdp) {
-      ws.send(pendingLocalSdp);
-      dlog("Kutilgan SDP yuborildi.");
-      pendingLocalSdp = null;
-    }
-  };
-  ws.onerror = () => dlog("WebSocket XATOSI");
-  ws.onclose = (e) => dlog(`WebSocket yopildi code=${e.code}`);
-
-  ws.onmessage = async (event) => {
-    let msg;
-    try { msg = JSON.parse(event.data); } catch { return; }
-
-    // Eski format (offer/answer) + yangi (sdp) bilan mos
-    if (msg.type === "offer" || msg.type === "answer") {
-      msg = { type: "sdp", description: msg.sdp };
-    }
-
-    if (msg.type === "sdp" && msg.description) {
-      const desc = msg.description;
-      const offerCollision =
-        desc.type === "offer" && (makingOffer || pc.signalingState !== "stable");
-      ignoreOffer = !polite && offerCollision;
-      if (ignoreOffer) {
-        dlog("Offer collision — impolite, ignore.");
-        return;
-      }
-      try {
-        await pc.setRemoteDescription(desc);
-        dlog("Remote SDP: " + desc.type);
-        await flushIce();
-        if (desc.type === "offer") {
-          await pc.setLocalDescription();
-          ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
-          dlog("Answer yuborildi.");
-        }
-      } catch (e) {
-        dlog("SDP xato: " + e.message);
-      }
-    } else if (msg.type === "ice" && msg.candidate) {
-      if (!pc.remoteDescription) {
-        pendingIce.push(msg.candidate);
-        dlog("ICE bufferlandi.");
-      } else {
-        try {
-          await pc.addIceCandidate(msg.candidate);
-        } catch (e) {
-          dlog("ICE xato: " + e.message);
-        }
-      }
-    }
-  };
+  try {
+    dlog("Connect: " + url);
+    await lkRoom.connect(url, token);
+    await lkRoom.localParticipant.setMicrophoneEnabled(true);
+    document.getElementById("callStatus").textContent =
+      lkRoom.remoteParticipants.size > 0 ? tr("connected") : "Ulandi — hamroh kutilmoqda";
+    dlog("Participants: " + (1 + lkRoom.remoteParticipants.size));
+  } catch (e) {
+    dlog("Connect xato: " + e.message);
+    document.getElementById("callStatus").textContent = "LiveKit: " + e.message;
+    return;
+  }
 
   callPollTimer = setInterval(async () => {
     try {
@@ -826,75 +738,65 @@ function cleanupCall(notifyServer) {
       body: JSON.stringify({ room_id: callRoomId, partner_id: callPartnerId }),
     }).catch(() => {});
   }
-  if (videoTrack) {
-    try { videoTrack.stop(); } catch (_) {}
-    videoTrack = null;
+  if (lkRoom) {
+    try { lkRoom.disconnect(); } catch (_) {}
+    lkRoom = null;
   }
-  if (pc) { pc.close(); pc = null; }
-  if (ws) { ws.close(); ws = null; }
-  if (localStream) {
-    localStream.getTracks().forEach((t) => t.stop());
-    localStream = null;
-  }
-  document.getElementById("remoteVideo").style.display = "none";
-  document.getElementById("localVideo").style.display = "none";
-  document.querySelector(".call-avatar").style.display = "flex";
-  document.getElementById("testCallBanner").style.display = "none";
-  document.getElementById("testLinkBox").style.display = "none";
+  const rv = document.getElementById("remoteVideo");
+  if (rv) rv.style.display = "none";
+  const lv = document.getElementById("localVideo");
+  if (lv) { lv.style.display = "none"; lv.srcObject = null; }
+  const avatar = document.querySelector(".call-avatar");
+  if (avatar) avatar.style.display = "flex";
+  const banner = document.getElementById("testCallBanner");
+  const box = document.getElementById("testLinkBox");
+  if (banner) banner.style.display = "none";
+  if (box) box.style.display = "none";
   callView.style.display = "none";
   bottomNav.style.display = "flex";
   searchView.classList.add("active");
   setSearchingUI(false);
   videoOn = false;
+  isMuted = false;
 }
 
 document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
 
-document.getElementById("muteBtn").addEventListener("click", () => {
-  if (!localStream) return;
+document.getElementById("muteBtn").addEventListener("click", async () => {
+  if (!lkRoom) return;
   isMuted = !isMuted;
-  localStream.getAudioTracks().forEach((t) => (t.enabled = !isMuted));
+  await lkRoom.localParticipant.setMicrophoneEnabled(!isMuted);
   document.getElementById("muteBtn").classList.toggle("active-toggle", isMuted);
 });
 
 document.getElementById("videoBtn").addEventListener("click", async () => {
-  if (!pc || !localStream) return;
+  if (!lkRoom) return;
   const btn = document.getElementById("videoBtn");
-  const localVideo = document.getElementById("localVideo");
-
-  if (!videoOn) {
-    try {
-      const vs = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-      });
-      videoTrack = vs.getVideoTracks()[0];
-      localStream.addTrack(videoTrack);
-      pc.addTrack(videoTrack, localStream);
-      localVideo.srcObject = new MediaStream([videoTrack]);
-      localVideo.style.display = "block";
-      videoOn = true;
-      btn.classList.add("active-toggle");
-      dlog("Video yoqildi.");
-    } catch (e) {
-      dlog("Kamera xato: " + e.message);
-      tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
+  try {
+    videoOn = !videoOn;
+    await lkRoom.localParticipant.setCameraEnabled(videoOn);
+    btn.classList.toggle("active-toggle", videoOn);
+    const localVideo = document.getElementById("localVideo");
+    if (videoOn) {
+      const pub = lkRoom.localParticipant.getTrackPublication(LivekitClient.Track.Source.Camera);
+      if (pub?.track) {
+        const el = pub.track.attach();
+        el.muted = true;
+        el.autoplay = true;
+        el.playsInline = true;
+        el.id = "localVideo";
+        el.style.cssText = "width:90px;border-radius:10px;background:#000;position:absolute;top:20px;right:20px;display:block;";
+        localVideo.replaceWith(el);
+      }
+      dlog("Video yoqildi");
+    } else if (localVideo) {
+      localVideo.style.display = "none";
+      dlog("Video o'chirildi");
     }
-  } else {
-    // Video o'chirish
-    const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
-    if (sender) {
-      try { pc.removeTrack(sender); } catch (_) {}
-    }
-    if (videoTrack) {
-      videoTrack.stop();
-      localStream.removeTrack(videoTrack);
-      videoTrack = null;
-    }
-    localVideo.srcObject = null;
-    localVideo.style.display = "none";
+  } catch (e) {
     videoOn = false;
-    btn.classList.remove("active-toggle");
-    dlog("Video o'chirildi.");
+    dlog("Kamera: " + e.message);
+    tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
   }
 });
 

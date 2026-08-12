@@ -18,10 +18,14 @@ class Settings(BaseSettings):
     # Ixtiyoriy; bo'sh bo'lsa bot_token dan hosil qilinadi
     dev_test_secret: str = ""
 
-    # TURN (WebRTC) — mobil tarmoqda audio/video uchun muhim
-    metered_domain: str = ""  # masalan: xxx.metered.live
+    # LiveKit (audio/video qo'ng'iroq) — Bgalaxy dagi kabi
+    livekit_url: str = ""  # wss://xxx.livekit.cloud
+    livekit_api_key: str = ""
+    livekit_api_secret: str = ""
+
+    # TURN (ixtiyoriy; LiveKit bo'lsa odatda kerak emas)
+    metered_domain: str = ""
     metered_secret_key: str = ""
-    # Ixtiyoriy o'z TURN (masalan docker coturn): turn:host:3478?transport=udp
     turn_urls: str = ""
     turn_username: str = ""
     turn_password: str = ""
