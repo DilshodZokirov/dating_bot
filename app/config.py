@@ -19,9 +19,11 @@ class Settings(BaseSettings):
     dev_test_secret: str = ""
 
     # TURN (WebRTC) — mobil tarmoqda audio/video uchun muhim
-    metered_domain: str = ""  # masalan: xxx.metered.live
-    metered_secret_key: str = ""
-    # Ixtiyoriy o'z TURN (masalan docker coturn): turn:host:3478?transport=udp
+    # Tavsiya: https://www.metered.ca/tools/openrelay/ — bepul API key
+    metered_domain: str = ""  # masalan: openrelayproject.metered.ca yoki xxx.metered.live
+    metered_api_key: str = ""  # Open Relay / Metered API key (GET credentials)
+    metered_secret_key: str = ""  # eski secret-key oqimi (ixtiyoriy)
+    # Ixtiyoriy o'z TURN (masalan docker coturn): turn:192.168.x.x:3478
     turn_urls: str = ""
     turn_username: str = ""
     turn_password: str = ""

@@ -108,7 +108,7 @@ async def _build_ice_servers() -> dict:
         {"urls": "stun:stun1.l.google.com:19302"},
     ]
 
-    # 1) Static TURN — har bir URL alohida (brauzerlar uchun ishonchliroq)
+    # 1) Static TURN (lokal coturn / qo'lda berilgan)
     if settings.turn_urls and settings.turn_username and settings.turn_password:
         urls = [u.strip() for u in settings.turn_urls.split(",") if u.strip()]
         for u in urls:
@@ -119,33 +119,55 @@ async def _build_ice_servers() -> dict:
                     "credential": settings.turn_password,
                 }
             )
-        print(f"ICE servers ready: {len(ice_servers)} (TURN urls={len(urls)})", flush=True)
+        print(f"ICE servers ready: {len(ice_servers)} (static TURN={len(urls)})", flush=True)
         return {"iceServers": ice_servers}
 
-    # 2) Metered.ca dinamik credential
-    if not settings.metered_domain or not settings.metered_secret_key:
-        return {"iceServers": ice_servers}
+    # 2) Metered / Open Relay — API key bilan (tavsiya etiladi)
+    domain = (settings.metered_domain or "").strip().rstrip("/")
+    api_key = (settings.metered_api_key or "").strip()
+    if domain and api_key:
+        # openrelayproject.metered.ca yoki app.metered.live
+        if domain.startswith("http"):
+            base = domain
+        else:
+            base = f"https://{domain}"
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                ice_resp = await client.get(
+                    f"{base}/api/v1/turn/credentials",
+                    params={"apiKey": api_key},
+                )
+                ice_resp.raise_for_status()
+                metered_servers = ice_resp.json()
+            if isinstance(metered_servers, list) and metered_servers:
+                print(f"ICE from Metered API: {len(metered_servers)} servers", flush=True)
+                return {"iceServers": metered_servers}
+        except Exception as e:
+            print(f"Metered API key TURN error: {e}", flush=True)
 
-    base = f"https://{settings.metered_domain}/api/v1/turn"
-    try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            create_resp = await client.post(
-                f"{base}/credential",
-                params={"secretKey": settings.metered_secret_key},
-                json={"expiryInSeconds": 3600, "label": "call"},
-            )
-            create_resp.raise_for_status()
-            api_key = create_resp.json()["apiKey"]
+    # 3) Metered secret-key oqimi (eski)
+    if domain and settings.metered_secret_key:
+        base = f"https://{domain}/api/v1/turn"
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                create_resp = await client.post(
+                    f"{base}/credential",
+                    params={"secretKey": settings.metered_secret_key},
+                    json={"expiryInSeconds": 3600, "label": "call"},
+                )
+                create_resp.raise_for_status()
+                api_key_dyn = create_resp.json()["apiKey"]
 
-            ice_resp = await client.get(f"{base}/credentials", params={"apiKey": api_key})
-            ice_resp.raise_for_status()
-            metered_servers = ice_resp.json()
-        if isinstance(metered_servers, list) and metered_servers:
-            return {"iceServers": metered_servers}
-        return {"iceServers": ice_servers}
-    except Exception as e:
-        print(f"TURN credentials error: {e}", flush=True)
-        return {"iceServers": ice_servers}
+                ice_resp = await client.get(f"{base}/credentials", params={"apiKey": api_key_dyn})
+                ice_resp.raise_for_status()
+                metered_servers = ice_resp.json()
+            if isinstance(metered_servers, list) and metered_servers:
+                return {"iceServers": metered_servers}
+        except Exception as e:
+            print(f"TURN credentials error: {e}", flush=True)
+
+    print("ICE: faqat STUN (TURN yo'q) — mobil/hotspotda disconnected bo'lishi mumkin", flush=True)
+    return {"iceServers": ice_servers}
 
 
 @router.get("/turn-credentials")
@@ -379,6 +401,10 @@ async def test_match(x_telegram_init_data: str | None = Header(default=None)):
         "test_token": token,
         "test_peer_url": peer_url,
         "test_peer_path": peer_path,
+        "force_relay": bool(
+            (settings.turn_urls and settings.turn_username and settings.turn_password)
+            or (settings.metered_domain and (settings.metered_api_key or settings.metered_secret_key))
+        ),
     }
 
 

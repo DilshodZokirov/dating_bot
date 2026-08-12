@@ -29,10 +29,16 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **audio/vi
 ## Video qo'ng'iroq ishlashi uchun
 
 1. **WEBAPP_URL** — ochiq HTTPS (Telegram Mini App talabi).
-2. **TURN** (mobil tarmoqda shart):
-   - Metered: `METERED_DOMAIN` + `METERED_SECRET_KEY`
-   - Yoki static: `TURN_URLS` + `TURN_USERNAME` + `TURN_PASSWORD`
+2. **TURN** (hotspot/mobil tarmoqda **shart**):
+   - Bepul: [Open Relay](https://www.metered.ca/tools/openrelay/) → Sign up → API key
+     ```env
+     METERED_DOMAIN=openrelayproject.metered.ca
+     METERED_API_KEY=sizning_api_key
+     ```
+   - Eski `openrelayproject` / `openrelayproject` login-parol **endi ishlamaydi**.
 3. Ikkalasi ham Mini App ochiq bo'lsin, mikrofon/kamera ruxsati berilsin.
+
+**Eslatma:** telefon hotspotida `host` candidate ko‘pincha ishlamaydi — TURN (`relay`) bo‘lmasa `disconnected` chiqadi.
 
 ## Keyingi qadamlar
 

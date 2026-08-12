@@ -504,6 +504,9 @@ async function startTestMatch() {
   try {
     const result = await api("/api/test/match", { method: "POST" });
     lastTestPeerUrl = result.test_peer_url || (location.origin + result.test_peer_path);
+    if (result.force_relay && !lastTestPeerUrl.includes("relay=1")) {
+      lastTestPeerUrl += (lastTestPeerUrl.includes("?") ? "&" : "?") + "relay=1";
+    }
     hint.textContent = tr("test_link_hint");
     link.href = lastTestPeerUrl;
     link.textContent = lastTestPeerUrl;
@@ -516,7 +519,7 @@ async function startTestMatch() {
 
     try { await navigator.clipboard.writeText(lastTestPeerUrl); } catch (_) {}
 
-    enterCall(result.room_id, result.partner_id);
+    enterCall(result.room_id, result.partner_id, { forceRelay: !!result.force_relay });
   } catch (e) {
     showError(e.message);
   }
