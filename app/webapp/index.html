@@ -44,7 +44,8 @@
   .cancel-link { margin-top: 22px; color: var(--hint); font-size: 14px; text-decoration: underline; cursor: pointer; display: none; }
   .test-btn {
     margin-top: 18px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(232,130,60,0.55);
-    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; display: none;
+    background: transparent; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
+    display: inline-block;
   }
   .test-link-box {
     display: none; width: 100%; max-width: 320px; margin-top: 14px; padding: 12px; border-radius: 12px;
@@ -328,27 +329,31 @@ function tr(key, vars) {
 }
 
 function applyStaticTranslations() {
-  document.getElementById("cancelLink").textContent = tr("cancel_link");
-  document.getElementById("profileTitle").textContent = tr("profile_title");
-  document.getElementById("lblName").textContent = tr("lbl_name");
-  document.getElementById("lblBio").textContent = tr("lbl_bio");
-  document.getElementById("lblLocation").textContent = tr("lbl_location");
-  document.getElementById("lblLanguage").textContent = tr("lbl_language");
-  document.getElementById("lblCity").textContent = tr("lbl_city");
-  document.getElementById("lblScope").textContent = tr("lbl_scope");
-  document.getElementById("cityNoneOpt").textContent = tr("city_none");
-  document.getElementById("scopeCountryOpt").textContent = tr("scope_country");
-  document.getElementById("scopeCityOpt").textContent = tr("scope_city");
-  document.getElementById("saveProfileBtn").textContent = tr("save_btn");
-  document.getElementById("navSearchLabel").textContent = tr("nav_search");
-  document.getElementById("navProfileLabel").textContent = tr("nav_profile");
-  document.getElementById("testMatchBtn").textContent = tr("test_match");
-  document.getElementById("copyTestLinkBtn").textContent = tr("test_copy_btn");
-  document.getElementById("blockBtn").textContent = tr("block_btn");
-  document.getElementById("reportBtn").textContent = tr("report_btn");
-  document.getElementById("reportTitle").textContent = tr("report_title");
-  document.getElementById("reportHint").textContent = tr("report_hint");
-  document.getElementById("reportCancelBtn").textContent = tr("report_cancel");
+  const setText = (id, key) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tr(key);
+  };
+  setText("cancelLink", "cancel_link");
+  setText("profileTitle", "profile_title");
+  setText("lblName", "lbl_name");
+  setText("lblBio", "lbl_bio");
+  setText("lblLocation", "lbl_location");
+  setText("lblLanguage", "lbl_language");
+  setText("lblCity", "lbl_city");
+  setText("lblScope", "lbl_scope");
+  setText("cityNoneOpt", "city_none");
+  setText("scopeCountryOpt", "scope_country");
+  setText("scopeCityOpt", "scope_city");
+  setText("saveProfileBtn", "save_btn");
+  setText("navSearchLabel", "nav_search");
+  setText("navProfileLabel", "nav_profile");
+  setText("testMatchBtn", "test_match");
+  setText("copyTestLinkBtn", "test_copy_btn");
+  setText("blockBtn", "block_btn");
+  setText("reportBtn", "report_btn");
+  setText("reportTitle", "report_title");
+  setText("reportHint", "report_hint");
+  setText("reportCancelBtn", "report_cancel");
   if (!searching) {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
@@ -518,16 +523,21 @@ async function loadMe() {
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     currentLang = me.language || "uz";
+    // Test match tugmasi doim ko'rinadi (API DEV_TEST_MODE ni tekshiradi)
+    const testBtn = document.getElementById("testMatchBtn");
+    if (testBtn) testBtn.style.display = "inline-block";
     applyStaticTranslations();
     userLabel.textContent = me.name;
     stateLabel.textContent = me.test_mode ? "TEST" : "";
-    document.getElementById("testMatchBtn").style.display = me.test_mode ? "inline-block" : "none";
     document.getElementById("profileName").value = me.name || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";
     document.getElementById("profileLanguage").value = me.language || "uz";
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
+    if (!me.test_mode) {
+      console.warn("API: DEV_TEST_MODE=false — tugma bosilsa xato chiqadi. .env ni tekshiring.");
+    }
   } catch (e) { showError(e.message); }
 }
 
@@ -573,7 +583,12 @@ async function startTestMatch() {
       token: result.livekit_token,
     });
   } catch (e) {
-    showError(e.message);
+    const msg = e.message || String(e);
+    if (/test mode|o'chirilgan|404/i.test(msg)) {
+      showError("DEV_TEST_MODE o'chirilgan. .env ga DEV_TEST_MODE=true yozing, keyin: docker compose up -d --force-recreate");
+    } else {
+      showError(msg);
+    }
   }
 }
 
