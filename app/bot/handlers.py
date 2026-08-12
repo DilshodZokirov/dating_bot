@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     Message,
+    CallbackQuery,
     ReplyKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardRemove,
@@ -17,6 +18,7 @@ from app.database import async_session
 from app.i18n import t
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
+from app.matching.respond import respond_to_proposal
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
 from app import test_mode
@@ -27,7 +29,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=prefs1"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=tg1"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -113,6 +115,57 @@ async def cmd_app(message: Message, state: FSMContext):
     inline = _webapp_inline(lang)
     if inline:
         await message.answer("Yoki shu tugma:", reply_markup=inline)
+
+
+@router.callback_query(F.data.startswith("p:"))
+async def on_proposal_callback(callback: CallbackQuery):
+    """Telegram inline: p:a:{id} qabul, p:d:{id} rad."""
+    data = callback.data or ""
+    parts = data.split(":", 2)
+    if len(parts) != 3 or parts[0] != "p" or parts[1] not in ("a", "d"):
+        await callback.answer("Noto'g'ri tugma", show_alert=True)
+        return
+
+    decision = "accepted" if parts[1] == "a" else "declined"
+    proposal_id = parts[2]
+    user_id = callback.from_user.id
+
+    async with async_session() as session:
+        user = await session.get(User, user_id)
+    lang = user.language.value if user else "uz"
+
+    result = await respond_to_proposal(user_id, proposal_id, decision)
+    outcome = result.get("outcome")
+
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    if outcome == "invalid":
+        await callback.answer(t(lang, "proposal_invalid"), show_alert=True)
+        return
+
+    if outcome == "waiting_partner":
+        await callback.answer()
+        await callback.message.answer(t(lang, "accepted_waiting_partner"))
+        return
+
+    if outcome == "declined":
+        await callback.answer()
+        await callback.message.answer(t(lang, "declined_self"))
+        return
+
+    if outcome == "livekit_missing":
+        await callback.answer("LiveKit sozlanmagan", show_alert=True)
+        return
+
+    if outcome == "matched":
+        await callback.answer()
+        await callback.message.answer(t(lang, "search_check_app"))
+        return
+
+    await callback.answer()
 
 
 @router.message(Command("testmode"))

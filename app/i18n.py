@@ -37,9 +37,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "✅ You accepted!",
     },
     "match_started": {
-        "uz": "🎉 Suhbat boshlandi! Xona: {room_id}\nSuhbatni tugatish uchun /stop.",
-        "ru": "🎉 Разговор начался! Комната: {room_id}\nЧтобы завершить, отправьте /stop.",
-        "en": "🎉 The chat has started! Room: {room_id}\nSend /stop to end it.",
+        "uz": "🎉 Suhbat boshlandi!\nQo'ng'iroq uchun pastdagi tugmani bosing.",
+        "ru": "🎉 Разговор начался!\nНажмите кнопку ниже, чтобы открыть звонок.",
+        "en": "🎉 Chat started!\nTap the button below to open the call.",
     },
     "declined_self": {
         "uz": "❌ Siz rad etdingiz.",
