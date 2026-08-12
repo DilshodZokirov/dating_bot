@@ -17,11 +17,11 @@ from app.matching.queue import (
     join_queue,
     pop_result,
     requeue_user,
-    set_decision,
     set_result,
 )
-from app.livekit_tokens import livekit_configured, livekit_join_payload
+from app.matching.respond import respond_to_proposal
 from app.matching.age_brackets import age_range_options, clamp_prefer
+from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.models import (
     CallSession,
     Gender,
@@ -282,9 +282,11 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
 
     await notify_match_found(
         user.id, user.language.value, candidate_user.name, candidate_user.age, candidate_user.gender.value,
+        proposal_id,
     )
     await notify_match_found(
         candidate_user.id, candidate_user.language.value, user.name, user.age, user.gender.value,
+        proposal_id,
     )
 
     return {"status": "proposal_sent"}
@@ -332,61 +334,10 @@ async def proposal_respond(payload: ProposalResponse, x_telegram_init_data: str 
     if payload.decision not in ("accepted", "declined"):
         raise HTTPException(status_code=400, detail="decision noto'g'ri")
 
-    result = await set_decision(payload.proposal_id, tg_user["id"], payload.decision)
-
-    if result["status"] == "invalid":
-        return {"outcome": "invalid"}
-
-    if result["status"] == "waiting_partner":
-        return {"outcome": "waiting_partner"}
-
-    proposal = result["proposal"]
-    other = _other_side(proposal, tg_user["id"])
-
-    if result["status"] == "declined":
-        # boshqa tomonni avtomatik ravishda qayta qidiruvga qo'shamiz
-        await requeue_user(other)
-        await set_result(other["user_id"], "requeued")
-        return {"outcome": "declined"}
-
-    # status == "matched"
-    room_id = f"room_{uuid.uuid4().hex[:12]}"
-    async with async_session() as session:
-        call = CallSession(user1_id=proposal["requester_id"], user2_id=proposal["candidate_id"], room_id=room_id)
-        session.add(call)
-        me = await session.get(User, tg_user["id"])
-        other_user = await session.get(User, other["user_id"])
-        if me:
-            me.is_in_call = True
-        if other_user:
-            other_user.is_in_call = True
-        await session.commit()
-
-    if not livekit_configured():
+    result = await respond_to_proposal(int(tg_user["id"]), payload.proposal_id, payload.decision)
+    if result.get("outcome") == "livekit_missing":
         raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
-
-    me_join = livekit_join_payload(identity=str(tg_user["id"]), name=me.name if me else str(tg_user["id"]), room_id=room_id)
-    other_join = livekit_join_payload(
-        identity=str(other["user_id"]),
-        name=other_user.name if other_user else str(other["user_id"]),
-        room_id=room_id,
-    )
-
-    await set_result(
-        other["user_id"],
-        "matched",
-        room_id=room_id,
-        partner_id=tg_user["id"],
-        livekit_url=other_join["livekit_url"],
-        livekit_token=other_join["livekit_token"],
-    )
-    return {
-        "outcome": "matched",
-        "room_id": room_id,
-        "partner_id": other["user_id"],
-        "livekit_url": me_join["livekit_url"],
-        "livekit_token": me_join["livekit_token"],
-    }
+    return result
 
 
 class CallEndRequest(BaseModel):
@@ -787,7 +738,7 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         partner.id, "proposal", proposal_id=proposal_id,
         other_name=me.name, other_age=me.age, other_gender=me.gender.value,
     )
-    await notify_saved_invite(partner.id, partner.language.value, me.name, me.age)
-    await notify_match_found(me.id, me.language.value, partner.name, partner.age, partner.gender.value)
+    await notify_saved_invite(partner.id, partner.language.value, me.name, me.age, proposal_id)
+    await notify_match_found(me.id, me.language.value, partner.name, partner.age, partner.gender.value, proposal_id)
 
     return {"status": "invited", "proposal_id": proposal_id, "partner_id": partner.id}
