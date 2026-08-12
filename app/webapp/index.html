@@ -690,6 +690,7 @@ async function enterCall(roomId, partnerId) {
     if (turnData.iceServers?.length) {
       iceServers = turnData.iceServers;
       dlog(`ICE servers: ${iceServers.length}`);
+      dlog("ICE urls: " + iceServers.map((s) => (Array.isArray(s.urls) ? s.urls.join(",") : s.urls)).join(" | "));
     }
   } catch (e) {
     dlog("TURN olishda xato, STUN only: " + e.message);
@@ -703,6 +704,8 @@ async function enterCall(roomId, partnerId) {
       dlog("ICE gathering done.");
       return;
     }
+    const typ = event.candidate.type || (String(event.candidate.candidate).includes("relay") ? "relay" : "?");
+    dlog("local ICE cand: " + typ);
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
     } else {
@@ -761,6 +764,21 @@ async function enterCall(roomId, partnerId) {
       statusEl.textContent = "ICE failed — bir Wi-Fi yoki TURN kerak";
     } else if (pc.iceConnectionState === "disconnected") {
       statusEl.textContent = "Uzildi — TURN / bir xil Wi-Fi sinab ko'ring";
+      // Qisqa uzilishdan keyin qayta urinish
+      setTimeout(async () => {
+        if (pc && pc.iceConnectionState === "disconnected") {
+          try {
+            dlog("ICE restart...");
+            await pc.restartIce();
+            if (!polite) {
+              await pc.setLocalDescription();
+              ws?.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
+            }
+          } catch (e) {
+            dlog("ICE restart xato: " + e.message);
+          }
+        }
+      }, 1500);
     } else if (pc.iceConnectionState === "checking") {
       statusEl.textContent = tr("connecting");
     }
@@ -788,18 +806,20 @@ async function enterCall(roomId, partnerId) {
     if (msg.type === "peer-joined") {
       dlog("Peer qo'shildi, peers=" + msg.peers);
       document.getElementById("callStatus").textContent = tr("connecting");
-      // Ikkinchi tomon kelganda offer qayta yuborish (birinchi offer yo'qolgan bo'lishi mumkin)
-      if (pc && !pc.remoteDescription && !makingOffer) {
+      // Perfect negotiation: faqat impolite tomon offer bersin (glare kamayadi)
+      if (pc && !polite && !pc.remoteDescription && !makingOffer) {
         try {
           makingOffer = true;
           await pc.setLocalDescription();
           ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
-          dlog("peer-joined: yangi offer yuborildi");
+          dlog("peer-joined: impolite offer yuborildi");
         } catch (e) {
           dlog("peer-joined offer xato: " + e.message);
         } finally {
           makingOffer = false;
         }
+      } else {
+        dlog("peer-joined: kutamiz (polite=" + polite + ")");
       }
       return;
     }

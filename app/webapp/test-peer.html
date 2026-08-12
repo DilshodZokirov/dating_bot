@@ -168,7 +168,10 @@ async function startCall() {
   let iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
   try {
     const turnData = await api(`/api/test/turn-credentials?token=${encodeURIComponent(token)}`);
-    if (turnData.iceServers?.length) iceServers = turnData.iceServers;
+    if (turnData.iceServers?.length) {
+      iceServers = turnData.iceServers;
+      dlog("ICE urls: " + iceServers.map((s) => (Array.isArray(s.urls) ? s.urls.join(",") : s.urls)).join(" | "));
+    }
   } catch (e) {
     dlog("TURN: " + e.message);
   }
@@ -178,6 +181,8 @@ async function startCall() {
 
   pc.onicecandidate = (event) => {
     if (event.candidate && ws?.readyState === WebSocket.OPEN) {
+      const typ = event.candidate.type || (String(event.candidate.candidate).includes("relay") ? "relay" : "?");
+      dlog("local ICE cand: " + typ);
       ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
     }
   };
@@ -238,17 +243,20 @@ async function startCall() {
     if (msg.type === "peer-joined") {
       dlog("Peer qo'shildi peers=" + msg.peers);
       document.getElementById("status").textContent = "Peer bor — ulanmoqda...";
-      if (pc && !pc.remoteDescription && !makingOffer) {
+      // Faqat impolite offer bersin
+      if (pc && !polite && !pc.remoteDescription && !makingOffer) {
         try {
           makingOffer = true;
           await pc.setLocalDescription();
           ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
-          dlog("peer-joined: offer yuborildi");
+          dlog("peer-joined: impolite offer yuborildi");
         } catch (e) {
           dlog("offer xato: " + e.message);
         } finally {
           makingOffer = false;
         }
+      } else {
+        dlog("peer-joined: kutamiz polite=" + polite);
       }
       return;
     }
