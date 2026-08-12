@@ -60,6 +60,16 @@ services:
       redis:
         condition: service_healthy
 
+  # Tekin HTTPS (Cloudflare Named Tunnel). Token: .env → CLOUDFLARE_TUNNEL_TOKEN
+  # Ishga: docker compose --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - api
+
   coturn:
     image: coturn/coturn:latest
     restart: unless-stopped

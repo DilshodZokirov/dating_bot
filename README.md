@@ -31,12 +31,14 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
    ```
    (To'liq `--build` ba'zan PyPI tarmoq xatosi beradi — kod volume orqali yangilanadi.)
 
-3. ngrok (URL o'zgarsa `.env` + BotFather Menu URL ni yangilang):
-   ```powershell
-   ngrok http 8000
-   ```
-   `WEBAPP_URL=https://xxxx.ngrok-free.app`  
-   BotFather Menu: `https://xxxx.ngrok-free.app/webapp/`
+3. Tashqi HTTPS (birini tanlang):
+   - **ngrok:** `ngrok http 8000`
+   - **Cloudflare Quick Tunnel (tekin):** batafsil → [deploy/TUNNEL.md](deploy/TUNNEL.md)
+     ```powershell
+     cloudflared tunnel --url http://localhost:8000
+     ```
+   `WEBAPP_URL=https://...` (oxirida `/webapp/` yo‘q)  
+   BotFather Menu: `https://.../webapp/`
 
 4. Tekshiruv:
    ```powershell
