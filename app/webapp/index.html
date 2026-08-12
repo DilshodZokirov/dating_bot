@@ -218,6 +218,11 @@ const TRANSLATIONS = {
   requeued_hint: { uz: "Hamsuhbatingiz rad etdi, sizni qayta qidiruvga qo'shdik...", ru: "Собеседник отказался, вы снова добавлены в поиск...", en: "The other person declined, you've been added back to the search..." },
   cancel_link: { uz: "Bekor qilish", ru: "Отменить", en: "Cancel" },
   not_registered: { uz: "Avval botda /start buyrug'i orqali ro'yxatdan o'ting.", ru: "Сначала зарегистрируйтесь в боте через /start.", en: "Please register first in the bot via /start." },
+  no_init_data: {
+    uz: "Telegram Mini App ichidan ochilmagan. Botga /start yuboring va «Qidirish / Qo'ng'iroq» tugmasini bosing (Chrome'da ishlamaydi).",
+    ru: "Откройте Mini App из бота: /start → кнопка «Поиск / Звонок» (в Chrome не работает).",
+    en: "Open the Mini App from the bot: /start → «Search / Call» (won't work in Chrome).",
+  },
   profile_title: { uz: "Profil", ru: "Профиль", en: "Profile" },
   lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
   lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
@@ -289,8 +294,42 @@ const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
 
-const initData = tg?.initData || "";
-const myId = tg?.initDataUnsafe?.user?.id || 0;
+function readInitDataFromHash() {
+  const hash = (location.hash || "").replace(/^#/, "");
+  if (!hash) return "";
+  const params = new URLSearchParams(hash);
+  // Telegram: tgWebAppData=... yoki to'g'ridan-to'g'ri query-string
+  const raw = params.get("tgWebAppData");
+  if (raw) {
+    try { return decodeURIComponent(raw); } catch (_) { return raw; }
+  }
+  // ba'zi clientlar hashni to'g'ridan-to'g'ri user=...&hash=... qilib beradi
+  if (params.get("hash") && params.get("user")) {
+    return hash;
+  }
+  return "";
+}
+
+function getInitData() {
+  const fromTg = window.Telegram?.WebApp?.initData || "";
+  if (fromTg) return fromTg;
+  return readInitDataFromHash();
+}
+
+let initData = getInitData();
+let myId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0;
+
+function refreshTelegramContext() {
+  initData = getInitData();
+  myId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0;
+  if (!myId && initData.includes("user=")) {
+    try {
+      const p = new URLSearchParams(initData);
+      const user = JSON.parse(p.get("user") || "{}");
+      myId = user.id || 0;
+    } catch (_) {}
+  }
+}
 
 const mainBtn = document.getElementById("mainBtn");
 const titleText = document.getElementById("titleText");
@@ -309,6 +348,7 @@ let searching = false;
 let currentProposalId = null;
 
 async function api(path, options = {}) {
+  refreshTelegramContext();
   const res = await fetch(path, {
     ...options,
     headers: {
@@ -402,6 +442,11 @@ async function loadCities() {
 
 async function loadMe() {
   try {
+    refreshTelegramContext();
+    if (!initData) {
+      showError(tr("no_init_data"));
+      return;
+    }
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     currentLang = me.language || "uz";
@@ -417,6 +462,21 @@ async function loadMe() {
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
   } catch (e) { showError(e.message); }
 }
+
+async function bootApp() {
+  // Telegram WebApp ba'zan biroz kechikishi mumkin
+  for (let i = 0; i < 10; i++) {
+    refreshTelegramContext();
+    if (initData) break;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  window.Telegram?.WebApp?.ready?.();
+  window.Telegram?.WebApp?.expand?.();
+  await loadCities();
+  await loadMe();
+}
+
+bootApp();
 
 let lastTestPeerUrl = "";
 
@@ -840,8 +900,7 @@ document.getElementById("videoBtn").addEventListener("click", async () => {
   }
 });
 
-loadCities();
-loadMe();
+bootApp();
 </script>
 </body>
 </html>
