@@ -3,7 +3,7 @@ import uuid
 import httpx
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from app import test_mode
 from app.cities import UZBEKISTAN_CITIES
@@ -20,6 +20,7 @@ from app.matching.queue import (
     set_decision,
     set_result,
 )
+from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.matching.age_brackets import age_range_options, clamp_prefer
 from app.models import (
     CallSession,
@@ -27,13 +28,15 @@ from app.models import (
     Language,
     LookingFor,
     ReportReason,
+    SavedPartner,
     SearchScope,
     SessionStatus,
     User,
 )
-from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids
+from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids, is_blocked_pair
+from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
-from app.telegram_client import notify_admins
+from app.telegram_client import notify_admins, notify_match_found, notify_saved_invite
 
 router = APIRouter(prefix="/api")
 
@@ -267,8 +270,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
 
     proposal_id = await create_mutual_proposal(requester=_queue_payload(user), candidate=candidate)
 
-    # Ikkalasiga ham — so'rovchiga HAM, kandidatga HAM — Mini App ichida ko'rsatiladigan
-    # taklif natijasini yozamiz (Telegram chatiga xabar YUBORILMAYDI).
+    # Mini App polling + Telegram inline xabar (ikkala tomonga)
     await set_result(
         user.id, "proposal", proposal_id=proposal_id,
         other_name=candidate_user.name, other_age=candidate_user.age, other_gender=candidate_user.gender.value,
@@ -278,12 +280,20 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         other_name=user.name, other_age=user.age, other_gender=user.gender.value,
     )
 
+    await notify_match_found(
+        user.id, user.language.value, candidate_user.name, candidate_user.age, candidate_user.gender.value,
+    )
+    await notify_match_found(
+        candidate_user.id, candidate_user.language.value, user.name, user.age, user.gender.value,
+    )
+
     return {"status": "proposal_sent"}
 
 
 @router.get("/search/status")
 async def search_status(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
+    await touch_presence(int(tg_user["id"]))
     result = await pop_result(tg_user["id"])
     if result:
         return result
@@ -344,10 +354,13 @@ async def proposal_respond(payload: ProposalResponse, x_telegram_init_data: str 
     async with async_session() as session:
         call = CallSession(user1_id=proposal["requester_id"], user2_id=proposal["candidate_id"], room_id=room_id)
         session.add(call)
-        await session.commit()
-
         me = await session.get(User, tg_user["id"])
         other_user = await session.get(User, other["user_id"])
+        if me:
+            me.is_in_call = True
+        if other_user:
+            other_user.is_in_call = True
+        await session.commit()
 
     if not livekit_configured():
         raise HTTPException(status_code=503, detail="LiveKit sozlanmagan")
@@ -383,16 +396,16 @@ class CallEndRequest(BaseModel):
 
 async def _end_call_session(room_id: str, notify_partner_id: int) -> None:
     async with async_session() as session:
-        result = await session.execute(
-            CallSession.__table__.select().where(CallSession.room_id == room_id)
-        )
-        row = result.first()
-        if row:
-            await session.execute(
-                CallSession.__table__.update()
-                .where(CallSession.room_id == room_id)
-                .values(status=SessionStatus.ended, ended_at=func.now())
-            )
+        call = (
+            await session.execute(select(CallSession).where(CallSession.room_id == room_id))
+        ).scalar_one_or_none()
+        if call:
+            call.status = SessionStatus.ended
+            call.ended_at = func.now()
+            for uid in (call.user1_id, call.user2_id):
+                user = await session.get(User, uid)
+                if user:
+                    user.is_in_call = False
             await session.commit()
 
     await set_result(notify_partner_id, "call_ended")
@@ -618,3 +631,163 @@ async def report_user(payload: ReportRequest, x_telegram_init_data: str | None =
         "blocked": payload.also_block,
         "partner_id": payload.partner_id,
     }
+
+
+# ---------------------------------------------------------------------------
+# Presence + Saqlanganlar
+# ---------------------------------------------------------------------------
+
+@router.post("/presence/ping")
+async def presence_ping(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    await touch_presence(int(tg_user["id"]))
+    return {"status": "ok", "online": True}
+
+
+class SavedRequest(BaseModel):
+    partner_id: int
+
+
+@router.get("/saved")
+async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    await touch_presence(me_id)
+
+    async with async_session() as session:
+        rows = (
+            await session.execute(
+                select(SavedPartner, User)
+                .join(User, User.id == SavedPartner.partner_id)
+                .where(SavedPartner.user_id == me_id)
+                .order_by(SavedPartner.id.desc())
+            )
+        ).all()
+
+    partner_ids = [int(u.id) for _, u in rows]
+    online = await online_map(partner_ids)
+
+    items = []
+    for saved, partner in rows:
+        items.append({
+            "partner_id": partner.id,
+            "name": partner.name,
+            "age": partner.age,
+            "gender": partner.gender.value,
+            "city": partner.city,
+            "language": partner.language.value,
+            "online": online.get(partner.id, False),
+            "busy": bool(partner.is_in_call),
+            "saved_at": saved.created_at.isoformat() if saved.created_at else None,
+        })
+    return {"items": items}
+
+
+@router.post("/saved")
+async def save_partner(payload: SavedRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizni saqlab bo'lmaydi")
+    if await is_blocked_pair(me_id, payload.partner_id):
+        raise HTTPException(status_code=403, detail="Bloklangan juftlik")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, payload.partner_id)
+        if not me or not partner:
+            raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        existing = (
+            await session.execute(
+                select(SavedPartner).where(
+                    SavedPartner.user_id == me_id, SavedPartner.partner_id == payload.partner_id
+                )
+            )
+        ).scalar_one_or_none()
+        if not existing:
+            session.add(SavedPartner(user_id=me_id, partner_id=payload.partner_id))
+            await session.commit()
+
+    return {"status": "saved", "partner_id": payload.partner_id}
+
+
+@router.delete("/saved/{partner_id}")
+async def unsave_partner(partner_id: int, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    async with async_session() as session:
+        row = (
+            await session.execute(
+                select(SavedPartner).where(
+                    SavedPartner.user_id == me_id, SavedPartner.partner_id == partner_id
+                )
+            )
+        ).scalar_one_or_none()
+        if row:
+            await session.delete(row)
+            await session.commit()
+    return {"status": "removed", "partner_id": partner_id}
+
+
+class InviteRequest(BaseModel):
+    partner_id: int
+
+
+@router.post("/saved/invite")
+async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None = Header(default=None)):
+    """
+    Saqlangan online suhbatdoshni suhbatga chaqirish.
+    Taklif yaratiladi + Telegram xabar; ikkala tomon Mini Appda qabul qiladi.
+    """
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    await touch_presence(me_id)
+
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizni chaqirib bo'lmaydi")
+    if await is_blocked_pair(me_id, payload.partner_id):
+        raise HTTPException(status_code=403, detail="Bloklangan juftlik")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, payload.partner_id)
+        saved = (
+            await session.execute(
+                select(SavedPartner).where(
+                    SavedPartner.user_id == me_id, SavedPartner.partner_id == payload.partner_id
+                )
+            )
+        ).scalar_one_or_none()
+
+    if not me or not partner:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+    if not saved:
+        raise HTTPException(status_code=400, detail="Avval suhbatdoshni saqlang")
+    if me.is_banned or partner.is_banned:
+        raise HTTPException(status_code=403, detail="Hisob cheklangan")
+    if partner.is_in_call:
+        raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
+    if not await is_online(payload.partner_id):
+        raise HTTPException(status_code=409, detail="Suhbatdosh hozir online emas")
+
+    # Navbatdan chiqarib, to'g'ridan-to'g'ri taklif
+    for lf in ("male", "female", "any"):
+        await cancel_wait(me.id, lf)
+        await cancel_wait(partner.id, lf)
+
+    proposal_id = await create_mutual_proposal(
+        requester=_queue_payload(me),
+        candidate=_queue_payload(partner),
+    )
+    await set_result(
+        me.id, "proposal", proposal_id=proposal_id,
+        other_name=partner.name, other_age=partner.age, other_gender=partner.gender.value,
+    )
+    await set_result(
+        partner.id, "proposal", proposal_id=proposal_id,
+        other_name=me.name, other_age=me.age, other_gender=me.gender.value,
+    )
+    await notify_saved_invite(partner.id, partner.language.value, me.name, me.age)
+    await notify_match_found(me.id, me.language.value, partner.name, partner.age, partner.gender.value)
+
+    return {"status": "invited", "proposal_id": proposal_id, "partner_id": partner.id}

@@ -127,11 +127,30 @@
   .save-btn { margin-top: 4px; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-size: 15px; font-weight: 600; cursor: pointer; }
   .save-status { text-align: center; font-size: 13px; color: var(--hint); min-height: 18px; }
 
+  .saved-list { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; }
+  .saved-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px; border-radius: 12px; background: var(--card);
+  }
+  .saved-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .saved-meta .name { font-weight: 600; font-size: 15px; }
+  .saved-meta .sub { color: var(--hint); font-size: 12px; }
+  .saved-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .saved-actions button {
+    padding: 8px 10px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: rgba(255,255,255,0.08); color: var(--text);
+  }
+  .saved-actions button.invite { background: var(--accent); color: var(--accent-text); }
+  .saved-actions button:disabled { opacity: 0.45; cursor: default; }
+  .online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3ba55c; margin-right: 6px; }
+  .online-dot.off { background: #7d8b99; }
+  .empty-saved { color: var(--hint); text-align: center; font-size: 14px; margin-top: 40px; }
+
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--bg);
     border-top: 1px solid rgba(255,255,255,0.08); padding: 8px 0 max(8px, env(safe-area-inset-bottom));
   }
-  .nav-btn { flex: 1; background: none; border: none; color: var(--hint); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
+  .nav-btn { flex: 1; background: none; border: none; color: var(--hint); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
   .nav-btn.active { color: var(--accent); }
   .nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
 </style>
@@ -198,6 +217,7 @@
       </button>
     </div>
     <div class="safety-row">
+      <button type="button" class="safety-btn" id="savePartnerBtn">Saqlash</button>
       <button type="button" class="safety-btn" id="blockBtn">Bloklash</button>
       <button type="button" class="safety-btn danger" id="reportBtn">Shikoyat</button>
     </div>
@@ -264,10 +284,22 @@
     </div>
   </div>
 
+  <!-- SAQLANGANLAR -->
+  <div class="view" id="savedView">
+    <h1 id="savedTitle">Saqlanganlar</h1>
+    <p class="hint" id="savedHint" style="margin-bottom:18px;">Online bo'lsa suhbatga chaqirishingiz mumkin.</p>
+    <div class="saved-list" id="savedList"></div>
+    <div class="empty-saved" id="savedEmpty" style="display:none;">Hali saqlangan suhbatdosh yo'q.</div>
+  </div>
+
   <div class="bottom-nav" id="bottomNav">
     <button class="nav-btn active" data-view="searchView">
       <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
       <span id="navSearchLabel">Qidirish</span>
+    </button>
+    <button class="nav-btn" data-view="savedView">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <span id="navSavedLabel">Saqlangan</span>
     </button>
     <button class="nav-btn" data-view="profileView">
       <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
@@ -345,6 +377,19 @@ const TRANSLATIONS = {
   block_ok: { uz: "Bloklandi. Boshqa uchrashmaysiz.", ru: "Заблокирован.", en: "Blocked." },
   report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent. Thank you." },
   safety_need_partner: { uz: "Hamroh yo'q.", ru: "Нет собеседника.", en: "No partner." },
+  save_partner_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
+  save_partner_ok: { uz: "Saqlanganlarga qo'shildi", ru: "Добавлено в сохранённые", en: "Saved" },
+  saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved" },
+  saved_hint: { uz: "Online bo'lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "If online, you can invite them." },
+  saved_empty: { uz: "Hali saqlangan suhbatdosh yo'q.", ru: "Пока нет сохранённых.", en: "No saved partners yet." },
+  nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved" },
+  invite_btn: { uz: "Chaqirish", ru: "Пригласить", en: "Invite" },
+  remove_btn: { uz: "O'chirish", ru: "Удалить", en: "Remove" },
+  invite_ok: { uz: "Taklif yuborildi — Mini Appda javob bering.", ru: "Приглашение отправлено.", en: "Invite sent — respond in Mini App." },
+  offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник сейчас не в сети.", en: "Partner is offline." },
+  busy_err: { uz: "Suhbatdosh band.", ru: "Собеседник занят.", en: "Partner is busy." },
+  online_label: { uz: "online", ru: "онлайн", en: "online" },
+  offline_label: { uz: "offline", ru: "офлайн", en: "offline" },
 };
 
 let currentLang = "uz";
@@ -382,6 +427,11 @@ function applyStaticTranslations() {
   setText("saveProfileBtn", "save_btn");
   setText("navSearchLabel", "nav_search");
   setText("navProfileLabel", "nav_profile");
+  setText("navSavedLabel", "nav_saved");
+  setText("savedTitle", "saved_title");
+  setText("savedHint", "saved_hint");
+  setText("savedEmpty", "saved_empty");
+  setText("savePartnerBtn", "save_partner_btn");
   setText("testMatchBtn", "test_match");
   setText("copyTestLinkBtn", "test_copy_btn");
   setText("blockBtn", "block_btn");
@@ -643,6 +693,7 @@ async function bootApp() {
   await loadCities();
   await loadAgeRanges();
   await loadMe();
+  startPresencePing();
 }
 
 let lastTestPeerUrl = "";
@@ -805,7 +856,92 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(btn.dataset.view).classList.add("active");
+    if (btn.dataset.view === "savedView") loadSavedList();
   });
+});
+
+let presenceTimer = null;
+function startPresencePing() {
+  clearInterval(presenceTimer);
+  const ping = () => { api("/api/presence/ping", { method: "POST" }).catch(() => {}); };
+  ping();
+  presenceTimer = setInterval(ping, 20000);
+}
+
+async function loadSavedList() {
+  const list = document.getElementById("savedList");
+  const empty = document.getElementById("savedEmpty");
+  if (!list) return;
+  list.innerHTML = "";
+  try {
+    const data = await api("/api/saved");
+    const items = data.items || [];
+    if (!items.length) {
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    for (const it of items) {
+      const row = document.createElement("div");
+      row.className = "saved-item";
+      const status = it.online
+        ? `<span class="online-dot"></span>${tr("online_label")}`
+        : `<span class="online-dot off"></span>${tr("offline_label")}`;
+      const city = it.city ? ` · ${it.city}` : "";
+      row.innerHTML = `
+        <div class="saved-meta">
+          <div class="name">${it.name}</div>
+          <div class="sub">${it.age} · ${tr(it.gender === "male" ? "gender_male" : "gender_female")}${city}</div>
+          <div class="sub">${status}${it.busy ? " · busy" : ""}</div>
+        </div>
+        <div class="saved-actions">
+          <button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>
+          <button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>
+        </div>`;
+      list.appendChild(row);
+    }
+  } catch (e) {
+    empty.style.display = "block";
+    empty.textContent = e.message;
+  }
+}
+
+document.getElementById("savedList")?.addEventListener("click", async (e) => {
+  const inviteBtn = e.target.closest("[data-invite]");
+  const unsaveBtn = e.target.closest("[data-unsave]");
+  if (inviteBtn) {
+    const pid = parseInt(inviteBtn.dataset.invite, 10);
+    try {
+      await api("/api/saved/invite", {
+        method: "POST",
+        body: JSON.stringify({ partner_id: pid }),
+      });
+      tg?.showAlert?.(tr("invite_ok"));
+      // Qidiruv ekraniga o'tib polling
+      document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+      document.querySelector('.nav-btn[data-view="searchView"]')?.classList.add("active");
+      searchView.classList.add("active");
+      setSearchingUI(true);
+      clearInterval(pollTimer);
+      pollTimer = setInterval(pollStatus, 2000);
+    } catch (err) {
+      const msg = err.message || String(err);
+      if (/online emas|offline/i.test(msg)) tg?.showAlert?.(tr("offline_err"));
+      else if (/band|busy/i.test(msg)) tg?.showAlert?.(tr("busy_err"));
+      else tg?.showAlert?.(msg);
+      loadSavedList();
+    }
+  }
+  if (unsaveBtn) {
+    const pid = parseInt(unsaveBtn.dataset.unsave, 10);
+    try {
+      await api(`/api/saved/${pid}`, { method: "DELETE" });
+      loadSavedList();
+    } catch (err) {
+      tg?.showAlert?.(err.message || String(err));
+    }
+  }
 });
 
 // ============================================================
@@ -965,6 +1101,22 @@ function cleanupCall(notifyServer) {
 }
 
 document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
+
+document.getElementById("savePartnerBtn")?.addEventListener("click", async () => {
+  if (!callPartnerId) {
+    tg?.showAlert(tr("safety_need_partner"));
+    return;
+  }
+  try {
+    await api("/api/saved", {
+      method: "POST",
+      body: JSON.stringify({ partner_id: callPartnerId }),
+    });
+    tg?.showAlert(tr("save_partner_ok"));
+  } catch (e) {
+    tg?.showAlert(e.message || String(e));
+  }
+});
 
 function openReportSheet() {
   document.getElementById("reportSheet").classList.add("open");

@@ -115,3 +115,15 @@ class Report(Base):
     status: Mapped[ReportStatus] = mapped_column(Enum(ReportStatus), default=ReportStatus.open)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+
+class SavedPartner(Base):
+    """Foydalanuvchi saqlagan suhbatdosh."""
+
+    __tablename__ = "saved_partners"
+    __table_args__ = (UniqueConstraint("user_id", "partner_id", name="uq_saved_pair"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    partner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+

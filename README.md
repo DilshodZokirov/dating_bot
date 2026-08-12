@@ -66,6 +66,12 @@ LIVEKIT_API_SECRET=...
 - Yosh tasdiqlash
 - Admin web panel
 
+## Saqlanganlar va xabarlar
+
+- Qo'ng'iroqda **Saqlash** → Mini App **Saqlangan** bo'limi
+- Mos suhbatdosh topilganda Telegramda **inline** xabar + Mini App tugmasi
+- Saqlangan online suhbatdoshni **Chaqirish** → taklif + xabar (ikkala tomon qabul qiladi)
+
 ## Matching qoidalari
 
 - Jins: sozlamalardagi **Suhbatdosh** (erkak / ayol / farqi yo'q)
