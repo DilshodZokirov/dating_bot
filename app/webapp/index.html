@@ -444,7 +444,14 @@ async function loadMe() {
   try {
     refreshTelegramContext();
     if (!initData) {
-      showError(tr("no_init_data"));
+      const platform = window.Telegram?.WebApp?.platform || "yo'q";
+      const ver = window.Telegram?.WebApp?.version || "?";
+      const hasTg = !!window.Telegram?.WebApp;
+      const hashLen = (location.hash || "").length;
+      showError(
+        tr("no_init_data") +
+          `\n\n[debug] WebApp=${hasTg} platform=${platform} v=${ver} hashLen=${hashLen}`
+      );
       return;
     }
     const me = await api("/api/me");
