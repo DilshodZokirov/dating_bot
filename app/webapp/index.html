@@ -521,6 +521,99 @@
   }
   .nav-btn.active { color: var(--accent-2); }
   .nav-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+  /* Profil / avatar */
+  .profile-hero {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 18px;
+    text-align: center;
+  }
+  .avatar-wrap {
+    position: relative;
+    width: 112px;
+    height: 112px;
+    margin: 0 auto 12px;
+  }
+  .avatar-img, .avatar-fallback {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ff9a74, var(--accent));
+    border: 3px solid rgba(255,255,255,0.15);
+  }
+  .avatar-fallback { color: #fff; font-family: "Syne", sans-serif; font-size: 2.2rem; font-weight: 800; }
+  .avatar-img { display: none; }
+  .avatar-img.show { display: block; }
+  .avatar-fallback.hide { display: none; }
+  .avatar-edit {
+    position: absolute;
+    right: 0; bottom: 0;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  }
+  .avatar-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .avatar-actions button {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .profile-preview-name {
+    margin: 0;
+    font-family: "Syne", sans-serif;
+    font-size: 1.35rem;
+    font-weight: 750;
+  }
+  .profile-preview-meta {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .proposal-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 12px;
+    display: none;
+    background: rgba(255,255,255,0.08);
+  }
+  .proposal-avatar.show { display: block; }
+  .saved-item .thumb {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.08);
+  }
+  .saved-item .thumb.letter {
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: #fff;
+    background: radial-gradient(circle at 35% 30%, #ff9a74, var(--accent));
+  }
 </style>
 </head>
 <body>
@@ -545,6 +638,7 @@
       <div class="error-panel" id="errorBox"></div>
 
       <div class="proposal" id="proposalCard">
+        <img class="proposal-avatar" id="pAvatar" alt="">
         <p class="who" id="pName"></p>
         <p class="meta" id="pMeta"></p>
         <div class="proposal-actions">
@@ -599,11 +693,25 @@
     </div>
   </div>
 
-  <!-- SOZLAMALAR -->
+  <!-- PROFIL -->
   <div class="view" id="profileView">
     <div class="page-head">
-      <h1 id="profileTitle">Sozlamalar</h1>
-      <p id="profileLead">Profilingiz va qidiruv afzalliklari</p>
+      <h1 id="profileTitle">Profil</h1>
+      <p id="profileLead">Rasm, ism va qidiruv sozlamalari</p>
+    </div>
+    <div class="profile-hero">
+      <div class="avatar-wrap">
+        <div class="avatar-fallback" id="avatarFallback">?</div>
+        <img class="avatar-img" id="avatarImg" alt="">
+        <button type="button" class="avatar-edit" id="avatarPickBtn" title="Rasm">📷</button>
+      </div>
+      <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/webp" hidden>
+      <div class="avatar-actions">
+        <button type="button" id="avatarChangeBtn">Rasm yuklash</button>
+        <button type="button" id="avatarRemoveBtn">O‘chirish</button>
+      </div>
+      <p class="profile-preview-name" id="profilePreviewName">—</p>
+      <p class="profile-preview-meta" id="profilePreviewMeta"></p>
     </div>
     <div class="form">
       <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
@@ -671,7 +779,7 @@
     </button>
     <button type="button" class="nav-btn" data-view="profileView">
       <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
-      <span id="navProfileLabel">Sozlamalar</span>
+      <span id="navProfileLabel">Profil</span>
     </button>
   </nav>
 </div>
@@ -700,8 +808,8 @@ const TRANSLATIONS = {
     ru: "Откройте Mini App из бота → Menu.",
     en: "Open the Mini App from the bot menu.",
   },
-  profile_title: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
-  profile_lead: { uz: "Profilingiz va qidiruv afzalliklari", ru: "Профиль и параметры поиска", en: "Your profile and search preferences" },
+  profile_title: { uz: "Profil", ru: "Профиль", en: "Profile" },
+  profile_lead: { uz: "Rasm, ism va qidiruv sozlamalari", ru: "Фото, имя и параметры поиска", en: "Photo, name and search settings" },
   lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
   lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age" },
   lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
@@ -723,8 +831,13 @@ const TRANSLATIONS = {
   saved_ok: { uz: "Saqlandi", ru: "Сохранено", en: "Saved" },
   save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: " },
   nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search" },
-  nav_profile: { uz: "Sozlamalar", ru: "Настройки", en: "Settings" },
+  nav_profile: { uz: "Profil", ru: "Профиль", en: "Profile" },
   nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved" },
+  avatar_upload: { uz: "Rasm yuklash", ru: "Загрузить фото", en: "Upload photo" },
+  avatar_remove: { uz: "O‘chirish", ru: "Удалить", en: "Remove" },
+  avatar_ok: { uz: "Rasm saqlandi", ru: "Фото сохранено", en: "Photo saved" },
+  avatar_removed: { uz: "Rasm o‘chirildi", ru: "Фото удалено", en: "Photo removed" },
+  avatar_err: { uz: "Rasm yuklanmadi", ru: "Не удалось загрузить", en: "Upload failed" },
   gender_male: { uz: "Erkak", ru: "Мужской", en: "Male" },
   gender_female: { uz: "Ayol", ru: "Женский", en: "Female" },
   p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} · {gender}" },
@@ -805,6 +918,8 @@ function applyStaticTranslations() {
   setText("savedHint", "saved_hint");
   setText("savedEmpty", "saved_empty");
   setText("savePartnerBtn", "save_partner_btn");
+  setText("avatarChangeBtn", "avatar_upload");
+  setText("avatarRemoveBtn", "avatar_remove");
   setText("blockBtn", "block_btn");
   setText("reportBtn", "report_btn");
   setText("reportTitle", "report_title");
@@ -917,7 +1032,7 @@ function setSearchingUI(isSearching) {
   resetSearchUIElements();
 }
 
-function showProposal(proposalId, name, age, gender) {
+function showProposal(proposalId, name, age, gender, avatarUrl) {
   clearInterval(pollTimer);
   currentProposalId = proposalId;
   searching = true;
@@ -931,7 +1046,77 @@ function showProposal(proposalId, name, age, gender) {
     age,
     gender: tr(gender === "male" ? "gender_male" : "gender_female"),
   });
+  const pav = document.getElementById("pAvatar");
+  if (pav) {
+    if (avatarUrl) {
+      pav.src = avatarUrl;
+      pav.classList.add("show");
+    } else {
+      pav.removeAttribute("src");
+      pav.classList.remove("show");
+    }
+  }
   proposalCard.style.display = "block";
+}
+
+function setAvatarUI(url, name) {
+  const img = document.getElementById("avatarImg");
+  const fb = document.getElementById("avatarFallback");
+  const letter = (name || "?").trim().charAt(0).toUpperCase() || "?";
+  if (fb) {
+    fb.textContent = letter;
+    fb.classList.toggle("hide", !!url);
+  }
+  if (img) {
+    if (url) {
+      img.src = url;
+      img.classList.add("show");
+    } else {
+      img.removeAttribute("src");
+      img.classList.remove("show");
+    }
+  }
+  const preview = document.getElementById("profilePreviewName");
+  if (preview) preview.textContent = name || "—";
+}
+
+function updateProfilePreview() {
+  const name = document.getElementById("profileName")?.value || "";
+  const age = document.getElementById("profileAge")?.value || "";
+  const city = document.getElementById("profileCity")?.value || "";
+  document.getElementById("profilePreviewName").textContent = name || "—";
+  const parts = [];
+  if (age) parts.push(age);
+  if (city) parts.push(city);
+  document.getElementById("profilePreviewMeta").textContent = parts.join(" · ");
+  const fb = document.getElementById("avatarFallback");
+  const img = document.getElementById("avatarImg");
+  if (fb && (!img || !img.classList.contains("show"))) {
+    fb.textContent = (name || "?").trim().charAt(0).toUpperCase() || "?";
+  }
+}
+
+async function uploadAvatarFile(file) {
+  if (!file) return;
+  refreshTelegramContext();
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const res = await fetch("/api/profile/avatar", {
+      method: "POST",
+      headers: {
+        "X-Telegram-Init-Data": initData,
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: fd,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || tr("avatar_err"));
+    setAvatarUI(body.avatar_url, document.getElementById("profileName").value);
+    tg?.showAlert?.(tr("avatar_ok"));
+  } catch (e) {
+    tg?.showAlert?.(e.message || tr("avatar_err"));
+  }
 }
 
 async function respondToProposal(decision) {
@@ -1041,6 +1226,8 @@ async function loadMe() {
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
     setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
+    setAvatarUI(me.avatar_url, me.name);
+    updateProfilePreview();
   } catch (e) {
     showError(e.message);
   }
@@ -1088,7 +1275,13 @@ async function pollStatus() {
     if (result.outcome === "proposal") {
       clearInterval(pollTimer);
       proposalWaitUntil = 0;
-      showProposal(result.proposal_id, result.other_name, result.other_age, result.other_gender);
+      showProposal(
+        result.proposal_id,
+        result.other_name,
+        result.other_age,
+        result.other_gender,
+        result.other_avatar_url,
+      );
     } else if (result.outcome === "matched") {
       clearInterval(pollTimer);
       proposalWaitUntil = 0;
@@ -1153,9 +1346,34 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
     applyStaticTranslations();
     statusEl.textContent = tr("saved_ok");
     userLabel.textContent = tr("hi", { name: document.getElementById("profileName").value });
+    updateProfilePreview();
     setTimeout(() => { statusEl.textContent = ""; }, 2000);
   } catch (e) {
     statusEl.textContent = tr("save_error") + e.message;
+  }
+});
+
+["profileName", "profileAge", "profileCity"].forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", updateProfilePreview);
+  document.getElementById(id)?.addEventListener("change", updateProfilePreview);
+});
+
+const avatarFile = document.getElementById("avatarFile");
+const openAvatarPicker = () => avatarFile?.click();
+document.getElementById("avatarPickBtn")?.addEventListener("click", openAvatarPicker);
+document.getElementById("avatarChangeBtn")?.addEventListener("click", openAvatarPicker);
+avatarFile?.addEventListener("change", () => {
+  const f = avatarFile.files?.[0];
+  uploadAvatarFile(f);
+  avatarFile.value = "";
+});
+document.getElementById("avatarRemoveBtn")?.addEventListener("click", async () => {
+  try {
+    await api("/api/profile/avatar", { method: "DELETE" });
+    setAvatarUI(null, document.getElementById("profileName").value);
+    tg?.showAlert?.(tr("avatar_removed"));
+  } catch (e) {
+    tg?.showAlert?.(e.message || tr("avatar_err"));
   }
 });
 
@@ -1198,8 +1416,12 @@ async function loadSavedList() {
         ? `<span class="dot"></span>${tr("online_label")}`
         : `<span class="dot off"></span>${tr("offline_label")}`;
       const city = it.city ? ` · ${it.city}` : "";
+      const thumb = it.avatar_url
+        ? `<img class="thumb" src="${it.avatar_url}" alt="">`
+        : `<div class="thumb letter">${(it.name || "?").charAt(0).toUpperCase()}</div>`;
       row.innerHTML = `
-        <div class="saved-meta">
+        ${thumb}
+        <div class="saved-meta" style="flex:1">
           <div class="name">${it.name}</div>
           <div class="sub">${it.age} · ${tr(it.gender === "male" ? "gender_male" : "gender_female")}${city}</div>
           <div class="sub">${status}${it.busy ? " · busy" : ""}</div>
@@ -1292,7 +1514,13 @@ async function enterCall(roomId, partnerId, lk = {}) {
   document.getElementById("callStatus").textContent = tr("connecting");
   document.getElementById("muteBtn").classList.remove("active-toggle");
   document.getElementById("videoBtn").classList.remove("active-toggle");
-  document.getElementById("callAvatar").style.display = "grid";
+  const callAv = document.getElementById("callAvatar");
+  if (callAv) {
+    callAv.style.display = "grid";
+    callAv.innerHTML = partnerId
+      ? `<img src="/api/avatar/${partnerId}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.remove()">`
+      : `<svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>`;
+  }
 
   if (!window.LivekitClient) {
     document.getElementById("callStatus").textContent = "LiveKit JS yuklanmadi";

@@ -64,6 +64,9 @@ class User(Base):
     city: Mapped[str | None] = mapped_column(String(64), nullable=True)  # ro'yxatdan tanlangan shahar/viloyat
     search_scope: Mapped[SearchScope] = mapped_column(Enum(SearchScope), default=SearchScope.country)
 
+    # Profil rasmi: data/avatars/{id}.jpg|png|webp
+    has_avatar: Mapped[bool] = mapped_column(default=False)
+
     # Aloqa sozlamalari — suhbatdosh yoshi oralig'i
     prefer_age_min: Mapped[int] = mapped_column(Integer, default=18)
     prefer_age_max: Mapped[int] = mapped_column(Integer, default=99)

@@ -20,3 +20,6 @@ Thumbs.db
 # Log / DB
 *.log
 *.sqlite3
+# Uploads
+data/avatars/*
+!data/avatars/.gitkeep
