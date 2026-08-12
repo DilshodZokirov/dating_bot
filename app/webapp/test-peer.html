@@ -235,6 +235,28 @@ async function startCall() {
   ws.onmessage = async (event) => {
     let msg;
     try { msg = JSON.parse(event.data); } catch { return; }
+    if (msg.type === "peer-joined") {
+      dlog("Peer qo'shildi peers=" + msg.peers);
+      document.getElementById("status").textContent = "Peer bor — ulanmoqda...";
+      if (pc && !pc.remoteDescription && !makingOffer) {
+        try {
+          makingOffer = true;
+          await pc.setLocalDescription();
+          ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
+          dlog("peer-joined: offer yuborildi");
+        } catch (e) {
+          dlog("offer xato: " + e.message);
+        } finally {
+          makingOffer = false;
+        }
+      }
+      return;
+    }
+    if (msg.type === "peer-left") {
+      dlog("Peer chiqdi");
+      document.getElementById("status").textContent = "Hamroh chiqdi";
+      return;
+    }
     if (msg.type === "offer" || msg.type === "answer") {
       msg = { type: "sdp", description: msg.sdp };
     }

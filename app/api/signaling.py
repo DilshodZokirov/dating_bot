@@ -1,19 +1,14 @@
 """
 WebRTC signaling — ikkala foydalanuvchi brauzeri o'rtasida SDP/ICE xabarlarini
-almashtirib beruvchi oddiy WebSocket relay. Media (ovoz/video) o'zi to'g'ridan-to'g'ri
-brauzerlar orasida (peer-to-peer) oqadi — bu server faqat "tanishtiruv" vazifasini
-bajaradi.
-
-ESLATMA: bu yerda faqat STUN ishlatilgan (TURN server yo'q). Ko'pchilik tarmoqlarda
-ishlaydi, lekin ba'zi mobil operator tarmoqlari (carrier-grade NAT) yoki qattiq
-firewall ortida ulanish muvaffaqiyatsiz bo'lishi mumkin — bunday holda TURN server
-qo'shish kerak bo'ladi.
+almashtirib beruvchi oddiy WebSocket relay.
 """
+
+import json
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from app.telegram_auth import InitDataError, validate_init_data
 from app import test_mode
+from app.telegram_auth import InitDataError, validate_init_data
 
 router = APIRouter()
 
@@ -30,7 +25,6 @@ async def call_signaling(
 ):
     user_id: int | None = None
 
-    # Dev test peer (kompyuter brauzeri) — faqat DEV_TEST_MODE da
     if test_token:
         try:
             claims = test_mode.verify_test_token(test_token, expected_room_id=room_id)
@@ -52,18 +46,45 @@ async def call_signaling(
     await websocket.accept()
 
     room = _rooms.setdefault(room_id, {})
+    # eski ulanishni almashtirish
     room[user_id] = websocket
+
+    others = [uid for uid in room.keys() if uid != user_id]
+    join_msg = json.dumps({"type": "peer-joined", "user_id": user_id, "peers": len(room)})
+    for uid in others:
+        try:
+            await room[uid].send_text(join_msg)
+        except Exception:
+            pass
+    if others:
+        # yangi kelganga ham "allaqachon kimdir bor" deb xabar
+        try:
+            await websocket.send_text(
+                json.dumps({"type": "peer-joined", "user_id": others[0], "peers": len(room)})
+            )
+        except Exception:
+            pass
 
     try:
         while True:
             data = await websocket.receive_text()
-            # xonadagi boshqa ishtirokchi(lar)ga uzatamiz
             for uid, ws in list(room.items()):
                 if uid != user_id:
-                    await ws.send_text(data)
+                    try:
+                        await ws.send_text(data)
+                    except Exception:
+                        pass
     except WebSocketDisconnect:
         pass
     finally:
-        room.pop(user_id, None)
+        if room.get(user_id) is websocket:
+            room.pop(user_id, None)
         if not room:
             _rooms.pop(room_id, None)
+        else:
+            leave_msg = json.dumps({"type": "peer-left", "user_id": user_id, "peers": len(room)})
+            for ws in list(room.values()):
+                try:
+                    await ws.send_text(leave_msg)
+                except Exception:
+                    pass

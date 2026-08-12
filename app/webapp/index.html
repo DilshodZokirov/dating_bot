@@ -758,7 +758,9 @@ async function enterCall(roomId, partnerId) {
     if (["connected", "completed"].includes(pc.iceConnectionState)) {
       statusEl.textContent = tr("connected");
     } else if (pc.iceConnectionState === "failed") {
-      statusEl.textContent = "ICE failed — TURN kerak (mobil tarmoq)";
+      statusEl.textContent = "ICE failed — bir Wi-Fi yoki TURN kerak";
+    } else if (pc.iceConnectionState === "disconnected") {
+      statusEl.textContent = "Uzildi — TURN / bir xil Wi-Fi sinab ko'ring";
     } else if (pc.iceConnectionState === "checking") {
       statusEl.textContent = tr("connecting");
     }
@@ -782,6 +784,30 @@ async function enterCall(roomId, partnerId) {
   ws.onmessage = async (event) => {
     let msg;
     try { msg = JSON.parse(event.data); } catch { return; }
+
+    if (msg.type === "peer-joined") {
+      dlog("Peer qo'shildi, peers=" + msg.peers);
+      document.getElementById("callStatus").textContent = tr("connecting");
+      // Ikkinchi tomon kelganda offer qayta yuborish (birinchi offer yo'qolgan bo'lishi mumkin)
+      if (pc && !pc.remoteDescription && !makingOffer) {
+        try {
+          makingOffer = true;
+          await pc.setLocalDescription();
+          ws.send(JSON.stringify({ type: "sdp", description: pc.localDescription }));
+          dlog("peer-joined: yangi offer yuborildi");
+        } catch (e) {
+          dlog("peer-joined offer xato: " + e.message);
+        } finally {
+          makingOffer = false;
+        }
+      }
+      return;
+    }
+    if (msg.type === "peer-left") {
+      dlog("Peer chiqdi");
+      document.getElementById("callStatus").textContent = "Hamroh chiqdi";
+      return;
+    }
 
     // Eski format (offer/answer) + yangi (sdp) bilan mos
     if (msg.type === "offer" || msg.type === "answer") {

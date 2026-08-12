@@ -25,7 +25,7 @@ def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
     # ?v= — Telegram Mini App HTML keshini yangilash uchun
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=5"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=6"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
