@@ -67,7 +67,7 @@ class User(Base):
     # Profil rasmi: data/avatars/{id}.jpg|png|webp
     has_avatar: Mapped[bool] = mapped_column(default=False)
 
-    # Mavzuli match: friends | dating | study | speak_en | ...
+    # Mavzuli match: friends | dating | study | speak_en/de/ru/tg/tr/ko/ja/zh | ...
     match_topic: Mapped[str] = mapped_column(String(32), default="any")
 
     # Aloqa sozlamalari — suhbatdosh yoshi oralig'i

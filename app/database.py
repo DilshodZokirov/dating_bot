@@ -56,3 +56,7 @@ async def init_db():
         await conn.execute(
             text("UPDATE users SET match_topic = 'any' WHERE match_topic IS NULL OR match_topic = ''")
         )
+        # O'zbek speaking olib tashlandi → any
+        await conn.execute(
+            text("UPDATE users SET match_topic = 'any' WHERE match_topic = 'speak_uz'")
+        )
