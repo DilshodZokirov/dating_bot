@@ -8,10 +8,10 @@ from __future__ import annotations
 
 # id → labels (faqat suhbat maqsadi; til emas)
 MATCH_TOPICS: list[dict] = [
-    {"id": "any", "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything"},
-    {"id": "friends", "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends"},
-    {"id": "dating", "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating"},
-    {"id": "study", "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study"},
+    {"id": "any", "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything", "tr": "Fark etmez"},
+    {"id": "friends", "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends", "tr": "Arkadaş bul"},
+    {"id": "dating", "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating", "tr": "Flört / tanışma"},
+    {"id": "study", "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study", "tr": "Eğitim / öğrenme"},
 ]
 
 TOPIC_IDS = {t["id"] for t in MATCH_TOPICS}
@@ -52,5 +52,5 @@ def topic_label(topic_id: str, lang: str = "uz") -> str:
     tid = normalize_topic(topic_id)
     for t in MATCH_TOPICS:
         if t["id"] == tid:
-            return t.get(lang) or t["uz"]
+            return t.get(lang) or t.get("en") or t["uz"]
     return tid
