@@ -719,6 +719,25 @@
   .game-choice {
     display: flex; flex-direction: column; gap: 8px; margin-top: 8px;
   }
+  .game-choice button {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .game-choice button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .game-choice button#rouletteSpinBtn:not(:disabled) {
+    background: linear-gradient(120deg, var(--accent), #c4532f);
+    border-color: transparent;
+    color: #fff;
+  }
   .star-row { display: flex; gap: 8px; justify-content: center; margin: 12px 0; }
   .star-row button {
     width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
@@ -1289,11 +1308,14 @@ const TRANSLATIONS = {
   roulette_spin_again: { uz: "Yana aylantirish", ru: "Крутить ещё", en: "Spin again", de: "Nochmal", tg: "Боз чарондан", tr: "Tekrar çevir", ko: "다시 돌리기", ja: "もう一度", zh: "再转一次",
     ar: "دور مجددًا",
   },
+  roulette_wait_turn: { uz: "Navbat sherikda…", ru: "Ход партнёра…", en: "Partner’s turn…", de: "Partner ist dran…", tg: "Навбат ҳамсуҳбатда…", tr: "Sıra partnerde…", ko: "상대 차례…", ja: "相手の番…", zh: "轮到对方…",
+    ar: "دور الشريك…",
+  },
   roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…", de: "Dreht…", tg: "Чавр мезанад…", tr: "Dönüyor…", ko: "도는 중…", ja: "回転中…", zh: "转动中…",
     ar: "يدور…",
   },
-  roulette_hint: { uz: "Aylantiring — yangi savol chiqadi (Yopishgacha)", ru: "Крутите — новый вопрос (пока не Закрыть)", en: "Spin for a new question (until Close)", de: "Drehen — neue Frage (bis Schließen)", tg: "Чаронед — саволи нав (то Пӯшидан)", tr: "Çevirin — yeni soru (Kapat’a kadar)", ko: "돌리세요 — 새 질문 (닫기 전까지)", ja: "回すと新しい質問（閉じるまで）", zh: "转动获取新问题（直到关闭）",
-    ar: "دوّر — سؤال جديد (حتى الإغلاق)",
+  roulette_hint: { uz: "Navbatma-navbat aylantiring — savollar tugamaydi", ru: "Крутите по очереди — вопросы не закончатся", en: "Take turns spinning — questions won’t run out", de: "Abwechselnd drehen — Fragen gehen nicht aus", tg: "Навбат ба навбат — саволҳо тамом намешаванд", tr: "Sırayla çevirin — sorular bitmez", ko: "번갈아 돌리세요 — 질문이 끝나지 않아요", ja: "交代で回す — 質問は尽きません", zh: "轮流转 — 问题不会用完",
+    ar: "تناوبا على الدوران — الأسئلة لا تنفد",
   },
   roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question", de: "Ihre Frage", tg: "Саволи шумо", tr: "Sorunuz", ko: "당신의 질문", ja: "あなたの質問", zh: "你的问题",
     ar: "سؤالك",
@@ -1469,6 +1491,9 @@ let profileLanguage = "uz";
 let matchTopic = "any";
 let sessionGameLang = null;
 let usedRouletteIndexes = new Set();
+/** Katta savollar bazasi (icebreakers.json) — yuklanmasa ICEBREAKERS fallback */
+let ICEBREAKER_BANK = [];
+let icebreakerBankReady = false;
 
 /** UI barcha tillar: uz/ru/en/de/tg/tr/ko/ja/zh */
 function applyDocumentLang() {
@@ -1629,14 +1654,32 @@ function topicBucket(topic) {
   return "any";
 }
 
+async function loadIcebreakerBank() {
+  if (icebreakerBankReady && ICEBREAKER_BANK.length) return ICEBREAKER_BANK;
+  try {
+    const res = await fetch("/webapp/icebreakers.json?v=roulette1", { cache: "force-cache" });
+    if (!res.ok) throw new Error("icebreakers " + res.status);
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.questions || []);
+    ICEBREAKER_BANK = list.filter((q) => q && (q.uz || q.ru || q.en));
+    icebreakerBankReady = true;
+  } catch (e) {
+    console.warn("icebreakers load failed", e);
+    ICEBREAKER_BANK = ICEBREAKERS.slice();
+    icebreakerBankReady = true;
+  }
+  return ICEBREAKER_BANK;
+}
+
 function activeIcebreakers(topic) {
   const lang = gameLang();
   const t = topic || sessionTopic || matchTopic || "any";
   const bucket = topicBucket(t);
   const extra = TOPIC_ICEBREAKERS[bucket] || [];
-  const base = bucket === "any" ? ICEBREAKERS : [...extra, ...ICEBREAKERS];
+  const big = ICEBREAKER_BANK.length ? ICEBREAKER_BANK : ICEBREAKERS;
+  const base = bucket === "any" ? big : [...extra, ...big];
   const bank = SPEAK_BANKS[lang];
-  // uz/ru/en uchun ko‘p tilli bank yetarli; boshqa tillarda native savollar birinchi
+  // Boshqa tillarda native mashq savollari birinchi, keyin katta bazadan
   if (bank && !["uz", "ru", "en"].includes(lang)) {
     return [...bank.map((text) => ({ [lang]: text, en: text })), ...base];
   }
@@ -2097,6 +2140,7 @@ async function bootApp() {
   await loadAgeRanges();
   await loadMe();
   await loadTopics();
+  loadIcebreakerBank(); // fonida — ruletka uchun 1000+ savol
   if (document.getElementById("profileTopic") && matchTopic) {
     document.getElementById("profileTopic").value = matchTopic;
   }
@@ -2488,11 +2532,14 @@ let pendingFeedback = null;
 let feedbackStars = 0;
 let rouletteTimer = null;
 let rouletteBusy = false;
+/** true = men aylantira olaman; false = sherik navbati */
+let rouletteMyTurn = true;
 
 function resetGameUI() {
   activeGame = null;
   gameHost = false;
   rouletteBusy = false;
+  rouletteMyTurn = true;
   usedRouletteIndexes = new Set();
   if (rouletteTimer) {
     clearInterval(rouletteTimer);
@@ -2520,10 +2567,12 @@ function pickPrompt(list) {
 
 function pickPromptIndex(list) {
   if (!list.length) return 0;
+  // Bazada savollar ko‘p — tukalsa qayta aylanaveradi
   if (usedRouletteIndexes.size >= list.length) usedRouletteIndexes.clear();
   let idx = Math.floor(Math.random() * list.length);
   let guard = 0;
-  while (usedRouletteIndexes.has(idx) && guard < 40) {
+  const maxGuard = Math.min(120, list.length * 2);
+  while (usedRouletteIndexes.has(idx) && guard < maxGuard) {
     idx = Math.floor(Math.random() * list.length);
     guard += 1;
   }
@@ -2547,6 +2596,9 @@ function openGame(game, asHost, seed) {
   activeGame = game;
   gameHost = !!asHost;
   usedRouletteIndexes = new Set();
+  // Ruletkada birinchi navbat — o‘yinni boshlagan (host)
+  rouletteMyTurn = game === "icebreaker" ? !!asHost : true;
+  rouletteBusy = false;
   document.getElementById("gamePickPanel")?.classList.remove("open");
   document.getElementById("gameInviteBox")?.classList.remove("open");
   const panel = document.getElementById("gamePanel");
@@ -2554,12 +2606,17 @@ function openGame(game, asHost, seed) {
   document.getElementById("gameTitle").textContent = gameName(game);
   const nextBtn = document.getElementById("gameNextBtn");
   if (nextBtn) nextBtn.style.display = game === "icebreaker" ? "none" : "";
+  if (game === "icebreaker") {
+    loadIcebreakerBank().then(() => renderGameRound(seed));
+    return;
+  }
   renderGameRound(seed);
 }
 
 function renderRouletteUI(state) {
   const body = document.getElementById("gameBody");
   const choices = document.getElementById("gameChoices");
+  const canSpin = !!rouletteMyTurn && !state?.spinning && !rouletteBusy;
   body.innerHTML = `
     <div class="roulette-wheel ${state?.spinning ? "spinning" : ""} ${state?.landed ? "landed" : ""}" id="rouletteWheel">
       <div class="r-label">${state?.landed ? tr("roulette_result") : tr("roulette_hint")}</div>
@@ -2568,20 +2625,24 @@ function renderRouletteUI(state) {
   choices.innerHTML = "";
   const spinBtn = document.createElement("button");
   spinBtn.id = "rouletteSpinBtn";
-  const spinLabel = state?.spinning
-    ? tr("roulette_spinning")
-    : (state?.landed ? tr("roulette_spin_again") : tr("roulette_spin"));
+  let spinLabel = tr("roulette_spin");
+  if (state?.spinning) spinLabel = tr("roulette_spinning");
+  else if (!rouletteMyTurn) spinLabel = tr("roulette_wait_turn");
+  else if (state?.landed) spinLabel = tr("roulette_spin_again");
   spinBtn.textContent = spinLabel;
-  spinBtn.disabled = !!state?.spinning || rouletteBusy;
+  spinBtn.disabled = !canSpin;
   spinBtn.onclick = () => startRouletteSpin(true);
   choices.appendChild(spinBtn);
 }
 
 function startRouletteSpin(broadcast) {
-  if (activeGame !== "icebreaker" || rouletteBusy) return;
+  if (activeGame !== "icebreaker" || rouletteBusy || !rouletteMyTurn) return;
   const list = activeIcebreakers(sessionTopic);
+  if (!list.length) return;
   const finalIdx = pickPromptIndex(list);
   const finalText = promptText(list[finalIdx]);
+  // Darhol navbatni berib qo‘yamiz — ikkalasi birga bosmasin
+  rouletteMyTurn = false;
   if (broadcast) {
     sendGameData({
       t: "game_spin",
@@ -2599,9 +2660,14 @@ function runRouletteAnimation(finalIdx, finalText, fromPeer) {
   rouletteBusy = true;
   if (rouletteTimer) clearInterval(rouletteTimer);
   const list = activeIcebreakers(sessionTopic);
+  if (!list.length) {
+    rouletteBusy = false;
+    return;
+  }
+  if (typeof finalIdx === "number") usedRouletteIndexes.add(finalIdx);
   let ticks = 0;
-  const totalTicks = 20 + ((finalIdx || 0) % 8);
-  renderRouletteUI({ spinning: true, text: promptText(list[0]) || "…" });
+  const totalTicks = 18 + ((finalIdx || 0) % 10);
+  renderRouletteUI({ spinning: true, text: promptText(list[ticks % list.length]) || "…" });
   rouletteTimer = setInterval(() => {
     ticks += 1;
     const el = document.getElementById("rouletteText");
@@ -2611,8 +2677,11 @@ function runRouletteAnimation(finalIdx, finalText, fromPeer) {
       rouletteTimer = null;
       const q = list[(finalIdx || 0) % list.length];
       const text = finalText || promptText(q);
-      renderRouletteUI({ landed: true, text });
+      // Muhim: avval busy=false, keyin UI — aks holda tugma disabled qoladi
       rouletteBusy = false;
+      if (fromPeer) rouletteMyTurn = true;
+      else rouletteMyTurn = false;
+      renderRouletteUI({ landed: true, text });
       if (!fromPeer) {
         sendGameData({
           t: "game_landed",
@@ -2624,7 +2693,7 @@ function runRouletteAnimation(finalIdx, finalText, fromPeer) {
         });
       }
     }
-  }, 90);
+  }, 80);
 }
 
 function renderGameRound(seed) {
@@ -2687,13 +2756,32 @@ function handleGameMessage(msg) {
     resetGameUI();
   } else if (msg.t === "game_spin" && msg.game === "icebreaker") {
     applySessionMeta(msg);
-    if (activeGame !== "icebreaker") openGame("icebreaker", false);
-    runRouletteAnimation(msg.index, msg.text, true);
+    const startPeerSpin = () => {
+      // openGame chaqirmaymiz — async race bo‘lmasin
+      if (activeGame !== "icebreaker") {
+        activeGame = "icebreaker";
+        gameHost = false;
+        usedRouletteIndexes = new Set();
+        document.getElementById("gamePickPanel")?.classList.remove("open");
+        document.getElementById("gameInviteBox")?.classList.remove("open");
+        document.getElementById("gamePanel")?.classList.add("open");
+        const title = document.getElementById("gameTitle");
+        if (title) title.textContent = gameName("icebreaker");
+        const nextBtn = document.getElementById("gameNextBtn");
+        if (nextBtn) nextBtn.style.display = "none";
+      }
+      rouletteMyTurn = false;
+      runRouletteAnimation(msg.index, msg.text, true);
+    };
+    loadIcebreakerBank().then(startPeerSpin);
   } else if (msg.t === "game_landed" && msg.game === "icebreaker") {
     applySessionMeta(msg);
     if (!rouletteBusy) {
       const list = activeIcebreakers(sessionTopic);
-      const q = list[(msg.index || 0) % list.length];
+      const q = list[(msg.index || 0) % (list.length || 1)];
+      rouletteBusy = false;
+      rouletteMyTurn = true;
+      if (typeof msg.index === "number") usedRouletteIndexes.add(msg.index);
       renderRouletteUI({ landed: true, text: msg.text || promptText(q) });
     }
   } else if (msg.t === "game_sync" && activeGame === msg.game) {
