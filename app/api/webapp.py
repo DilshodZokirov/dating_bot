@@ -28,7 +28,7 @@ from app.matching.queue import (
     set_result,
 )
 from app.matching.respond import respond_to_proposal
-from app.matching.age_brackets import age_range_options, clamp_prefer
+from app.matching.age_brackets import clamp_prefer, prefer_bounds_meta
 from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.models import (
     CallFeedback,
@@ -68,8 +68,8 @@ def _queue_payload(user: User) -> dict:
         "language": user.language.value,
         "city": user.city,
         "search_scope": user.search_scope.value,
-        "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
-        "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
+        "prefer_age_min": user.prefer_age_min if user.prefer_age_min is not None else 12,
+        "prefer_age_max": user.prefer_age_max if user.prefer_age_max is not None else 100,
         "match_topic": normalize_topic(getattr(user, "match_topic", None)),
     }
 
@@ -88,8 +88,8 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
         "language": proposal[f"{prefix}_language"],
         "city": proposal[f"{prefix}_city"],
         "search_scope": proposal[f"{prefix}_search_scope"],
-        "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 18),
-        "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 99),
+        "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 12),
+        "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 100),
         "match_topic": normalize_topic(proposal.get(f"{prefix}_match_topic", "any")),
     }
 
@@ -115,8 +115,8 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "location": user.location,
         "city": user.city,
         "search_scope": user.search_scope.value,
-        "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
-        "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
+        "prefer_age_min": user.prefer_age_min if user.prefer_age_min is not None else settings.min_age,
+        "prefer_age_max": user.prefer_age_max if user.prefer_age_max is not None else 100,
         "is_banned": user.is_banned,
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
@@ -131,10 +131,10 @@ class ProfileUpdate(BaseModel):
     language: Language | None = None
     city: str | None = Field(default=None, max_length=64)
     search_scope: SearchScope | None = None
-    age: int | None = Field(default=None, ge=18, le=99)
+    age: int | None = Field(default=None, ge=12, le=100)
     looking_for: LookingFor | None = None
-    prefer_age_min: int | None = Field(default=None, ge=18, le=99)
-    prefer_age_max: int | None = Field(default=None, ge=18, le=99)
+    prefer_age_min: int | None = Field(default=None, ge=0, le=100)
+    prefer_age_max: int | None = Field(default=None, ge=0, le=100)
     match_topic: str | None = Field(default=None, max_length=32)
 
 
@@ -145,7 +145,8 @@ async def get_cities():
 
 @router.get("/age-ranges")
 async def get_age_ranges():
-    return {"ranges": age_range_options(), "min_age": settings.min_age}
+    meta = prefer_bounds_meta(settings.min_age)
+    return {"ranges": [], **meta}
 
 
 @router.get("/topics")
@@ -246,8 +247,12 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
         if update.looking_for is not None:
             user.looking_for = update.looking_for
         if update.prefer_age_min is not None or update.prefer_age_max is not None:
-            lo = update.prefer_age_min if update.prefer_age_min is not None else (user.prefer_age_min or settings.min_age)
-            hi = update.prefer_age_max if update.prefer_age_max is not None else (user.prefer_age_max or 99)
+            lo = update.prefer_age_min if update.prefer_age_min is not None else (
+                user.prefer_age_min if user.prefer_age_min is not None else 12
+            )
+            hi = update.prefer_age_max if update.prefer_age_max is not None else (
+                user.prefer_age_max if user.prefer_age_max is not None else 100
+            )
             lo, hi = clamp_prefer(lo, hi, settings.min_age)
             user.prefer_age_min = lo
             user.prefer_age_max = hi
@@ -351,7 +356,8 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     await join_queue(
         user.id, user.gender.value, user.looking_for.value, user.age,
         user.language.value, user.city, user.search_scope.value,
-        user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
+        user.prefer_age_min if user.prefer_age_min is not None else 12,
+        user.prefer_age_max if user.prefer_age_max is not None else 100,
         normalize_topic(getattr(user, "match_topic", None)),
     )
 
@@ -402,8 +408,8 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
         language=user.language.value,
         city=user.city,
         search_scope=user.search_scope.value,
-        prefer_age_min=user.prefer_age_min or settings.min_age,
-        prefer_age_max=user.prefer_age_max or 99,
+        prefer_age_min=user.prefer_age_min if user.prefer_age_min is not None else 12,
+        prefer_age_max=user.prefer_age_max if user.prefer_age_max is not None else 100,
         match_topic=normalize_topic(getattr(user, "match_topic", None)),
         exclude_ids=exclude,
     )

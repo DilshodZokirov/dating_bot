@@ -22,24 +22,24 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
         # Mavjud DB ga yangi ustunlar (create_all qo'shmaydi)
         await conn.execute(
-            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_age_min INTEGER DEFAULT 18")
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_age_min INTEGER DEFAULT 12")
         )
         await conn.execute(
-            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_age_max INTEGER DEFAULT 99")
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS prefer_age_max INTEGER DEFAULT 100")
         )
         await conn.execute(
-            text("UPDATE users SET prefer_age_min = 18 WHERE prefer_age_min IS NULL")
+            text("UPDATE users SET prefer_age_min = 12 WHERE prefer_age_min IS NULL")
         )
         await conn.execute(
-            text("UPDATE users SET prefer_age_max = 99 WHERE prefer_age_max IS NULL")
+            text("UPDATE users SET prefer_age_max = 100 WHERE prefer_age_max IS NULL")
         )
-        # Eski default (faqat o'z yosh bracketi) matchingni bloklagan — 18+ ga ochamiz
+        # Eski fixed bracket / 18–99 default → keng 12–100 (foydalanuvchi keyin o'zi toraytiradi)
         await conn.execute(
             text(
                 """
-                UPDATE users SET prefer_age_min = 18, prefer_age_max = 99
+                UPDATE users SET prefer_age_min = 12, prefer_age_max = 100
                 WHERE (prefer_age_min, prefer_age_max) IN (
-                    (18, 19), (20, 24), (25, 29), (30, 34),
+                    (18, 99), (18, 19), (20, 24), (25, 29), (30, 34),
                     (35, 39), (40, 49), (50, 59), (60, 99)
                 )
                 """

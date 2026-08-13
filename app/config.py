@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
 
-    min_age: int = 18
-    max_age_gap: int = 5  # matching qilinadigan foydalanuvchilar orasidagi maksimal yosh farqi
+    min_age: int = 12  # o'z yoshi minimal (12+)
+    max_age_gap: int = 5  # ishlatilmaydi — oraliqni foydalanuvchi o'zi tanlaydi
 
     webapp_url: str = ""  # Mini App uchun ochiq HTTPS manzil (masalan ngrok / Render)
 

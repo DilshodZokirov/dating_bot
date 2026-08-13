@@ -46,8 +46,8 @@ async def _release_lock(token: str):
 
 
 def _pref_ages(payload: dict) -> tuple[int, int]:
-    lo = int(payload.get("prefer_age_min") or settings.min_age)
-    hi = int(payload.get("prefer_age_max") or 99)
+    lo = int(payload["prefer_age_min"]) if payload.get("prefer_age_min") is not None else 12
+    hi = int(payload["prefer_age_max"]) if payload.get("prefer_age_max") is not None else 100
     if hi < lo:
         lo, hi = hi, lo
     return lo, hi
@@ -76,8 +76,8 @@ async def find_candidate(
     language: str,
     city: str | None,
     search_scope: str,
-    prefer_age_min: int = 18,
-    prefer_age_max: int = 99,
+    prefer_age_min: int = 12,
+    prefer_age_max: int = 100,
     match_topic: str = "any",
     exclude_ids: set[int] | None = None,
 ) -> dict | None:
@@ -133,8 +133,8 @@ async def join_queue(
     language: str,
     city: str | None,
     search_scope: str,
-    prefer_age_min: int = 18,
-    prefer_age_max: int = 99,
+    prefer_age_min: int = 12,
+    prefer_age_max: int = 100,
     match_topic: str = "any",
 ):
     await cancel_wait(user_id, looking_for)
@@ -176,8 +176,8 @@ async def requeue_user(payload: dict):
         payload["language"],
         payload.get("city"),
         payload.get("search_scope", "country"),
-        int(payload.get("prefer_age_min") or 18),
-        int(payload.get("prefer_age_max") or 99),
+        int(payload["prefer_age_min"]) if payload.get("prefer_age_min") is not None else 12,
+        int(payload["prefer_age_max"]) if payload.get("prefer_age_max") is not None else 100,
         payload.get("match_topic") or "any",
     )
 
@@ -195,8 +195,8 @@ def _side_fields(prefix: str, data: dict) -> dict:
         f"{prefix}_language": data["language"],
         f"{prefix}_city": data.get("city"),
         f"{prefix}_search_scope": data.get("search_scope", "country"),
-        f"{prefix}_prefer_age_min": int(data.get("prefer_age_min") or 18),
-        f"{prefix}_prefer_age_max": int(data.get("prefer_age_max") or 99),
+        f"{prefix}_prefer_age_min": int(data["prefer_age_min"]) if data.get("prefer_age_min") is not None else 12,
+        f"{prefix}_prefer_age_max": int(data["prefer_age_max"]) if data.get("prefer_age_max") is not None else 100,
         f"{prefix}_match_topic": data.get("match_topic") or "any",
         f"{prefix}_decision": "pending",
     }
