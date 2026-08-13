@@ -239,10 +239,24 @@ async def process_language(message: Message, state: FSMContext):
 
     await state.clear()
     lang = data["language"].value if hasattr(data["language"], "value") else data["language"]
-    await message.answer(t(lang, "reg_done"), reply_markup=_webapp_kb(lang))
+    await message.answer(
+        t(lang, "reg_done", name=data["name"]),
+        reply_markup=_webapp_kb(lang),
+    )
+    await message.answer(t(lang, "how_it_works"))
     inline = _webapp_inline(lang)
     if inline:
         await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
+
+
+@router.message(Command("help"))
+async def cmd_help(message: Message, state: FSMContext):
+    await state.clear()
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    lang = user.language.value if user else "uz"
+    await message.answer(t(lang, "how_it_works"), reply_markup=_webapp_kb(lang) if user else None)
+    await message.answer(t(lang, "help_commands"))
 
 
 @router.message(Command("search"))

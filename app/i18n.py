@@ -217,28 +217,90 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "⚠️ WEBAPP_URL فارغ. تحقق من .env.",
     },
     "reg_hello": {
-        "uz": "Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:",
-        "ru": "Привет! Начинаем регистрацию.\nВведите имя:",
-        "en": "Hi! Let's register.\nEnter your name:",
-        "de": "Hallo! Registrierung.\nGeben Sie Ihren Namen ein:",
-        "tg": "Салом! Сабт номро оғоз.\nНоматонро ворид кунед:",
-        "tr": "Merhaba! Kayıt başlıyor.\nAdınızı girin:",
-        "ko": "안녕하세요! 가입을 시작합니다.\n이름을 입력하세요:",
-        "ja": "こんにちは！登録を始めます。\n名前を入力してください:",
-        "zh": "你好！开始注册。\n请输入姓名：",
-        "ar": "مرحبًا! نبدأ التسجيل.\nأدخل اسمك:",
+        "uz": "Salom! <b>Soyla</b> — suhbatdosh topib, video qo‘ng‘iroq.\n\nIsmingiz?",
+        "ru": "Привет! <b>Soyla</b> — найти собеседника и видеозвонок.\n\nКак вас зовут?",
+        "en": "Hi! <b>Soyla</b> — find a partner and jump on a video call.\n\nWhat’s your name?",
+        "de": "Hallo! <b>Soyla</b> — Partner finden und Videoanruf.\n\nIhr Name?",
+        "tg": "Салом! <b>Soyla</b> — ҳамсуҳбат ва видеозанг.\n\nНоматон?",
+        "tr": "Merhaba! <b>Soyla</b> — eşleşme bul, görüntülü ara.\n\nAdınız?",
+        "ko": "안녕하세요! <b>Soyla</b> — 상대를 찾고 영상 통화.\n\n이름이 뭐예요?",
+        "ja": "こんにちは！<b>Soyla</b> — 相手を見つけてビデオ通話。\n\nお名前は？",
+        "zh": "你好！<b>Soyla</b> — 找到聊天对象并视频通话。\n\n你叫什么？",
+        "ar": "مرحبًا! <b>Soyla</b> — اعثر على شريك وابدأ مكالمة فيديو.\n\nما اسمك؟",
     },
     "reg_done": {
-        "uz": "✅ Ro'yxatdan o'tish tugadi!\n\nSuhbatdosh qidirish va <b>audio/video qo'ng'iroq</b> Mini App ichida.\nPastdagi tugmani bosing yoki Menu → Qidirish.",
-        "ru": "✅ Регистрация завершена!\n\nПоиск и <b>аудио/видео</b> — в Mini App.\nНажмите кнопку ниже или Menu.",
-        "en": "✅ Registration done!\n\nSearch and <b>audio/video calls</b> are in the Mini App.\nTap the button below or Menu.",
-        "de": "✅ Registrierung fertig!\n\nSuche und <b>Audio/Video</b> in der Mini App.\nTippen Sie unten oder Menu.",
-        "tg": "✅ Сабт анҷом!\n\nҶустуҷӯ ва <b>аудио/видео</b> дар Mini App.\nТугмаи поён ё Menu.",
-        "tr": "✅ Kayıt tamam!\n\nArama ve <b>ses/görüntü</b> Mini App'te.\nAlttaki düğme veya Menu.",
-        "ko": "✅ 가입 완료!\n\n검색과 <b>음성/영상 통화</b>는 미니 앱에서.\n아래 버튼 또는 Menu.",
-        "ja": "✅ 登録完了！\n\n検索と<b>音声/ビデオ</b>はミニアプリで。\n下のボタンか Menu。",
-        "zh": "✅ 注册完成！\n\n搜索与 <b>音视频通话</b> 在迷你应用中。\n点下方按钮或 Menu。",
-        "ar": "✅ اكتمل التسجيل!\n\nالبحث و<b>المكالمات الصوتية/المرئية</b> داخل تطبيق الميني.\nاضغط الزر أدناه أو Menu.",
+        "uz": "✅ Tayyor, {name}!\nMini Appni oching — qidiruv shu yerda.",
+        "ru": "✅ Готово, {name}!\nОткройте Mini App — поиск там.",
+        "en": "✅ You’re in, {name}!\nOpen the Mini App — search lives there.",
+        "de": "✅ Fertig, {name}!\nÖffnen Sie die Mini App — dort suchen.",
+        "tg": "✅ Тайёр, {name}!\nMini App-ро кушоед — ҷустуҷӯ онҷост.",
+        "tr": "✅ Hazır, {name}!\nMini App’i açın — arama orada.",
+        "ko": "✅ 준비됐어요, {name}!\n미니 앱을 여세요 — 검색은 거기에서.",
+        "ja": "✅ 準備OK、{name}!\nミニアプリを開いてください — 検索はそこです。",
+        "zh": "✅ 好了，{name}！\n打开迷你应用 — 搜索在那里。",
+        "ar": "✅ جاهز، {name}!\nافتح تطبيق الميني — البحث هناك.",
+    },
+    "how_it_works": {
+        "uz": "<b>Qanday ishlaydi</b> (qisqa):\n\n"
+              "1) Mini Appni oching\n"
+              "2) Katta tugmani bosing — qidiruv\n"
+              "3) <b>Roziman</b> → video suhbat\n\n"
+              "Til va yoshni <b>Profil</b>da sozlang.\n"
+              "Yordam: /help",
+        "ru": "<b>Как это работает</b>:\n\n"
+              "1) Откройте Mini App\n"
+              "2) Нажмите большую кнопку — поиск\n"
+              "3) <b>Согласен</b> → видеозвонок\n\n"
+              "Язык и возраст — в <b>Профиле</b>.\n"
+              "Помощь: /help",
+        "en": "<b>How it works</b>:\n\n"
+              "1) Open the Mini App\n"
+              "2) Tap the big button — search\n"
+              "3) <b>Accept</b> → video call\n\n"
+              "Set language & age in <b>Profile</b>.\n"
+              "Help: /help",
+        "de": "<b>So geht’s</b>:\n\n"
+              "1) Mini App öffnen\n"
+              "2) Großen Button tippen — Suche\n"
+              "3) <b>Annehmen</b> → Videoanruf\n\n"
+              "Sprache & Alter im <b>Profil</b>.\n"
+              "Hilfe: /help",
+        "tg": "<b>Чӣ гуна кор мекунад</b>:\n\n"
+              "1) Mini App-ро кушоед\n"
+              "2) Тугмаи калон — ҷустуҷӯ\n"
+              "3) <b>Розӣ</b> → видеозанг\n\n"
+              "Забон ва синну сол дар <b>Профил</b>.\n"
+              "Ёрӣ: /help",
+        "tr": "<b>Nasıl çalışır</b>:\n\n"
+              "1) Mini App’i açın\n"
+              "2) Büyük düğmeye basın — arama\n"
+              "3) <b>Kabul</b> → görüntülü sohbet\n\n"
+              "Dil ve yaş <b>Profil</b>’de.\n"
+              "Yardım: /help",
+        "ko": "<b>사용 방법</b>:\n\n"
+              "1) 미니 앱 열기\n"
+              "2) 큰 버튼 — 검색\n"
+              "3) <b>수락</b> → 영상 통화\n\n"
+              "언어·나이는 <b>프로필</b>에서.\n"
+              "도움말: /help",
+        "ja": "<b>使い方</b>:\n\n"
+              "1) ミニアプリを開く\n"
+              "2) 大きなボタン — 検索\n"
+              "3) <b>承諾</b> → ビデオ通話\n\n"
+              "言語と年齢は<b>プロフィール</b>で。\n"
+              "ヘルプ: /help",
+        "zh": "<b>怎么用</b>:\n\n"
+              "1) 打开迷你应用\n"
+              "2) 点大按钮 — 搜索\n"
+              "3) <b>接受</b> → 视频通话\n\n"
+              "语言和年龄在<b>资料</b>里设置。\n"
+              "帮助: /help",
+        "ar": "<b>كيف يعمل</b>:\n\n"
+              "1) افتح تطبيق الميني\n"
+              "2) اضغط الزر الكبير — بحث\n"
+              "3) <b>قبول</b> → مكالمة فيديو\n\n"
+              "اللغة والعمر في <b>الملف</b>.\n"
+              "المساعدة: /help",
     },
     "need_register": {
         "uz": "Avval ro'yxatdan o'ting: /start",
@@ -265,16 +327,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "رد غير صحيح لهذه الخطوة. ابدأ من /start.",
     },
     "help_commands": {
-        "uz": "Buyruqlar: /start — boshlash, /app — Mini App, /reset — profilni o'chirish",
-        "ru": "Команды: /start — старт, /app — Mini App, /reset — сброс профиля",
-        "en": "Commands: /start — start, /app — Mini App, /reset — delete profile",
-        "de": "Befehle: /start — Start, /app — Mini App, /reset — Profil löschen",
-        "tg": "Фармонҳо: /start — оғоз, /app — Mini App, /reset — профил",
-        "tr": "Komutlar: /start — başla, /app — Mini App, /reset — profil sil",
-        "ko": "명령: /start — 시작, /app — 미니 앱, /reset — 프로필 삭제",
-        "ja": "コマンド: /start — 開始, /app — ミニアプリ, /reset — プロフィール削除",
-        "zh": "命令：/start — 开始，/app — 迷你应用，/reset — 删除资料",
-        "ar": "الأوامر: /start — البدء، /app — تطبيق الميني، /reset — حذف الملف",
+        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/app — Mini App\n/start — boshiga\n/reset — profilni o‘chirish",
+        "ru": "Команды:\n/help — как это работает\n/app — Mini App\n/start — в начало\n/reset — удалить профиль",
+        "en": "Commands:\n/help — how it works\n/app — Mini App\n/start — restart\n/reset — delete profile",
+        "de": "Befehle:\n/help — so geht’s\n/app — Mini App\n/start — neu\n/reset — Profil löschen",
+        "tg": "Фармонҳо:\n/help — чӣ гуна\n/app — Mini App\n/start — аз аввал\n/reset — профилро нест",
+        "tr": "Komutlar:\n/help — nasıl çalışır\n/app — Mini App\n/start — başa dön\n/reset — profil sil",
+        "ko": "명령:\n/help — 사용 방법\n/app — 미니 앱\n/start — 처음으로\n/reset — 프로필 삭제",
+        "ja": "コマンド:\n/help — 使い方\n/app — ミニアプリ\n/start — 最初から\n/reset — プロフィール削除",
+        "zh": "命令：\n/help — 怎么用\n/app — 迷你应用\n/start — 重新开始\n/reset — 删除资料",
+        "ar": "الأوامر:\n/help — كيف يعمل\n/app — تطبيق الميني\n/start — من البداية\n/reset — حذف الملف",
     },
 }
 
