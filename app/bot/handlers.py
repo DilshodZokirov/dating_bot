@@ -8,8 +8,6 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardRemove,
     WebAppInfo,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
     MenuButtonWebApp,
 )
 
