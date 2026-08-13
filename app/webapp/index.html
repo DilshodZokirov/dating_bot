@@ -510,6 +510,57 @@
     cursor: pointer;
   }
 
+  .guide-steps {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .guide-steps li {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 10px;
+    align-items: start;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--ink);
+    animation: fadeUp 0.4s ease both;
+  }
+  .guide-steps li:nth-child(2) { animation-delay: 0.08s; }
+  .guide-steps li:nth-child(3) { animation-delay: 0.16s; }
+  .guide-steps .n {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #b84328);
+  }
+  .guide-note {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.4;
+    text-align: left;
+  }
+  .guide-ok {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(120deg, var(--accent), #c4532f);
+    color: #fff;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
   .bottom-nav {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -814,6 +865,20 @@
     </div>
   </div>
 
+  <div class="report-sheet" id="guideSheet" aria-hidden="true">
+    <div class="report-panel">
+      <h3 id="guideTitle">Qanday ishlaydi</h3>
+      <p id="guideLead">Uch qadam — keyin gaplashasiz.</p>
+      <ol class="guide-steps">
+        <li><span class="n">1</span><span id="guideStep1">Katta tugmani bosing — qidiruv</span></li>
+        <li><span class="n">2</span><span id="guideStep2">Taklif kelganda Roziman bosing</span></li>
+        <li><span class="n">3</span><span id="guideStep3">Video suhbat boshlanadi</span></li>
+      </ol>
+      <p class="guide-note" id="guideNote">Til va yosh oralig‘ini Profil’da sozlang.</p>
+      <button type="button" class="guide-ok" id="guideOkBtn">Tushundim</button>
+    </div>
+  </div>
+
   <div class="report-sheet" id="feedbackSheet">
     <div class="report-panel">
       <h3 id="feedbackTitle">Suhbatni baholang</h3>
@@ -962,6 +1027,27 @@ const TRANSLATIONS = {
   },
   idle_hint: { uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.", ru: "Найдём собеседника и сразу подключим к видеозвонку.", en: "We’ll find a match and connect you to a video call.", de: "Wir finden ein Match und verbinden Sie mit einem Videoanruf.", tg: "Ҳамсуҳбати мувофиқ ёфта, фавран ба видеозанг пайваст мекунем.", tr: "Uygun birini bulup hemen görüntülü aramaya bağlarız.", ko: "맞는 상대를 찾아 바로 영상 통화로 연결합니다.", ja: "マッチを見つけてすぐにビデオ通話に接続します。", zh: "找到匹配对象后立即连接视频通话。",
     ar: "سنجد شريكًا مناسبًا ونوصلك بمكالمة فيديو فورًا.",
+  },
+  guide_title: { uz: "Qanday ishlaydi", ru: "Как это работает", en: "How it works", de: "So geht’s", tg: "Чӣ гуна кор мекунад", tr: "Nasıl çalışır", ko: "사용 방법", ja: "使い方", zh: "怎么用",
+    ar: "كيف يعمل",
+  },
+  guide_lead: { uz: "Uch qadam — keyin gaplashasiz.", ru: "Три шага — и вы в разговоре.", en: "Three steps — then you’re talking.", de: "Drei Schritte — dann sprechen Sie.", tg: "Се қадам — баъд суҳбат.", tr: "Üç adım — sonra sohbet.", ko: "세 단계 — 바로 대화.", ja: "3ステップで会話へ。", zh: "三步，然后开始聊。",
+    ar: "ثلاث خطوات — ثم تتحدث.",
+  },
+  guide_step1: { uz: "Katta tugmani bosing — qidiruv boshlanadi", ru: "Нажмите большую кнопку — начнётся поиск", en: "Tap the big button — search starts", de: "Großen Button tippen — Suche startet", tg: "Тугмаи калон — ҷустуҷӯ оғоз", tr: "Büyük düğmeye basın — arama başlar", ko: "큰 버튼을 누르면 검색 시작", ja: "大きなボタンで検索開始", zh: "点大按钮 — 开始搜索",
+    ar: "اضغط الزر الكبير — يبدأ البحث",
+  },
+  guide_step2: { uz: "Taklif kelganda Roziman bosing", ru: "Когда придёт предложение — нажмите Согласен", en: "When a match appears — tap Accept", de: "Bei einem Vorschlag — Annehmen tippen", tg: "Таклиф омад — Розӣ пахш кунед", tr: "Teklif gelince Kabul’e basın", ko: "제안이 오면 수락을 누르세요", ja: "提案が来たら承諾", zh: "出现匹配时点接受",
+    ar: "عند ظهور عرض — اضغط قبول",
+  },
+  guide_step3: { uz: "Video suhbat darhol boshlanadi", ru: "Сразу начнётся видеозвонок", en: "A video call starts right away", de: "Der Videoanruf startet sofort", tg: "Видеозанг фавран оғоз мешавад", tr: "Görüntülü sohbet hemen başlar", ko: "바로 영상 통화가 시작됩니다", ja: "すぐにビデオ通話が始まります", zh: "视频通话立即开始",
+    ar: "تبدأ مكالمة الفيديو فورًا",
+  },
+  guide_note: { uz: "Til va yosh oralig‘ini Profil’da sozlang.", ru: "Язык и возраст настройте в Профиле.", en: "Set language and age range in Profile.", de: "Sprache und Altersbereich im Profil setzen.", tg: "Забон ва синну солро дар Профил танзим кунед.", tr: "Dil ve yaş aralığını Profil’de ayarlayın.", ko: "언어와 나이 범위는 프로필에서.", ja: "言語と年齢はプロフィールで設定。", zh: "在资料里设置语言和年龄范围。",
+    ar: "اضبط اللغة ونطاق العمر في الملف.",
+  },
+  guide_ok: { uz: "Tushundim", ru: "Понятно", en: "Got it", de: "Verstanden", tg: "Фаҳмидам", tr: "Anladım", ko: "알겠어요", ja: "わかった", zh: "知道了",
+    ar: "فهمت",
   },
   searching_title: { uz: "Suhbatdosh qidirilmoqda…", ru: "Ищем собеседника…", en: "Searching…", de: "Suche…", tg: "Ҷустуҷӯ…", tr: "Eşleşme aranıyor…", ko: "검색 중…", ja: "検索中…", zh: "搜索中…",
     ar: "جاري البحث…",
@@ -1564,6 +1650,13 @@ function applyStaticTranslations() {
     if (el) el.textContent = tr(key);
   };
   setText("cancelLink", "cancel_link");
+  setText("guideTitle", "guide_title");
+  setText("guideLead", "guide_lead");
+  setText("guideStep1", "guide_step1");
+  setText("guideStep2", "guide_step2");
+  setText("guideStep3", "guide_step3");
+  setText("guideNote", "guide_note");
+  setText("guideOkBtn", "guide_ok");
   setText("profileTitle", "profile_title");
   setText("profileLead", "profile_lead");
   setText("lblName", "lbl_name");
@@ -1925,7 +2018,10 @@ function setPreferAgeBounds(minV, maxV) {
   if (maxEl.value !== String(hi)) maxEl.value = maxEl.options[maxEl.options.length - 1]?.value || "100";
 }
 
+let meLoaded = false;
+
 async function loadMe() {
+  meLoaded = false;
   try {
     refreshTelegramContext();
     if (!initData) {
@@ -1954,10 +2050,40 @@ async function loadMe() {
     );
     setAvatarUI(me.avatar_url, me.name);
     updateProfilePreview();
+    meLoaded = true;
   } catch (e) {
     showError(e.message);
   }
 }
+
+const GUIDE_SEEN_KEY = "soyla_guide_v1";
+
+function showGuideSheet() {
+  const sheet = document.getElementById("guideSheet");
+  if (!sheet) return;
+  sheet.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+}
+
+function hideGuideSheet() {
+  const sheet = document.getElementById("guideSheet");
+  if (!sheet) return;
+  sheet.classList.remove("open");
+  sheet.setAttribute("aria-hidden", "true");
+  try { localStorage.setItem(GUIDE_SEEN_KEY, "1"); } catch (_) {}
+}
+
+function maybeShowGuide() {
+  try {
+    if (localStorage.getItem(GUIDE_SEEN_KEY)) return;
+  } catch (_) {}
+  showGuideSheet();
+}
+
+document.getElementById("guideOkBtn")?.addEventListener("click", () => {
+  hideGuideSheet();
+  tg?.HapticFeedback?.notificationOccurred?.("success");
+});
 
 async function bootApp() {
   for (let i = 0; i < 10; i++) {
@@ -1976,6 +2102,7 @@ async function bootApp() {
   }
   applyStaticTranslations();
   startPresencePing();
+  if (meLoaded) maybeShowGuide();
 }
 
 async function startSearch() {
