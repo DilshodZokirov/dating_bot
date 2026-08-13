@@ -164,7 +164,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
     "kb_search_call": {
         "uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call",
-        "de": "🔍 Suche / Anruf", "tg": "🔍 Ҷустуҷӯ / Занг", "tr": "🔍 Ara / Ara",
+        "de": "🔍 Suche / Anruf", "tg": "🔍 Ҷустуҷӯ / Занг", "tr": "🔍 Arama / Görüşme",
         "ko": "🔍 검색 / 통화", "ja": "🔍 検索 / 通話", "zh": "🔍 搜索 / 通话",
     },
     "kb_open_miniapp": {
