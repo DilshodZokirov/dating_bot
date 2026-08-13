@@ -8,8 +8,7 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardRemove,
     WebAppInfo,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
+    MenuButtonWebApp,
 )
 
 from app.bot.states import Registration
@@ -28,7 +27,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=comms1"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=onesearch1"
 
 
 def _ui_lang(user: User | None) -> str:
@@ -41,28 +40,26 @@ def _ui_lang(user: User | None) -> str:
     return user.language.value
 
 
-def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
-    """Mini App ochish tugmasi — video qo'ng'iroq shu yerda."""
+async def _set_user_menu(message: Message, lang: str) -> None:
+    """Bitta kirish nuqtasi: Telegram Menu → Mini App."""
     url = _webapp_url()
     if not url:
-        print("WARNING: WEBAPP_URL bo'sh — Mini App tugmasi yuborilmaydi", flush=True)
-        return ReplyKeyboardRemove()
-    label = t(lang, "kb_search_call")
-    print(f"Mini App URL: {url}", flush=True)
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=url))]],
-        resize_keyboard=True,
-    )
+        return
+    try:
+        await message.bot.set_chat_menu_button(
+            chat_id=message.chat.id,
+            menu_button=MenuButtonWebApp(
+                text=t(lang, "menu_btn")[:64],
+                web_app=WebAppInfo(url=url),
+            ),
+        )
+    except Exception as e:
+        print(f"set_chat_menu_button {message.chat.id}: {e}", flush=True)
 
 
-def _webapp_inline(lang: str = "uz") -> InlineKeyboardMarkup | None:
-    url = _webapp_url()
-    if not url:
-        return None
-    label = t(lang, "kb_open_miniapp")
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=label, web_app=WebAppInfo(url=url))]]
-    )
+def _clear_reply_kb() -> ReplyKeyboardRemove:
+    """Eski 'Qidirish / Qo'ng'iroq' klaviaturasini olib tashlash."""
+    return ReplyKeyboardRemove()
 
 gender_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Erkak"), KeyboardButton(text="Ayol")]],
@@ -104,15 +101,14 @@ async def cmd_start(message: Message, state: FSMContext):
 
         if user:
             lang = _ui_lang(user)
-            await message.answer(
-                t(lang, "welcome_back", name=user.name),
-                reply_markup=_webapp_kb(lang),
-            )
-            inline = _webapp_inline(lang)
-            if inline:
-                await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
-            elif not settings.webapp_url:
+            await _set_user_menu(message, lang)
+            if not settings.webapp_url:
                 await message.answer(t(lang, "webapp_url_missing"))
+            else:
+                await message.answer(
+                    t(lang, "welcome_back", name=user.name),
+                    reply_markup=_clear_reply_kb(),
+                )
             return
 
         await message.answer(t("uz", "reg_hello"))
@@ -131,10 +127,8 @@ async def cmd_app(message: Message, state: FSMContext):
     if not settings.webapp_url:
         await message.answer(t(lang, "webapp_url_missing"))
         return
-    await message.answer(t(lang, "open_mini_app"), reply_markup=_webapp_kb(lang))
-    inline = _webapp_inline(lang)
-    if inline:
-        await message.answer(t(lang, "or_this_button"), reply_markup=inline)
+    await _set_user_menu(message, lang)
+    await message.answer(t(lang, "search_check_app"), reply_markup=_clear_reply_kb())
 
 
 @router.callback_query(F.data.startswith("p:"))
@@ -251,14 +245,12 @@ async def process_language(message: Message, state: FSMContext):
 
     await state.clear()
     lang = data["language"].value if hasattr(data["language"], "value") else data["language"]
+    await _set_user_menu(message, lang)
     await message.answer(
         t(lang, "reg_done", name=data["name"]),
-        reply_markup=_webapp_kb(lang),
+        reply_markup=_clear_reply_kb(),
     )
     await message.answer(t(lang, "how_it_works"))
-    inline = _webapp_inline(lang)
-    if inline:
-        await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
 
 
 @router.message(Command("help"))
@@ -267,16 +259,18 @@ async def cmd_help(message: Message, state: FSMContext):
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
     lang = _ui_lang(user)
-    await message.answer(t(lang, "how_it_works"), reply_markup=_webapp_kb(lang) if user else None)
+    if user:
+        await _set_user_menu(message, lang)
+    await message.answer(
+        t(lang, "how_it_works"),
+        reply_markup=_clear_reply_kb() if user else None,
+    )
     await message.answer(t(lang, "help_commands"))
 
 
 @router.message(Command("search"))
 async def cmd_search(message: Message, state: FSMContext):
-    """
-    Endi qidiruv va taklif jarayoni to'liq Mini App ichida bo'lganligi sababli,
-    bu buyruq foydalanuvchini shunchaki Mini App'ga yo'naltiradi.
-    """
+    """Eski buyruq — faqat Menu'ga yo‘naltiradi (reklama qilinmaydi)."""
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
 
@@ -285,9 +279,10 @@ async def cmd_search(message: Message, state: FSMContext):
         return
 
     lang = _ui_lang(user)
+    await _set_user_menu(message, lang)
     await message.answer(
         t(lang, "search_check_app"),
-        reply_markup=_webapp_kb(lang),
+        reply_markup=_clear_reply_kb(),
     )
 
 
@@ -472,4 +467,5 @@ async def fallback_text(message: Message, state: FSMContext):
     if current:
         await message.answer(t(lang, "bad_step"))
         return
-    await message.answer(t(lang, "help_commands"), reply_markup=_webapp_kb(lang))
+    await _set_user_menu(message, lang)
+    await message.answer(t(lang, "help_commands"), reply_markup=_clear_reply_kb())
