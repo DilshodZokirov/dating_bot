@@ -44,7 +44,7 @@ from app.models import (
 from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids, is_blocked_pair
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
-from app.telegram_client import notify_admins
+from app.telegram_client import notify_admins, sync_user_language_ui
 from app.topics import DEFAULT_TOPIC, LEGACY_TOPIC_MAP, MATCH_TOPICS, TOPIC_IDS, normalize_topic
 
 router = APIRouter(prefix="/api")
@@ -235,8 +235,12 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             user.bio = update.bio.strip()[:300]
         if update.location is not None:
             user.location = update.location.strip()[:100]
+        language_changed = False
+        new_lang_value = None
         if update.language is not None:
+            language_changed = user.language != update.language
             user.language = update.language
+            new_lang_value = update.language.value
         if update.city is not None:
             user.city = update.city.strip()[:64] or None
         if update.search_scope is not None:
@@ -264,12 +268,17 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             user.match_topic = normalize_topic(raw)
 
         await session.commit()
+        uid = user.id
 
         # Sozlamalar o'zgarsa eski qidiruv yozuvini tozalash
         for lf in ("male", "female", "any"):
             await cancel_wait(user.id, lf)
 
-    return {"status": "ok"}
+    # Mini App tilini botga ham sinxronlash (klaviatura + Menu + xabar)
+    if language_changed and new_lang_value:
+        await sync_user_language_ui(uid, new_lang_value)
+
+    return {"status": "ok", "language": new_lang_value} if new_lang_value else {"status": "ok"}
 
 
 @router.post("/profile/avatar")

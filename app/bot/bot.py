@@ -23,11 +23,12 @@ async def main():
     dp.include_router(router)
 
     if settings.webapp_url:
-        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/"
+        # Global default; har bir foydalanuvchi uchun /start va til o'zgarganda override qilinadi
+        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n4"
         logging.info("Setting menu button: %s", menu_url)
         try:
             await bot.set_chat_menu_button(
-                menu_button=MenuButtonWebApp(text="Qidirish", web_app=WebAppInfo(url=menu_url))
+                menu_button=MenuButtonWebApp(text="Search", web_app=WebAppInfo(url=menu_url))
             )
         except Exception as e:
             logging.error("Menu button o'rnatilmadi: %s", e)

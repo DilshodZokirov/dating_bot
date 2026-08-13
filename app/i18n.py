@@ -276,6 +276,23 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zh": "命令：/start — 开始，/app — 迷你应用，/reset — 删除资料",
         "ar": "الأوامر: /start — البدء، /app — تطبيق الميني، /reset — حذف الملف",
     },
+    "lang_changed": {
+        "uz": "✅ Til o‘zgartirildi. Bot endi shu tilda ishlaydi.",
+        "ru": "✅ Язык изменён. Бот теперь на этом языке.",
+        "en": "✅ Language updated. The bot will use this language now.",
+        "de": "✅ Sprache geändert. Der Bot nutzt jetzt diese Sprache.",
+        "tg": "✅ Забон иваз шуд. Бот акнун бо ҳамин забон кор мекунад.",
+        "tr": "✅ Dil değiştirildi. Bot artık bu dilde çalışacak.",
+        "ko": "✅ 언어가 변경되었습니다. 봇이 이 언어를 사용합니다.",
+        "ja": "✅ 言語を変更しました。ボットはこの言語で動作します。",
+        "zh": "✅ 语言已更改。机器人将使用此语言。",
+        "ar": "✅ تم تغيير اللغة. سيعمل البوت بهذه اللغة الآن.",
+    },
+    "menu_btn": {
+        "uz": "Qidirish", "ru": "Поиск", "en": "Search", "de": "Suche",
+        "tg": "Ҷустуҷӯ", "tr": "Ara", "ko": "검색", "ja": "検索", "zh": "搜索",
+        "ar": "بحث",
+    },
 }
 
 
