@@ -89,6 +89,7 @@ LIVEKIT_API_SECRET=...
 
 - Jins: sozlamalardagi **Suhbatdosh** (erkak / ayol / farqi yo'q)
 - Yosh: sozlamalardagi **Suhbatdosh yoshi** oralig'i (ikki tomonlama) — default **18+**
-- Til bir xil; shahar — `search_scope=city` bo'lsa mos shahar
+- Til bir xil (uz/ru/en/de/tg/tr/ko/ja/zh) — qidiruv shu til bo‘yicha; shahar — `search_scope=city` bo'lsa mos shahar
+- Suhbat mavzusi: do‘st / juft / o‘qish / farqi yo‘q (til alohida sozlama)
 - Ikki tomonlama rozilik (taklif 120 soniya)
 - Bekor qilish / rad etish → ikkinchi tomon qayta qidiruvga

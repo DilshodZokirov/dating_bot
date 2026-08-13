@@ -8,7 +8,8 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import _age_pref_compatible, _city_compatible
-from app.topics import topic_compatible
+from app.models import Language
+from app.topics import MATCH_TOPICS, normalize_topic, topic_compatible
 
 
 def test_default_prefer_ages_is_open():
@@ -30,11 +31,14 @@ def test_city_scope():
 
 def test_topic_compatible():
     assert topic_compatible("friends", "friends")
-    assert topic_compatible("any", "speak_en")
-    assert topic_compatible("speak_en", "any")
+    assert topic_compatible("any", "dating")
     assert not topic_compatible("friends", "dating")
-    assert not topic_compatible("speak_en", "speak_de")
-    assert topic_compatible("speak_tg", "speak_tg")
-    assert not topic_compatible("speak_ko", "speak_ja")
-    # Eski o'zbek speaking → any
-    assert topic_compatible("speak_uz", "speak_tr")
+    # Eski speaking mavzular → any
+    assert topic_compatible("speak_tg", "friends")
+    assert normalize_topic("speak_ko") == "any"
+    assert all(not t["id"].startswith("speak_") for t in MATCH_TOPICS)
+
+
+def test_languages_include_new():
+    codes = {x.value for x in Language}
+    assert {"uz", "ru", "en", "de", "tg", "tr", "ko", "ja", "zh"} <= codes

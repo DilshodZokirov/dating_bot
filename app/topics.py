@@ -1,29 +1,33 @@
-"""Mavzuli match — sozlamada tanlanadi, matchingda mos kelishi kerak."""
+"""Mavzuli match — sozlamada tanlanadi, matchingda mos kelishi kerak.
+
+Til (language) alohida: matching allaqachon bir xil til bo'yicha filtrlaydi.
+Speaking mavzular olib tashlandi — tillar profil Til maydonida.
+"""
 
 from __future__ import annotations
 
-# id → labels
+# id → labels (faqat suhbat maqsadi; til emas)
 MATCH_TOPICS: list[dict] = [
     {"id": "any", "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything"},
     {"id": "friends", "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends"},
     {"id": "dating", "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating"},
     {"id": "study", "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study"},
-    {"id": "speak_en", "uz": "Ingliz speaking", "ru": "English speaking", "en": "English speaking"},
-    {"id": "speak_de", "uz": "Nemis speaking", "ru": "Deutsch speaking", "en": "German speaking"},
-    {"id": "speak_ru", "uz": "Rus speaking", "ru": "Русский speaking", "en": "Russian speaking"},
-    {"id": "speak_tg", "uz": "Tojik speaking", "ru": "Таджикский speaking", "en": "Tajik speaking"},
-    {"id": "speak_tr", "uz": "Turk speaking", "ru": "Турецкий speaking", "en": "Turkish speaking"},
-    {"id": "speak_ko", "uz": "Koreys speaking", "ru": "Корейский speaking", "en": "Korean speaking"},
-    {"id": "speak_ja", "uz": "Yapon speaking", "ru": "Японский speaking", "en": "Japanese speaking"},
-    {"id": "speak_zh", "uz": "Xitoy speaking", "ru": "Китайский speaking", "en": "Chinese speaking"},
 ]
 
 TOPIC_IDS = {t["id"] for t in MATCH_TOPICS}
 DEFAULT_TOPIC = "any"
 
-# Eski id lar → yangi
+# Eski speaking mavzular → any (til endi Language da)
 LEGACY_TOPIC_MAP = {
     "speak_uz": "any",
+    "speak_en": "any",
+    "speak_de": "any",
+    "speak_ru": "any",
+    "speak_tg": "any",
+    "speak_tr": "any",
+    "speak_ko": "any",
+    "speak_ja": "any",
+    "speak_zh": "any",
 }
 
 

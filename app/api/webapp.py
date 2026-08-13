@@ -153,6 +153,25 @@ async def get_topics():
     return {"topics": MATCH_TOPICS, "default": DEFAULT_TOPIC}
 
 
+# Matching shu til bo'yicha filtrlaydi (queue: language == language)
+LANGUAGES = [
+    {"id": "uz", "label": "O‘zbek"},
+    {"id": "ru", "label": "Русский"},
+    {"id": "en", "label": "English"},
+    {"id": "de", "label": "Deutsch"},
+    {"id": "tg", "label": "Tojik"},
+    {"id": "tr", "label": "Türkçe"},
+    {"id": "ko", "label": "한국어"},
+    {"id": "ja", "label": "日本語"},
+    {"id": "zh", "label": "中文"},
+]
+
+
+@router.get("/languages")
+async def get_languages():
+    return {"languages": LANGUAGES}
+
+
 async def _build_ice_servers() -> dict:
     ice_servers: list[dict] = [{"urls": "stun:stun.l.google.com:19302"}]
 

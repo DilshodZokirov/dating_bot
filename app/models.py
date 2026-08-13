@@ -22,6 +22,12 @@ class Language(str, enum.Enum):
     uz = "uz"
     ru = "ru"
     en = "en"
+    de = "de"
+    tg = "tg"  # tojik
+    tr = "tr"  # turk
+    ko = "ko"  # koreys
+    ja = "ja"  # yapon
+    zh = "zh"  # xitoy
 
 
 class SearchScope(str, enum.Enum):
@@ -67,7 +73,7 @@ class User(Base):
     # Profil rasmi: data/avatars/{id}.jpg|png|webp
     has_avatar: Mapped[bool] = mapped_column(default=False)
 
-    # Mavzuli match: friends | dating | study | speak_en/de/ru/tg/tr/ko/ja/zh | ...
+    # Mavzuli match: friends | dating | study | any (til — Language maydonida)
     match_topic: Mapped[str] = mapped_column(String(32), default="any")
 
     # Aloqa sozlamalari — suhbatdosh yoshi oralig'i
