@@ -4,7 +4,7 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
 
 ## Imkoniyatlar
 
-- Ro'yxatdan o'tish (aiogram FSM, 18+)
+- Ro'yxatdan o'tish (aiogram FSM, 12+)
 - Redis matching (yosh/jins/til/shahar) + ikki tomonlama rozilik
 - PostgreSQL (user + CallSession + Block + Report + SavedPartner)
 - Telegram Mini App (qidiruv, saqlanganlar, sozlamalar, qo'ng'iroq)
@@ -56,7 +56,7 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
 
 1. Biri **erkak**, biri **ayol** (yoki Sozlamalarda Suhbatdosh = **Farqi yo'q**)
 2. Til **bir xil**
-3. Sozlamalar → Suhbatdosh yoshi → **18+ (hammasi)** → Saqlash
+3. Sozlamalar → Suhbatdosh yoshi → **Quyi / Yuqori** (0–100) → Saqlash
 4. Ikkalasi Mini Appni ochib **Qidirish**
 5. Taklif chiqsa → Roziman → LiveKit qo'ng'iroq
 
@@ -88,7 +88,7 @@ LIVEKIT_API_SECRET=...
 ## Matching qoidalari
 
 - Jins: sozlamalardagi **Suhbatdosh** (erkak / ayol / farqi yo'q)
-- Yosh: sozlamalardagi **Suhbatdosh yoshi** oralig'i (ikki tomonlama) — default **18+**
+- Yosh: sozlamalardagi **Quyi/Yuqori** oraliq (0–100, ikki tomonlama) — o‘z yoshi **12+**; jins bo‘yicha avtomatik yosh qoidasi yo‘q
 - Til bir xil (uz/ru/en/de/tg/tr/ko/ja/zh) — qidiruv shu til bo‘yicha; shahar — `search_scope=city` bo'lsa mos shahar
 - Suhbat mavzusi: do‘st / juft / o‘qish / farqi yo‘q (til alohida sozlama)
 - Ikki tomonlama rozilik (taklif 120 soniya)

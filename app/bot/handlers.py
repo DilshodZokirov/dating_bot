@@ -195,7 +195,7 @@ async def process_age(message: Message, state: FSMContext):
 
     age = int(message.text)
     if age < settings.min_age:
-        await message.answer(f"Kechirasiz, bu botdan faqat {settings.min_age} yoshdan katta foydalanuvchilar foydalana oladi.")
+        await message.answer(f"Kechirasiz, bu botdan faqat {settings.min_age}+ yoshdagi foydalanuvchilar foydalana oladi.")
         await state.clear()
         return
     if age > 100:
@@ -290,8 +290,8 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "language": proposal["candidate_language"],
                     "city": proposal.get("candidate_city"),
                     "search_scope": proposal.get("candidate_search_scope", "country"),
-                    "prefer_age_min": proposal.get("candidate_prefer_age_min", 18),
-                    "prefer_age_max": proposal.get("candidate_prefer_age_max", 99),
+                    "prefer_age_min": proposal.get("candidate_prefer_age_min", 12),
+                    "prefer_age_max": proposal.get("candidate_prefer_age_max", 100),
                     "match_topic": proposal.get("candidate_match_topic", "any"),
                 }
             else:
@@ -303,8 +303,8 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "language": proposal["requester_language"],
                     "city": proposal.get("requester_city"),
                     "search_scope": proposal.get("requester_search_scope", "country"),
-                    "prefer_age_min": proposal.get("requester_prefer_age_min", 18),
-                    "prefer_age_max": proposal.get("requester_prefer_age_max", 99),
+                    "prefer_age_min": proposal.get("requester_prefer_age_min", 12),
+                    "prefer_age_max": proposal.get("requester_prefer_age_max", 100),
                     "match_topic": proposal.get("requester_match_topic", "any"),
                 }
             await requeue_user(other)

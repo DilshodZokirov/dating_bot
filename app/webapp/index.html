@@ -275,6 +275,12 @@
     border-color: rgba(232, 111, 74, 0.55);
   }
   .field textarea { resize: vertical; min-height: 72px; }
+  .age-range-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .age-range-row .field { margin: 0; }
   .section-label {
     margin: 10px 0 0;
     font-family: "Syne", sans-serif;
@@ -860,7 +866,7 @@
     </div>
     <div class="form">
       <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
-      <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="18" max="99" step="1"></div>
+      <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="12" max="100" step="1"></div>
       <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
       <div class="field"><label id="lblLocation">Yashash joyi</label><input type="text" id="profileLocation" maxlength="100"></div>
       <div class="field">
@@ -903,9 +909,18 @@
           <option value="any" id="lfAny">Farqi yo‘q</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:6px">
         <label id="lblPreferAge">Suhbatdosh yoshi</label>
-        <select id="profilePreferAge"></select>
+      </div>
+      <div class="age-range-row">
+        <div class="field">
+          <label id="lblPreferAgeMin">Quyi</label>
+          <select id="profilePreferAgeMin"></select>
+        </div>
+        <div class="field">
+          <label id="lblPreferAgeMax">Yuqori</label>
+          <select id="profilePreferAgeMax"></select>
+        </div>
       </div>
 
       <button class="save-btn" id="saveProfileBtn">Saqlash</button>
@@ -973,7 +988,9 @@ const TRANSLATIONS = {
   lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region" },
   lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
   lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for" },
-  lbl_prefer_age: { uz: "Suhbatdosh yoshi", ru: "Возраст собеседника", en: "Partner age" },
+  lbl_prefer_age: { uz: "Suhbatdosh yoshi (0–100)", ru: "Возраст собеседника (0–100)", en: "Partner age (0–100)" },
+  lbl_prefer_age_min: { uz: "Quyi chegara", ru: "Нижняя", en: "Min" },
+  lbl_prefer_age_max: { uz: "Yuqori chegara", ru: "Верхняя", en: "Max" },
   lbl_topic: { uz: "Suhbat mavzusi", ru: "Тема общения", en: "Conversation topic" },
   prefs_title: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat preferences" },
   prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to" },
@@ -1306,6 +1323,8 @@ function applyStaticTranslations() {
   setText("lblScope", "lbl_scope");
   setText("lblLookingFor", "lbl_looking_for");
   setText("lblPreferAge", "lbl_prefer_age");
+  setText("lblPreferAgeMin", "lbl_prefer_age_min");
+  setText("lblPreferAgeMax", "lbl_prefer_age_max");
   setText("lblTopic", "lbl_topic");
   setText("prefsSectionTitle", "prefs_title");
   setText("prefsSectionHint", "prefs_hint");
@@ -1577,30 +1596,28 @@ async function loadCities() {
   } catch (_) {}
 }
 
-async function loadAgeRanges() {
-  const select = document.getElementById("profilePreferAge");
+function fillAgeBoundSelect(select, floor, ceil) {
   if (!select) return;
   select.innerHTML = "";
+  for (let n = floor; n <= ceil; n += 1) {
+    const opt = document.createElement("option");
+    opt.value = String(n);
+    opt.textContent = String(n);
+    select.appendChild(opt);
+  }
+}
+
+async function loadAgeRanges() {
+  let floor = 0;
+  let ceil = 100;
   try {
     const data = await api("/api/age-ranges");
-    for (const r of data.ranges) {
-      const opt = document.createElement("option");
-      opt.value = `${r.min}-${r.max}`;
-      opt.textContent = r.label;
-      select.appendChild(opt);
-    }
-  } catch (_) {
-    const fallback = [
-      ["18-99", "18+"], ["18-19", "18–19"], ["20-24", "20–24"], ["25-29", "25–29"],
-      ["30-34", "30–34"], ["35-39", "35–39"], ["40-49", "40–49"], ["50-59", "50–59"], ["60-99", "60–99"],
-    ];
-    for (const [v, label] of fallback) {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = label;
-      select.appendChild(opt);
-    }
-  }
+    if (Number.isFinite(data.prefer_floor)) floor = data.prefer_floor;
+    if (Number.isFinite(data.prefer_ceil)) ceil = data.prefer_ceil;
+  } catch (_) {}
+  fillAgeBoundSelect(document.getElementById("profilePreferAgeMin"), floor, ceil);
+  fillAgeBoundSelect(document.getElementById("profilePreferAgeMax"), floor, ceil);
+  setPreferAgeBounds(12, 100);
 }
 
 async function loadTopics() {
@@ -1628,15 +1645,17 @@ async function loadTopics() {
   }
 }
 
-function setPreferAgeSelect(minV, maxV) {
-  const select = document.getElementById("profilePreferAge");
-  if (!select) return;
-  const key = `${minV}-${maxV}`;
-  let found = false;
-  for (const opt of select.options) {
-    if (opt.value === key) { select.value = key; found = true; break; }
-  }
-  if (!found) select.value = "18-99";
+function setPreferAgeBounds(minV, maxV) {
+  const minEl = document.getElementById("profilePreferAgeMin");
+  const maxEl = document.getElementById("profilePreferAgeMax");
+  if (!minEl || !maxEl) return;
+  let lo = Number.isFinite(Number(minV)) ? Number(minV) : 12;
+  let hi = Number.isFinite(Number(maxV)) ? Number(maxV) : 100;
+  if (hi < lo) [lo, hi] = [hi, lo];
+  minEl.value = String(lo);
+  maxEl.value = String(hi);
+  if (minEl.value !== String(lo)) minEl.value = minEl.options[0]?.value || "0";
+  if (maxEl.value !== String(hi)) maxEl.value = maxEl.options[maxEl.options.length - 1]?.value || "100";
 }
 
 async function loadMe() {
@@ -1662,7 +1681,10 @@ async function loadMe() {
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
     document.getElementById("profileTopic").value = matchTopic;
-    setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
+    setPreferAgeBounds(
+      me.prefer_age_min != null ? me.prefer_age_min : 12,
+      me.prefer_age_max != null ? me.prefer_age_max : 100,
+    );
     setAvatarUI(me.avatar_url, me.name);
     updateProfilePreview();
   } catch (e) {
@@ -1762,8 +1784,11 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
   statusEl.textContent = "…";
   try {
     const newLang = document.getElementById("profileLanguage").value;
-    const preferVal = document.getElementById("profilePreferAge").value || "18-99";
-    const [pMin, pMax] = preferVal.split("-").map((x) => parseInt(x, 10));
+    let pMin = parseInt(document.getElementById("profilePreferAgeMin").value, 10);
+    let pMax = parseInt(document.getElementById("profilePreferAgeMax").value, 10);
+    if (!Number.isFinite(pMin)) pMin = 12;
+    if (!Number.isFinite(pMax)) pMax = 100;
+    if (pMax < pMin) [pMin, pMax] = [pMax, pMin];
     const ageVal = parseInt(document.getElementById("profileAge").value, 10);
     await api("/api/profile", {
       method: "POST",

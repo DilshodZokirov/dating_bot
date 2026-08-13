@@ -76,9 +76,9 @@ class User(Base):
     # Mavzuli match: friends | dating | study | any (til — Language maydonida)
     match_topic: Mapped[str] = mapped_column(String(32), default="any")
 
-    # Aloqa sozlamalari — suhbatdosh yoshi oralig'i
-    prefer_age_min: Mapped[int] = mapped_column(Integer, default=18)
-    prefer_age_max: Mapped[int] = mapped_column(Integer, default=99)
+    # Aloqa sozlamalari — suhbatdosh yoshi oralig'i (foydalanuvchi o'zi 0–100)
+    prefer_age_min: Mapped[int] = mapped_column(Integer, default=12)
+    prefer_age_max: Mapped[int] = mapped_column(Integer, default=100)
 
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_banned: Mapped[bool] = mapped_column(default=False)
