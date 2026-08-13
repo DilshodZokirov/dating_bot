@@ -67,6 +67,9 @@ class User(Base):
     # Profil rasmi: data/avatars/{id}.jpg|png|webp
     has_avatar: Mapped[bool] = mapped_column(default=False)
 
+    # Mavzuli match: friends | dating | study | speak_en | ...
+    match_topic: Mapped[str] = mapped_column(String(32), default="any")
+
     # Aloqa sozlamalari — suhbatdosh yoshi oralig'i
     prefer_age_min: Mapped[int] = mapped_column(Integer, default=18)
     prefer_age_max: Mapped[int] = mapped_column(Integer, default=99)
@@ -90,6 +93,20 @@ class CallSession(Base):
 
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CallFeedback(Base):
+    """Suhbatdan keyin 1–5 yulduz baho."""
+
+    __tablename__ = "call_feedback"
+    __table_args__ = (UniqueConstraint("room_id", "from_user_id", name="uq_feedback_room_from"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    room_id: Mapped[str] = mapped_column(String(64), index=True)
+    from_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    to_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    stars: Mapped[int] = mapped_column(Integer)  # 1..5
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Block(Base):

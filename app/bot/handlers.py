@@ -274,6 +274,7 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "search_scope": proposal.get("candidate_search_scope", "country"),
                     "prefer_age_min": proposal.get("candidate_prefer_age_min", 18),
                     "prefer_age_max": proposal.get("candidate_prefer_age_max", 99),
+                    "match_topic": proposal.get("candidate_match_topic", "any"),
                 }
             else:
                 other = {
@@ -286,6 +287,7 @@ async def cmd_stop(message: Message, state: FSMContext):
                     "search_scope": proposal.get("requester_search_scope", "country"),
                     "prefer_age_min": proposal.get("requester_prefer_age_min", 18),
                     "prefer_age_max": proposal.get("requester_prefer_age_max", 99),
+                    "match_topic": proposal.get("requester_match_topic", "any"),
                 }
             await requeue_user(other)
             await set_result(other["user_id"], "requeued")

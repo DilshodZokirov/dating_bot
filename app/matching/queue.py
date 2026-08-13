@@ -15,6 +15,7 @@ import uuid
 import redis.asyncio as redis
 
 from app.config import settings
+from app.topics import topic_compatible
 
 redis_client = redis.from_url(settings.redis_url, decode_responses=True)
 
@@ -77,6 +78,7 @@ async def find_candidate(
     search_scope: str,
     prefer_age_min: int = 18,
     prefer_age_max: int = 99,
+    match_topic: str = "any",
     exclude_ids: set[int] | None = None,
 ) -> dict | None:
     exclude_ids = exclude_ids or set()
@@ -113,6 +115,8 @@ async def find_candidate(
                     continue
                 if candidate["looking_for"] != "any" and candidate["looking_for"] != gender:
                     continue
+                if not topic_compatible(match_topic, candidate.get("match_topic")):
+                    continue
 
                 await redis_client.lrem(opposite_queue, 1, raw)
                 return candidate
@@ -131,6 +135,7 @@ async def join_queue(
     search_scope: str,
     prefer_age_min: int = 18,
     prefer_age_max: int = 99,
+    match_topic: str = "any",
 ):
     await cancel_wait(user_id, looking_for)
     for lf in ("male", "female", "any"):
@@ -148,6 +153,7 @@ async def join_queue(
         "search_scope": search_scope,
         "prefer_age_min": prefer_age_min,
         "prefer_age_max": prefer_age_max,
+        "match_topic": match_topic or "any",
     })
     await redis_client.rpush(my_queue, payload)
 
@@ -172,6 +178,7 @@ async def requeue_user(payload: dict):
         payload.get("search_scope", "country"),
         int(payload.get("prefer_age_min") or 18),
         int(payload.get("prefer_age_max") or 99),
+        payload.get("match_topic") or "any",
     )
 
 
@@ -190,6 +197,7 @@ def _side_fields(prefix: str, data: dict) -> dict:
         f"{prefix}_search_scope": data.get("search_scope", "country"),
         f"{prefix}_prefer_age_min": int(data.get("prefer_age_min") or 18),
         f"{prefix}_prefer_age_max": int(data.get("prefer_age_max") or 99),
+        f"{prefix}_match_topic": data.get("match_topic") or "any",
         f"{prefix}_decision": "pending",
     }
 

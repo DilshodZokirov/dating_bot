@@ -50,3 +50,9 @@ async def init_db():
         await conn.execute(
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_avatar BOOLEAN DEFAULT false")
         )
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS match_topic VARCHAR(32) DEFAULT 'any'")
+        )
+        await conn.execute(
+            text("UPDATE users SET match_topic = 'any' WHERE match_topic IS NULL OR match_topic = ''")
+        )
