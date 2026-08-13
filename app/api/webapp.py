@@ -45,7 +45,7 @@ from app.moderation import add_block, add_report, get_banned_ids, get_blocked_id
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
 from app.telegram_client import notify_admins
-from app.topics import DEFAULT_TOPIC, MATCH_TOPICS, TOPIC_IDS
+from app.topics import DEFAULT_TOPIC, LEGACY_TOPIC_MAP, MATCH_TOPICS, TOPIC_IDS, normalize_topic
 
 router = APIRouter(prefix="/api")
 
@@ -70,7 +70,7 @@ def _queue_payload(user: User) -> dict:
         "search_scope": user.search_scope.value,
         "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
         "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
-        "match_topic": getattr(user, "match_topic", None) or "any",
+        "match_topic": normalize_topic(getattr(user, "match_topic", None)),
     }
 
 
@@ -90,7 +90,7 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
         "search_scope": proposal[f"{prefix}_search_scope"],
         "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 18),
         "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 99),
-        "match_topic": proposal.get(f"{prefix}_match_topic", "any"),
+        "match_topic": normalize_topic(proposal.get(f"{prefix}_match_topic", "any")),
     }
 
 
@@ -120,7 +120,7 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "is_banned": user.is_banned,
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
-        "match_topic": getattr(user, "match_topic", None) or "any",
+        "match_topic": normalize_topic(getattr(user, "match_topic", None)),
     }
 
 
@@ -233,10 +233,10 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             user.prefer_age_min = lo
             user.prefer_age_max = hi
         if update.match_topic is not None:
-            topic = update.match_topic.strip()
-            if topic not in TOPIC_IDS:
+            raw = update.match_topic.strip()
+            if raw not in TOPIC_IDS and raw not in LEGACY_TOPIC_MAP:
                 raise HTTPException(status_code=400, detail="Noto'g'ri mavzu")
-            user.match_topic = topic
+            user.match_topic = normalize_topic(raw)
 
         await session.commit()
 
@@ -333,7 +333,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         user.id, user.gender.value, user.looking_for.value, user.age,
         user.language.value, user.city, user.search_scope.value,
         user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
-        getattr(user, "match_topic", None) or "any",
+        normalize_topic(getattr(user, "match_topic", None)),
     )
 
     # Ikkalasi bir vaqtda bosganda: men navbatga tushganimdan keyin yana bir marta
@@ -385,7 +385,7 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
         search_scope=user.search_scope.value,
         prefer_age_min=user.prefer_age_min or settings.min_age,
         prefer_age_max=user.prefer_age_max or 99,
-        match_topic=getattr(user, "match_topic", None) or "any",
+        match_topic=normalize_topic(getattr(user, "match_topic", None)),
         exclude_ids=exclude,
     )
     if not candidate:

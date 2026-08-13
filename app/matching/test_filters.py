@@ -34,3 +34,7 @@ def test_topic_compatible():
     assert topic_compatible("speak_en", "any")
     assert not topic_compatible("friends", "dating")
     assert not topic_compatible("speak_en", "speak_de")
+    assert topic_compatible("speak_tg", "speak_tg")
+    assert not topic_compatible("speak_ko", "speak_ja")
+    # Eski o'zbek speaking → any
+    assert topic_compatible("speak_uz", "speak_tr")

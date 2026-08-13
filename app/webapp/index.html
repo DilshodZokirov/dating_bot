@@ -1148,12 +1148,137 @@ function tr(key, vars) {
   return str;
 }
 
+const SPEAK_TOPIC_LANG = {
+  speak_en: "en",
+  speak_de: "de",
+  speak_ru: "ru",
+  speak_tg: "tg",
+  speak_tr: "tr",
+  speak_ko: "ko",
+  speak_ja: "ja",
+  speak_zh: "zh",
+};
+
+/** Speaking mavzuda savollar shu tilda (amaliyot uchun) */
+const SPEAK_BANKS = {
+  en: [
+    "What word did you learn today?",
+    "Introduce yourself in 1 minute.",
+    "What is your favorite phrase in English?",
+    "Describe your city in 3 sentences.",
+    "Will you correct my mistakes?",
+    "What topic shall we practice?",
+    "Tell me about your last weekend.",
+    "What food do you recommend?",
+    "Ask me 3 simple questions.",
+    "Why are you learning English?",
+    "What movie did you watch recently?",
+    "Describe your ideal day.",
+  ],
+  de: [
+    "Welches Wort hast du heute gelernt?",
+    "Stell dich in 1 Minute vor.",
+    "Was ist deine Lieblingsphrase auf Deutsch?",
+    "Beschreibe deine Stadt in 3 Sätzen.",
+    "Korrigierst du meine Fehler?",
+    "Welches Thema üben wir?",
+    "Erzähl von deinem letzten Wochenende.",
+    "Welches Essen empfiehlst du?",
+    "Stell mir 3 einfache Fragen.",
+    "Warum lernst du Deutsch?",
+    "Welchen Film hast du zuletzt gesehen?",
+    "Beschreibe deinen idealen Tag.",
+  ],
+  ru: [
+    "Какое слово вы выучили сегодня?",
+    "Представьтесь за 1 минуту.",
+    "Ваша любимая фраза на русском?",
+    "Опишите свой город в 3 предложениях.",
+    "Будете исправлять мои ошибки?",
+    "На какую тему потренируемся?",
+    "Расскажите про последние выходные.",
+    "Какую еду посоветуете?",
+    "Задайте мне 3 простых вопроса.",
+    "Почему учите русский?",
+    "Какой фильм смотрели недавно?",
+    "Опишите свой идеальный день.",
+  ],
+  tg: [
+    "Имрӯз кадом калимаро ёд гирифтед?",
+    "Дар 1 дақиқа худро муаррифӣ кунед.",
+    "Ибораи дӯстдоштаатон ба тоҷикӣ?",
+    "Шаҳратонро дар 3 ҷумла тавсиф кунед.",
+    "Хатоҳои маро ислоҳ мекунед?",
+    "Дар кадом мавзуъ машқ мекунем?",
+    "Дар бораи истироҳати охирин бигӯед.",
+    "Кадом таомро тавсия медиҳед?",
+    "Ба ман 3 саволи оддӣ диҳед.",
+    "Чаро забони тоҷикиро меомӯзед?",
+    "Охирин кадом филмро дидед?",
+    "Рӯзи идеалиатонро тавсиф кунед.",
+  ],
+  tr: [
+    "Bugün hangi kelimeyi öğrendiniz?",
+    "1 dakikada kendinizi tanıtın.",
+    "Türkçede favori cümleniz nedir?",
+    "Şehrinizi 3 cümlede anlatın.",
+    "Hatalarımı düzeltir misiniz?",
+    "Hangi konuda pratik yapalım?",
+    "Son hafta sonunuzu anlatın.",
+    "Hangi yemeği önerirsiniz?",
+    "Bana 3 basit soru sorun.",
+    "Neden Türkçe öğreniyorsunuz?",
+    "Son izlediğiniz film neydi?",
+    "İdeal gününüzü anlatın.",
+  ],
+  ko: [
+    "오늘 배운 단어는 뭐예요?",
+    "1분 동안 자기소개 해주세요.",
+    "좋아하는 한국어 문장은?",
+    "당신의 도시를 세 문장으로 설명해 주세요.",
+    "제 실수를 고쳐 주시겠어요?",
+    "어떤 주제로 연습할까요?",
+    "지난 주말에 뭐 했어요?",
+    "추천하는 음식이 있나요?",
+    "간단한 질문 세 개 해주세요.",
+    "왜 한국어를 배워요?",
+    "최근에 본 영화는?",
+    "이상적인 하루를 말해 주세요.",
+  ],
+  ja: [
+    "今日覚えた単語は何ですか？",
+    "1分で自己紹介してください。",
+    "好きな日本語のフレーズは？",
+    "あなたの街を3文で説明してください。",
+    "間違えたら直してくれますか？",
+    "何のトピックを練習しますか？",
+    "先週の週末について話してください。",
+    "おすすめの食べ物は？",
+    "簡単な質問を3つしてください。",
+    "なぜ日本語を勉強していますか？",
+    "最近見た映画は？",
+    "理想の一日を教えてください。",
+  ],
+  zh: [
+    "你今天学了哪个词？",
+    "请用一分钟自我介绍。",
+    "你最喜欢的中文句子是什么？",
+    "用三句话描述你的城市。",
+    "你会纠正我的错误吗？",
+    "我们练习什么话题？",
+    "说说你上个周末做了什么。",
+    "你推荐什么食物？",
+    "请问我三个简单的问题。",
+    "你为什么学中文？",
+    "你最近看了什么电影？",
+    "描述一下你理想的一天。",
+  ],
+};
+
 function gameLang() {
   if (sessionGameLang) return sessionGameLang;
-  if (matchTopic === "speak_ru") return "ru";
-  if (matchTopic === "speak_en") return "en";
-  if (matchTopic === "speak_uz") return "uz";
-  if (matchTopic === "speak_de") return "de";
+  const fromTopic = SPEAK_TOPIC_LANG[matchTopic];
+  if (fromTopic) return fromTopic;
   return currentLang === "de" ? "de" : (currentLang || "uz");
 }
 
@@ -1165,9 +1290,14 @@ function topicBucket(topic) {
 }
 
 function activeIcebreakers(topic) {
-  const bucket = topicBucket(topic);
+  const t = topic || sessionTopic || matchTopic || "any";
+  if (String(t).startsWith("speak_")) {
+    const lang = SPEAK_TOPIC_LANG[t] || "en";
+    const bank = SPEAK_BANKS[lang] || SPEAK_BANKS.en;
+    return bank.map((text) => ({ [lang]: text, en: text }));
+  }
+  const bucket = topicBucket(t);
   const extra = TOPIC_ICEBREAKERS[bucket] || [];
-  // Bitta umumiy ro'yxat — index sync ishlashi uchun
   return bucket === "any" ? ICEBREAKERS : [...extra, ...ICEBREAKERS];
 }
 
@@ -1500,7 +1630,10 @@ async function loadTopics() {
   } catch (_) {
     [
       ["any", "Farqi yo'q"], ["friends", "Do'st topish"], ["dating", "Juft / tanishuv"],
-      ["study", "Ilmiy / o'qish"], ["speak_en", "Ingliz speaking"], ["speak_de", "Nemis speaking"],
+      ["study", "Ilmiy / o'qish"],
+      ["speak_en", "Ingliz speaking"], ["speak_de", "Nemis speaking"], ["speak_ru", "Rus speaking"],
+      ["speak_tg", "Tojik speaking"], ["speak_tr", "Turk speaking"],
+      ["speak_ko", "Koreys speaking"], ["speak_ja", "Yapon speaking"], ["speak_zh", "Xitoy speaking"],
     ].forEach(([v, label]) => {
       const opt = document.createElement("option");
       opt.value = v;
