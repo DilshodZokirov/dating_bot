@@ -8,16 +8,35 @@ from __future__ import annotations
 
 # id → labels (faqat suhbat maqsadi; til emas)
 MATCH_TOPICS: list[dict] = [
-    {"id": "any", "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything"},
-    {"id": "friends", "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends"},
-    {"id": "dating", "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating"},
-    {"id": "study", "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study"},
+    {
+        "id": "any",
+        "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything",
+        "de": "Egal", "tg": "Фарқ надорад", "tr": "Fark etmez",
+        "ko": "상관없음", "ja": "どちらでも", "zh": "无所谓",
+    },
+    {
+        "id": "friends",
+        "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends",
+        "de": "Freunde finden", "tg": "Дӯст ёфтан", "tr": "Arkadaş bul",
+        "ko": "친구 찾기", "ja": "友達を探す", "zh": "找朋友",
+    },
+    {
+        "id": "dating",
+        "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating",
+        "de": "Dating", "tg": "Ҷуфт / шиносоӣ", "tr": "Flört / tanışma",
+        "ko": "데이팅", "ja": "出会い", "zh": "恋爱 / 交友",
+    },
+    {
+        "id": "study",
+        "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study",
+        "de": "Lernen / Studium", "tg": "Таҳсил / илм", "tr": "Eğitim / öğrenme",
+        "ko": "공부", "ja": "学習", "zh": "学习",
+    },
 ]
 
 TOPIC_IDS = {t["id"] for t in MATCH_TOPICS}
 DEFAULT_TOPIC = "any"
 
-# Eski speaking mavzular → any (til endi Language da)
 LEGACY_TOPIC_MAP = {
     "speak_uz": "any",
     "speak_en": "any",
@@ -52,5 +71,5 @@ def topic_label(topic_id: str, lang: str = "uz") -> str:
     tid = normalize_topic(topic_id)
     for t in MATCH_TOPICS:
         if t["id"] == tid:
-            return t.get(lang) or t["uz"]
+            return t.get(lang) or t.get("en") or t["uz"]
     return tid
