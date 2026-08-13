@@ -1,5 +1,5 @@
 """
-Bot xabarlari — barcha tillar: uz/ru/en/de/tg/tr/ko/ja/zh.
+Bot xabarlari — barcha tillar: uz/ru/en/de/tg/tr/ko/ja/zh/ar.
 """
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
@@ -13,6 +13,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "다시 오신 것을 환영합니다, {name}!\n상대를 찾으려면 <b>Menu</b> 또는 /search.",
         "ja": "おかえりなさい、{name}!\n相手を探すには <b>Menu</b> か /search。",
         "zh": "欢迎回来，{name}！\n点下方 <b>Menu</b> 或发送 /search 寻找聊天对象。",
+        "ar": "مرحبًا بعودتك، {name}!\nللعثور على شريك اضغط <b>Menu</b> أو أرسل /search.",
     },
     "searching": {
         "uz": "Suhbatdosh qidirilmoqda... Bekor qilish uchun /stop yuboring.",
@@ -24,6 +25,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "상대 검색 중... 취소: /stop.",
         "ja": "相手を検索中... キャンセルは /stop。",
         "zh": "正在寻找对象… 取消请发 /stop。",
+        "ar": "جاري البحث عن شريك... للإلغاء أرسل /stop.",
     },
     "proposal_sent_notice": {
         "uz": "Sizga mos kishi topildi! Yuqoridagi xabarga javob bering.",
@@ -35,6 +37,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "매칭을 찾았습니다! 위 메시지에 답하세요.",
         "ja": "マッチが見つかりました！上のメッセージに返信してください。",
         "zh": "找到匹配了！请回复上方消息。",
+        "ar": "تم العثور على تطابق! الرجاء الرد على الرسالة أعلاه.",
     },
     "proposal_text": {
         "uz": "🔔 Sizga mos suhbatdosh topildi!\n\nIsm: {name}\nYosh: {age}\nJins: {gender}\n\nShu kishi bilan suhbatlashishga rozimisiz?",
@@ -46,14 +49,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "🔔 매칭을 찾았습니다!\n\n이름: {name}\n나이: {age}\n성별: {gender}\n\n대화할까요?",
         "ja": "🔔 マッチです！\n\n名前: {name}\n年齢: {age}\n性別: {gender}\n\n話しますか？",
         "zh": "🔔 为你找到匹配！\n\n姓名：{name}\n年龄：{age}\n性别：{gender}\n\n要聊天吗？",
+        "ar": "🔔 تم العثور على شريك مناسب!\n\nالاسم: {name}\nالعمر: {age}\nالجنس: {gender}\n\nهل تريد الدردشة مع هذا الشخص؟",
     },
     "btn_accept": {
         "uz": "✅ Roziman", "ru": "✅ Согласен(на)", "en": "✅ Accept", "de": "✅ Annehmen",
         "tg": "✅ Розӣ", "tr": "✅ Kabul", "ko": "✅ 수락", "ja": "✅ 承諾", "zh": "✅ 接受",
+        "ar": "✅ قبول",
     },
     "btn_decline": {
         "uz": "❌ Yo'q", "ru": "❌ Нет", "en": "❌ Decline", "de": "❌ Nein",
         "tg": "❌ Не", "tr": "❌ Hayır", "ko": "❌ 거절", "ja": "❌ 拒否", "zh": "❌ 拒绝",
+        "ar": "❌ لا",
     },
     "accepted_waiting_partner": {
         "uz": "✅ Siz rozi bo'ldingiz. Hamsuhbatingiz javobini kutmoqdamiz...",
@@ -65,11 +71,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "✅ 수락했습니다. 상대 응답 대기 중...",
         "ja": "✅ 承諾しました。相手を待っています...",
         "zh": "✅ 已接受。正在等待对方…",
+        "ar": "✅ قبلت. بانتظار رد الطرف الآخر...",
     },
     "accepted_confirmed": {
         "uz": "✅ Siz rozi bo'ldingiz!", "ru": "✅ Вы согласились!", "en": "✅ You accepted!",
         "de": "✅ Angenommen!", "tg": "✅ Розӣ шудед!", "tr": "✅ Kabul ettiniz!",
         "ko": "✅ 수락했습니다!", "ja": "✅ 承諾しました！", "zh": "✅ 已接受！",
+        "ar": "✅ قبلت!",
     },
     "match_started": {
         "uz": "🎉 Suhbat boshlandi!\nQo'ng'iroq uchun pastdagi tugmani bosing.",
@@ -81,11 +89,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "🎉 대화가 시작되었습니다!\n아래 버튼으로 통화를 여세요.",
         "ja": "🎉 チャット開始！\n下のボタンで通話を開いてください。",
         "zh": "🎉 聊天开始！\n点下方按钮打开通话。",
+        "ar": "🎉 بدأت المحادثة!\nافتح المكالمة بالزر أدناه.",
     },
     "declined_self": {
         "uz": "❌ Siz rad etdingiz.", "ru": "❌ Вы отклонили.", "en": "❌ You declined.",
         "de": "❌ Abgelehnt.", "tg": "❌ Рад кардед.", "tr": "❌ Reddettiniz.",
         "ko": "❌ 거절했습니다.", "ja": "❌ 拒否しました。", "zh": "❌ 已拒绝。",
+        "ar": "❌ لقد رفضت.",
     },
     "declined_other": {
         "uz": "Afsuski, hamsuhbatingiz rad etdi. Sizni avtomatik ravishda qayta qidiruvga qo'shdik — kutib turing.",
@@ -97,6 +107,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "상대가 거절했습니다. 다시 검색 중입니다 — 잠시만요.",
         "ja": "残念ながら拒否されました。再検索中です — お待ちください。",
         "zh": "对方已拒绝。已自动重新加入搜索 — 请稍候。",
+        "ar": "للأسف رفض الطرف الآخر. أعدنا إضافتك للبحث تلقائيًا — انتظر.",
     },
     "proposal_invalid": {
         "uz": "Bu taklif eskirgan yoki allaqachon javob berilgan.",
@@ -108,6 +119,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "이 제안은 만료되었거나 이미 응답되었습니다.",
         "ja": "この提案は期限切れか、すでに回答済みです。",
         "zh": "该提议已过期或已回复。",
+        "ar": "هذا العرض منتهٍ أو تمت الإجابة عليه.",
     },
     "stop_confirm": {
         "uz": "Qidiruv/suhbat bekor qilindi. Qayta boshlash uchun /search.",
@@ -119,6 +131,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "검색/채팅 취소됨. 다시: /search.",
         "ja": "検索/チャットをキャンセル。再開は /search。",
         "zh": "搜索/聊天已取消。重新开始请发 /search。",
+        "ar": "أُلغي البحث/المحادثة. للبدء مجددًا أرسل /search.",
     },
     "partner_cancelled": {
         "uz": "Suhbatdoshingiz qidiruvni bekor qildi.",
@@ -130,6 +143,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "상대가 검색을 취소했습니다.",
         "ja": "相手が検索をキャンセルしました。",
         "zh": "对方取消了搜索。",
+        "ar": "ألغى الشريك البحث.",
     },
     "reset_confirm": {
         "uz": "Profilingiz o'chirildi. Qayta ro'yxatdan o'tish uchun /start yuboring.",
@@ -141,14 +155,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "프로필이 삭제되었습니다. 재가입: /start.",
         "ja": "プロフィールを削除しました。再登録は /start。",
         "zh": "资料已删除。重新注册请发 /start。",
+        "ar": "حُذف ملفك. للتسجيل مجددًا أرسل /start.",
     },
     "gender_male": {
         "uz": "Erkak", "ru": "Мужской", "en": "Male", "de": "Männlich",
         "tg": "Мард", "tr": "Erkek", "ko": "남성", "ja": "男性", "zh": "男",
+        "ar": "ذكر",
     },
     "gender_female": {
         "uz": "Ayol", "ru": "Женский", "en": "Female", "de": "Weiblich",
         "tg": "Зан", "tr": "Kadın", "ko": "여성", "ja": "女性", "zh": "女",
+        "ar": "أنثى",
     },
     "search_check_app": {
         "uz": "Taklif Mini App'da ko'rinadi — pastdagi Menu tugmasini bosing.",
@@ -160,6 +177,104 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ko": "제안이 미니 앱에 표시됩니다 — Menu를 누르세요.",
         "ja": "提案はミニアプリに表示されます — Menu をタップ。",
         "zh": "提议会出现在迷你应用中 — 请点 Menu。",
+        "ar": "سيظهر العرض في تطبيق الميني — اضغط Menu بالأسفل.",
+    },
+
+    "kb_search_call": {
+        "uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call",
+        "de": "🔍 Suche / Anruf", "tg": "🔍 Ҷустуҷӯ / Занг", "tr": "🔍 Arama / Görüşme",
+        "ko": "🔍 검색 / 통화", "ja": "🔍 検索 / 通話", "zh": "🔍 搜索 / 通话",
+        "ar": "🔍 بحث / مكالمة",
+    },
+    "kb_open_miniapp": {
+        "uz": "📱 Mini Appni ochish", "ru": "📱 Открыть Mini App", "en": "📱 Open Mini App",
+        "de": "📱 Mini App öffnen", "tg": "📱 Mini App-ро кушоед", "tr": "📱 Mini App'i aç",
+        "ko": "📱 미니 앱 열기", "ja": "📱 ミニアプリを開く", "zh": "📱 打开迷你应用",
+        "ar": "📱 افتح تطبيق الميني",
+    },
+    "open_mini_app": {
+        "uz": "Mini Appni ochish:", "ru": "Открыть Mini App:", "en": "Open Mini App:",
+        "de": "Mini App öffnen:", "tg": "Mini App-ро кушоед:", "tr": "Mini App'i açın:",
+        "ko": "미니 앱 열기:", "ja": "ミニアプリを開く:", "zh": "打开迷你应用：",
+        "ar": "افتح تطبيق الميني:",
+    },
+    "or_this_button": {
+        "uz": "Yoki shu tugma:", "ru": "Или эта кнопка:", "en": "Or this button:",
+        "de": "Oder dieser Button:", "tg": "Ё ин тугма:", "tr": "Veya bu düğme:",
+        "ko": "또는 이 버튼:", "ja": "またはこのボタン:", "zh": "或此按钮：",
+        "ar": "أو هذا الزر:",
+    },
+    "webapp_url_missing": {
+        "uz": "⚠️ WEBAPP_URL bo'sh. .env ni tekshiring.",
+        "ru": "⚠️ WEBAPP_URL пуст. Проверьте .env.",
+        "en": "⚠️ WEBAPP_URL is empty. Check .env.",
+        "de": "⚠️ WEBAPP_URL ist leer. .env prüfen.",
+        "tg": "⚠️ WEBAPP_URL холӣ. .env-ро санҷед.",
+        "tr": "⚠️ WEBAPP_URL boş. .env'i kontrol edin.",
+        "ko": "⚠️ WEBAPP_URL이 비어 있습니다. .env를 확인하세요.",
+        "ja": "⚠️ WEBAPP_URL が空です。.env を確認してください。",
+        "zh": "⚠️ WEBAPP_URL 为空。请检查 .env。",
+        "ar": "⚠️ WEBAPP_URL فارغ. تحقق من .env.",
+    },
+    "reg_hello": {
+        "uz": "Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:",
+        "ru": "Привет! Начинаем регистрацию.\nВведите имя:",
+        "en": "Hi! Let's register.\nEnter your name:",
+        "de": "Hallo! Registrierung.\nGeben Sie Ihren Namen ein:",
+        "tg": "Салом! Сабт номро оғоз.\nНоматонро ворид кунед:",
+        "tr": "Merhaba! Kayıt başlıyor.\nAdınızı girin:",
+        "ko": "안녕하세요! 가입을 시작합니다.\n이름을 입력하세요:",
+        "ja": "こんにちは！登録を始めます。\n名前を入力してください:",
+        "zh": "你好！开始注册。\n请输入姓名：",
+        "ar": "مرحبًا! نبدأ التسجيل.\nأدخل اسمك:",
+    },
+    "reg_done": {
+        "uz": "✅ Ro'yxatdan o'tish tugadi!\n\nSuhbatdosh qidirish va <b>audio/video qo'ng'iroq</b> Mini App ichida.\nPastdagi tugmani bosing yoki Menu → Qidirish.",
+        "ru": "✅ Регистрация завершена!\n\nПоиск и <b>аудио/видео</b> — в Mini App.\nНажмите кнопку ниже или Menu.",
+        "en": "✅ Registration done!\n\nSearch and <b>audio/video calls</b> are in the Mini App.\nTap the button below or Menu.",
+        "de": "✅ Registrierung fertig!\n\nSuche und <b>Audio/Video</b> in der Mini App.\nTippen Sie unten oder Menu.",
+        "tg": "✅ Сабт анҷом!\n\nҶустуҷӯ ва <b>аудио/видео</b> дар Mini App.\nТугмаи поён ё Menu.",
+        "tr": "✅ Kayıt tamam!\n\nArama ve <b>ses/görüntü</b> Mini App'te.\nAlttaki düğme veya Menu.",
+        "ko": "✅ 가입 완료!\n\n검색과 <b>음성/영상 통화</b>는 미니 앱에서.\n아래 버튼 또는 Menu.",
+        "ja": "✅ 登録完了！\n\n検索と<b>音声/ビデオ</b>はミニアプリで。\n下のボタンか Menu。",
+        "zh": "✅ 注册完成！\n\n搜索与 <b>音视频通话</b> 在迷你应用中。\n点下方按钮或 Menu。",
+        "ar": "✅ اكتمل التسجيل!\n\nالبحث و<b>المكالمات الصوتية/المرئية</b> داخل تطبيق الميني.\nاضغط الزر أدناه أو Menu.",
+    },
+    "need_register": {
+        "uz": "Avval ro'yxatdan o'ting: /start",
+        "ru": "Сначала зарегистрируйтесь: /start",
+        "en": "Please register first: /start",
+        "de": "Bitte zuerst registrieren: /start",
+        "tg": "Аввал сабт шавед: /start",
+        "tr": "Önce kayıt olun: /start",
+        "ko": "먼저 가입하세요: /start",
+        "ja": "先に登録してください: /start",
+        "zh": "请先注册：/start",
+        "ar": "سجّل أولاً: /start",
+    },
+    "bad_step": {
+        "uz": "Joriy bosqich uchun javob noto'g'ri. /start bilan boshidan.",
+        "ru": "Неверный ответ для этого шага. Начните с /start.",
+        "en": "Wrong reply for this step. Start over with /start.",
+        "de": "Falsche Antwort. Neu mit /start.",
+        "tg": "Ҷавоб нодуруст. Аз /start оғоз кунед.",
+        "tr": "Bu adım için yanlış yanıt. /start ile baştan.",
+        "ko": "이 단계에 잘못된 답변입니다. /start로 다시.",
+        "ja": "この手順の返答が正しくありません。/start でやり直してください。",
+        "zh": "此步骤回复不正确。请用 /start 重新开始。",
+        "ar": "رد غير صحيح لهذه الخطوة. ابدأ من /start.",
+    },
+    "help_commands": {
+        "uz": "Buyruqlar: /start — boshlash, /app — Mini App, /reset — profilni o'chirish",
+        "ru": "Команды: /start — старт, /app — Mini App, /reset — сброс профиля",
+        "en": "Commands: /start — start, /app — Mini App, /reset — delete profile",
+        "de": "Befehle: /start — Start, /app — Mini App, /reset — Profil löschen",
+        "tg": "Фармонҳо: /start — оғоз, /app — Mini App, /reset — профил",
+        "tr": "Komutlar: /start — başla, /app — Mini App, /reset — profil sil",
+        "ko": "명령: /start — 시작, /app — 미니 앱, /reset — 프로필 삭제",
+        "ja": "コマンド: /start — 開始, /app — ミニアプリ, /reset — プロフィール削除",
+        "zh": "命令：/start — 开始，/app — 迷你应用，/reset — 删除资料",
+        "ar": "الأوامر: /start — البدء، /app — تطبيق الميني، /reset — حذف الملف",
     },
 }
 

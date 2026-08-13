@@ -28,7 +28,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=tg1"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n3"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -37,9 +37,7 @@ def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
     if not url:
         print("WARNING: WEBAPP_URL bo'sh — Mini App tugmasi yuborilmaydi", flush=True)
         return ReplyKeyboardRemove()
-    label = {"uz": "🔍 Qidirish / Qo'ng'iroq", "ru": "🔍 Поиск / Звонок", "en": "🔍 Search / Call"}.get(
-        lang, "🔍 Qidirish / Qo'ng'iroq"
-    )
+    label = t(lang, "kb_search_call")
     print(f"Mini App URL: {url}", flush=True)
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=label, web_app=WebAppInfo(url=url))]],
@@ -51,9 +49,7 @@ def _webapp_inline(lang: str = "uz") -> InlineKeyboardMarkup | None:
     url = _webapp_url()
     if not url:
         return None
-    label = {"uz": "📱 Mini Appni ochish", "ru": "📱 Открыть Mini App", "en": "📱 Open Mini App"}.get(
-        lang, "📱 Mini Appni ochish"
-    )
+    label = t(lang, "kb_open_miniapp")
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text=label, web_app=WebAppInfo(url=url))]]
     )
@@ -68,6 +64,7 @@ language_kb = ReplyKeyboardMarkup(
         [KeyboardButton(text="O'zbek"), KeyboardButton(text="Русский"), KeyboardButton(text="English")],
         [KeyboardButton(text="Deutsch"), KeyboardButton(text="Tojik"), KeyboardButton(text="Turk")],
         [KeyboardButton(text="Koreys"), KeyboardButton(text="Yapon"), KeyboardButton(text="Xitoy")],
+        [KeyboardButton(text="Arab")],
     ],
     resize_keyboard=True,
 )
@@ -84,6 +81,7 @@ LANGUAGE_MAP = {
     "Koreys": Language.ko,
     "Yapon": Language.ja,
     "Xitoy": Language.zh,
+    "Arab": Language.ar,
 }
 
 
@@ -101,12 +99,12 @@ async def cmd_start(message: Message, state: FSMContext):
             )
             inline = _webapp_inline(user.language.value)
             if inline:
-                await message.answer("Mini Appni ochish:", reply_markup=inline)
+                await message.answer(t(user.language.value, "open_mini_app"), reply_markup=inline)
             elif not settings.webapp_url:
-                await message.answer("⚠️ WEBAPP_URL bo'sh. .env ni tekshiring va botni qayta ishga tushiring.")
+                await message.answer(t(user.language.value, "webapp_url_missing"))
             return
 
-        await message.answer("Salom! Ro'yxatdan o'tishni boshlaymiz.\nIsmingizni kiriting:")
+        await message.answer(t("uz", "reg_hello"))
         await state.set_state(Registration.name)
     except Exception as e:
         print(f"cmd_start ERROR: {e}", flush=True)
@@ -120,12 +118,12 @@ async def cmd_app(message: Message, state: FSMContext):
         user = await session.get(User, message.from_user.id)
     lang = user.language.value if user else "uz"
     if not settings.webapp_url:
-        await message.answer("WEBAPP_URL bo'sh. .env ga ngrok HTTPS manzilini yozing.")
+        await message.answer(t(lang, "webapp_url_missing"))
         return
-    await message.answer("Mini App:", reply_markup=_webapp_kb(lang))
+    await message.answer(t(lang, "open_mini_app"), reply_markup=_webapp_kb(lang))
     inline = _webapp_inline(lang)
     if inline:
-        await message.answer("Yoki shu tugma:", reply_markup=inline)
+        await message.answer(t(lang, "or_this_button"), reply_markup=inline)
 
 
 @router.callback_query(F.data.startswith("p:"))
@@ -241,12 +239,10 @@ async def process_language(message: Message, state: FSMContext):
 
     await state.clear()
     lang = data["language"].value if hasattr(data["language"], "value") else data["language"]
-    await message.answer(
-        "✅ Ro'yxatdan o'tish tugadi!\n\n"
-        "Suhbatdosh qidirish va <b>audio/video qo'ng'iroq</b> Mini App ichida.\n"
-        "Pastdagi tugmani bosing yoki Menu → Qidirish.",
-        reply_markup=_webapp_kb(lang),
-    )
+    await message.answer(t(lang, "reg_done"), reply_markup=_webapp_kb(lang))
+    inline = _webapp_inline(lang)
+    if inline:
+        await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
 
 
 @router.message(Command("search"))
@@ -259,7 +255,7 @@ async def cmd_search(message: Message, state: FSMContext):
         user = await session.get(User, message.from_user.id)
 
     if not user:
-        await message.answer("Avval ro'yxatdan o'ting: /start")
+        await message.answer(t("uz", "need_register"))
         return
 
     await message.answer(
@@ -441,10 +437,12 @@ async def fallback_text(message: Message, state: FSMContext):
     """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz."""
     current = await state.get_state()
     print(f"fallback: text={message.text!r} state={current}", flush=True)
+    lang = "uz"
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    if user:
+        lang = user.language.value
     if current:
-        await message.answer("Joriy bosqich uchun javob noto'g'ri. /start bilan boshidan boshlang.")
+        await message.answer(t(lang, "bad_step"))
         return
-    await message.answer(
-        "Buyruqlar: /start — boshlash, /app — Mini App, /reset — profilni o'chirish",
-        reply_markup=_webapp_kb("uz"),
-    )
+    await message.answer(t(lang, "help_commands"), reply_markup=_webapp_kb(lang))
