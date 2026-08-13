@@ -64,13 +64,27 @@ gender_kb = ReplyKeyboardMarkup(
 )
 
 language_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="O'zbek"), KeyboardButton(text="Русский"), KeyboardButton(text="English")]],
+    keyboard=[
+        [KeyboardButton(text="O'zbek"), KeyboardButton(text="Русский"), KeyboardButton(text="English")],
+        [KeyboardButton(text="Deutsch"), KeyboardButton(text="Tojik"), KeyboardButton(text="Turk")],
+        [KeyboardButton(text="Koreys"), KeyboardButton(text="Yapon"), KeyboardButton(text="Xitoy")],
+    ],
     resize_keyboard=True,
 )
 
 GENDER_MAP = {"Erkak": Gender.male, "Ayol": Gender.female}
 OPPOSITE_GENDER = {Gender.male: LookingFor.female, Gender.female: LookingFor.male}
-LANGUAGE_MAP = {"O'zbek": Language.uz, "Русский": Language.ru, "English": Language.en}
+LANGUAGE_MAP = {
+    "O'zbek": Language.uz,
+    "Русский": Language.ru,
+    "English": Language.en,
+    "Deutsch": Language.de,
+    "Tojik": Language.tg,
+    "Turk": Language.tr,
+    "Koreys": Language.ko,
+    "Yapon": Language.ja,
+    "Xitoy": Language.zh,
+}
 
 
 @router.message(CommandStart())
@@ -197,7 +211,11 @@ async def process_age(message: Message, state: FSMContext):
 async def process_gender(message: Message, state: FSMContext):
     gender = GENDER_MAP[message.text]
     await state.update_data(gender=gender, looking_for=OPPOSITE_GENDER[gender])
-    await message.answer("Qaysi tilda suhbatlashmoqchisiz?", reply_markup=language_kb)
+    await message.answer(
+        "Qaysi tilda suhbatlashmoqchisiz?\n"
+        "(Qidiruv shu til bo‘yicha mos suhbatdosh topadi)",
+        reply_markup=language_kb,
+    )
     await state.set_state(Registration.language)
 
 

@@ -869,6 +869,12 @@
           <option value="uz">O‘zbek</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="tg">Tojik</option>
+          <option value="tr">Türkçe</option>
+          <option value="ko">한국어</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
         </select>
       </div>
       <div class="field">
@@ -963,7 +969,7 @@ const TRANSLATIONS = {
   lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age" },
   lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
   lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location" },
-  lbl_language: { uz: "Til", ru: "Язык", en: "Language" },
+  lbl_language: { uz: "Til (qidiruv shu til bo‘yicha)", ru: "Язык (поиск по языку)", en: "Language (match by language)" },
   lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region" },
   lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
   lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for" },
@@ -1122,24 +1128,18 @@ const TOPIC_ICEBREAKERS = {
     { uz: "Imtihon oldidan nima qilasiz?", ru: "Что делаете перед экзаменом?", en: "What do you do before an exam?", de: "Was vor der Prüfung?" },
     { uz: "Birga qanday loyiha qilardik?", ru: "Какой проект сделали бы вместе?", en: "What project would we do together?", de: "Welches Projekt zusammen?" },
   ],
-  speak: [
-    { uz: "Bugun qaysi so‘zni o‘rgandingiz?", ru: "Какое слово выучили сегодня?", en: "What word did you learn today?", de: "Welches Wort heute gelernt?" },
-    { uz: "Eng qiyin talaffuz qaysi?", ru: "Какое произношение самое сложное?", en: "Which pronunciation is hardest?", de: "Welche Aussprache ist schwer?" },
-    { uz: "Sevimli iborangiz shu tilda?", ru: "Любимая фраза на этом языке?", en: "Favorite phrase in this language?", de: "Lieblingsphrase in dieser Sprache?" },
-    { uz: "Filmni originalda ko‘rasizmi?", ru: "Смотрите фильмы в оригинале?", en: "Do you watch films in original?", de: "Filme im Original?" },
-    { uz: "Qanday mavzuda mashq qilamiz?", ru: "На какую тему потренируемся?", en: "What topic shall we practice?", de: "Welches Thema üben wir?" },
-    { uz: "Xato qilsam tuzatasizmi?", ru: "Будете исправлять ошибки?", en: "Will you correct my mistakes?", de: "Korrigieren Sie Fehler?" },
-    { uz: "3 ta oddiy jumla ayting shu tilda", ru: "Скажите 3 простые фразы на языке", en: "Say 3 simple sentences in the language", de: "Sagen Sie 3 einfache Sätze" },
-    { uz: "Nima uchun bu tilni o‘rganyapsiz?", ru: "Почему учите этот язык?", en: "Why are you learning this language?", de: "Warum lernen Sie die Sprache?" },
-    { uz: "Eng yoqqan so‘z/ibora?", ru: "Самое любимое слово/фраза?", en: "Your favorite word/phrase?", de: "Lieblingswort/-phrase?" },
-    { uz: "1 daqiqada o‘zingizni tanishtiring", ru: "Представьтесь за 1 минуту", en: "Introduce yourself in 1 minute", de: "Stellen Sie sich in 1 Minute vor" },
-  ],
 };
 
 let currentLang = "uz";
+let profileLanguage = "uz";
 let matchTopic = "any";
 let sessionGameLang = null;
 let usedRouletteIndexes = new Set();
+
+/** UI tarjimalari faqat uz/ru/en — boshqa tillarda interfeys o‘zbekcha */
+function uiLang(lang) {
+  return lang === "ru" || lang === "en" ? lang : "uz";
+}
 
 function tr(key, vars) {
   const entry = TRANSLATIONS[key] || {};
@@ -1148,18 +1148,7 @@ function tr(key, vars) {
   return str;
 }
 
-const SPEAK_TOPIC_LANG = {
-  speak_en: "en",
-  speak_de: "de",
-  speak_ru: "ru",
-  speak_tg: "tg",
-  speak_tr: "tr",
-  speak_ko: "ko",
-  speak_ja: "ja",
-  speak_zh: "zh",
-};
-
-/** Speaking mavzuda savollar shu tilda (amaliyot uchun) */
+/** Til amaliyoti / ruletka — profil tiliga mos savollar */
 const SPEAK_BANKS = {
   en: [
     "What word did you learn today?",
@@ -1277,28 +1266,27 @@ const SPEAK_BANKS = {
 
 function gameLang() {
   if (sessionGameLang) return sessionGameLang;
-  const fromTopic = SPEAK_TOPIC_LANG[matchTopic];
-  if (fromTopic) return fromTopic;
-  return currentLang === "de" ? "de" : (currentLang || "uz");
+  return profileLanguage || currentLang || "uz";
 }
 
 function topicBucket(topic) {
   const t = topic || matchTopic || "any";
-  if (String(t).startsWith("speak_")) return "speak";
   if (t === "friends" || t === "dating" || t === "study") return t;
   return "any";
 }
 
 function activeIcebreakers(topic) {
+  const lang = gameLang();
   const t = topic || sessionTopic || matchTopic || "any";
-  if (String(t).startsWith("speak_")) {
-    const lang = SPEAK_TOPIC_LANG[t] || "en";
-    const bank = SPEAK_BANKS[lang] || SPEAK_BANKS.en;
-    return bank.map((text) => ({ [lang]: text, en: text }));
-  }
   const bucket = topicBucket(t);
   const extra = TOPIC_ICEBREAKERS[bucket] || [];
-  return bucket === "any" ? ICEBREAKERS : [...extra, ...ICEBREAKERS];
+  const base = bucket === "any" ? ICEBREAKERS : [...extra, ...ICEBREAKERS];
+  const bank = SPEAK_BANKS[lang];
+  // uz/ru/en uchun ko‘p tilli bank yetarli; boshqa tillarda native savollar birinchi
+  if (bank && !["uz", "ru", "en"].includes(lang)) {
+    return [...bank.map((text) => ({ [lang]: text, en: text })), ...base];
+  }
+  return base;
 }
 
 function applyStaticTranslations() {
@@ -1629,11 +1617,8 @@ async function loadTopics() {
     }
   } catch (_) {
     [
-      ["any", "Farqi yo'q"], ["friends", "Do'st topish"], ["dating", "Juft / tanishuv"],
-      ["study", "Ilmiy / o'qish"],
-      ["speak_en", "Ingliz speaking"], ["speak_de", "Nemis speaking"], ["speak_ru", "Rus speaking"],
-      ["speak_tg", "Tojik speaking"], ["speak_tr", "Turk speaking"],
-      ["speak_ko", "Koreys speaking"], ["speak_ja", "Yapon speaking"], ["speak_zh", "Xitoy speaking"],
+      ["any", "Farqi yo'q"], ["friends", "Do'st topish"],
+      ["dating", "Juft / tanishuv"], ["study", "Ilmiy / o'qish"],
     ].forEach(([v, label]) => {
       const opt = document.createElement("option");
       opt.value = v;
@@ -1663,7 +1648,8 @@ async function loadMe() {
     }
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
-    currentLang = me.language || "uz";
+    profileLanguage = me.language || "uz";
+    currentLang = uiLang(profileLanguage);
     matchTopic = me.match_topic || "any";
     applyStaticTranslations();
     userLabel.textContent = tr("hi", { name: me.name || "" });
@@ -1671,7 +1657,7 @@ async function loadMe() {
     document.getElementById("profileAge").value = me.age || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";
-    document.getElementById("profileLanguage").value = me.language || "uz";
+    document.getElementById("profileLanguage").value = profileLanguage;
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
@@ -1795,7 +1781,8 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
         prefer_age_max: pMax,
       }),
     });
-    currentLang = newLang;
+    profileLanguage = newLang;
+    currentLang = uiLang(newLang);
     matchTopic = document.getElementById("profileTopic").value || "any";
     applyStaticTranslations();
     statusEl.textContent = tr("saved_ok");

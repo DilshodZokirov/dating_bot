@@ -56,7 +56,16 @@ async def init_db():
         await conn.execute(
             text("UPDATE users SET match_topic = 'any' WHERE match_topic IS NULL OR match_topic = ''")
         )
-        # O'zbek speaking olib tashlandi → any
+        # Speaking mavzular olib tashlandi — til Language ustunida
         await conn.execute(
-            text("UPDATE users SET match_topic = 'any' WHERE match_topic = 'speak_uz'")
+            text("UPDATE users SET match_topic = 'any' WHERE match_topic LIKE 'speak_%'")
         )
+        # Yangi tillar (PostgreSQL enum `language`)
+        for lang in ("de", "tg", "tr", "ko", "ja", "zh"):
+            try:
+                async with conn.begin_nested():
+                    await conn.execute(
+                        text(f"ALTER TYPE language ADD VALUE IF NOT EXISTS '{lang}'")
+                    )
+            except Exception:
+                pass
