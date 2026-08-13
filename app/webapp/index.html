@@ -2853,12 +2853,27 @@ document.getElementById("flipCamBtn")?.addEventListener("click", async () => {
 
 document.getElementById("profileLanguage")?.addEventListener("change", async () => {
   const lang = document.getElementById("profileLanguage").value;
+  const prev = profileLanguage;
   profileLanguage = lang;
   currentLang = uiLang(lang);
   applyStaticTranslations();
   const topicVal = document.getElementById("profileTopic")?.value || matchTopic;
   await loadTopics();
   if (document.getElementById("profileTopic")) document.getElementById("profileTopic").value = topicVal;
+  // Darhol saqlash — bot xabar/klaviatura/Menu shu tilda yangilanadi
+  try {
+    await api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({ language: lang }),
+    });
+    tg?.HapticFeedback?.notificationOccurred?.("success");
+  } catch (e) {
+    profileLanguage = prev;
+    currentLang = uiLang(prev);
+    document.getElementById("profileLanguage").value = prev;
+    applyStaticTranslations();
+    tg?.showAlert?.(tr("save_error") + (e.message || ""));
+  }
 });
 
 bootApp();

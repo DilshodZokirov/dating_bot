@@ -10,6 +10,7 @@ from aiogram.types import (
     WebAppInfo,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
+    MenuButtonWebApp,
 )
 
 from app.bot.states import Registration
@@ -28,7 +29,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n3"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n4"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -53,6 +54,23 @@ def _webapp_inline(lang: str = "uz") -> InlineKeyboardMarkup | None:
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text=label, web_app=WebAppInfo(url=url))]]
     )
+
+
+async def _set_user_menu(message: Message, lang: str) -> None:
+    """Foydalanuvchi uchun Menu tugmasi matnini uning tiliga moslash."""
+    url = _webapp_url()
+    if not url:
+        return
+    try:
+        await message.bot.set_chat_menu_button(
+            chat_id=message.chat.id,
+            menu_button=MenuButtonWebApp(
+                text=t(lang, "menu_btn")[:64],
+                web_app=WebAppInfo(url=url),
+            ),
+        )
+    except Exception as e:
+        print(f"set_chat_menu_button {message.chat.id}: {e}", flush=True)
 
 gender_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Erkak"), KeyboardButton(text="Ayol")]],
@@ -93,15 +111,17 @@ async def cmd_start(message: Message, state: FSMContext):
             user = await session.get(User, message.from_user.id)
 
         if user:
+            lang = user.language.value
+            await _set_user_menu(message, lang)
             await message.answer(
-                t(user.language.value, "welcome_back", name=user.name),
-                reply_markup=_webapp_kb(user.language.value),
+                t(lang, "welcome_back", name=user.name),
+                reply_markup=_webapp_kb(lang),
             )
-            inline = _webapp_inline(user.language.value)
+            inline = _webapp_inline(lang)
             if inline:
-                await message.answer(t(user.language.value, "open_mini_app"), reply_markup=inline)
+                await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
             elif not settings.webapp_url:
-                await message.answer(t(user.language.value, "webapp_url_missing"))
+                await message.answer(t(lang, "webapp_url_missing"))
             return
 
         await message.answer(t("uz", "reg_hello"))
@@ -120,6 +140,7 @@ async def cmd_app(message: Message, state: FSMContext):
     if not settings.webapp_url:
         await message.answer(t(lang, "webapp_url_missing"))
         return
+    await _set_user_menu(message, lang)
     await message.answer(t(lang, "open_mini_app"), reply_markup=_webapp_kb(lang))
     inline = _webapp_inline(lang)
     if inline:
@@ -239,6 +260,7 @@ async def process_language(message: Message, state: FSMContext):
 
     await state.clear()
     lang = data["language"].value if hasattr(data["language"], "value") else data["language"]
+    await _set_user_menu(message, lang)
     await message.answer(t(lang, "reg_done"), reply_markup=_webapp_kb(lang))
     inline = _webapp_inline(lang)
     if inline:
@@ -258,9 +280,11 @@ async def cmd_search(message: Message, state: FSMContext):
         await message.answer(t("uz", "need_register"))
         return
 
+    lang = user.language.value
+    await _set_user_menu(message, lang)
     await message.answer(
-        t(user.language.value, "search_check_app"),
-        reply_markup=_webapp_kb(user.language.value),
+        t(lang, "search_check_app"),
+        reply_markup=_webapp_kb(lang),
     )
 
 
