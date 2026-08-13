@@ -258,12 +258,18 @@
     padding: 12px 14px;
     border-radius: 12px;
     border: 1px solid var(--line);
-    background: rgba(255,255,255,0.04);
+    background: #122822;
     color: var(--ink);
     font: inherit;
     font-size: 0.95rem;
     outline: none;
     transition: border-color 0.15s ease;
+    color-scheme: dark;
+  }
+  .field select option,
+  .field select optgroup {
+    background: #122822;
+    color: #f3f7f5;
   }
   .field input:focus, .field textarea:focus, .field select:focus {
     border-color: rgba(232, 111, 74, 0.55);
@@ -412,12 +418,15 @@
     position: relative;
     z-index: 2;
     display: flex;
-    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
     margin-bottom: 14px;
+    max-width: 340px;
   }
   .call-btn {
-    width: 58px;
-    height: 58px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     border: 1px solid var(--line);
     background: rgba(255,255,255,0.06);
@@ -425,7 +434,8 @@
     display: grid;
     place-items: center;
   }
-  .call-btn svg { width: 24px; height: 24px; fill: var(--ink); }
+  .call-btn.hidden { display: none; }
+  .call-btn svg { width: 22px; height: 22px; fill: var(--ink); }
   .call-btn.end { background: var(--danger); border-color: transparent; }
   .call-btn.active-toggle { background: var(--accent); border-color: transparent; }
   .safety-row {
@@ -778,8 +788,14 @@
       <button class="call-btn" id="muteBtn" title="Mute">
         <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
       </button>
+      <button class="call-btn" id="speakerBtn" title="Speaker">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      </button>
       <button class="call-btn" id="videoBtn" title="Video">
         <svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg>
+      </button>
+      <button class="call-btn hidden" id="flipCamBtn" title="Flip camera">
+        <svg viewBox="0 0 24 24"><path d="M20 5h-3.2l-1.9-2H9.1L7.2 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5H5l2.5-2.5L10 13H8c0 2.21 1.79 4 4 4s4-1.79 4-4h-2l2.5-2.5L19 13h-2c0 2.76-2.24 5-5 5z"/></svg>
       </button>
       <button class="call-btn end" id="endCallBtn" title="End">
         <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.71c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.66c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
@@ -1013,10 +1029,14 @@ const TRANSLATIONS = {
   game_invite: { uz: "Hamroh o‘yin taklif qildi: {game}. Qabul qilasizmi?", ru: "Собеседник предлагает игру: {game}. Принять?", en: "Partner invites you to: {game}. Accept?" },
   game_waiting: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
   game_declined: { uz: "O‘yin rad etildi", ru: "Игра отклонена", en: "Game declined" },
-  roulette_spin: { uz: "Aylantirish", ru: "Крутить", en: "Spin" },
-  roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…" },
-  roulette_hint: { uz: "Kimdir aylantiradi — savol tasodifan tushadi", ru: "Кто-то крутит — вопрос выпадает случайно", en: "Anyone spins — a random question drops" },
-  roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question" },
+  roulette_spin: { uz: "Aylantirish", ru: "Крутить", en: "Spin", de: "Drehen" },
+  roulette_spin_again: { uz: "Yana aylantirish", ru: "Крутить ещё", en: "Spin again", de: "Nochmal" },
+  roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…", de: "Dreht…" },
+  roulette_hint: { uz: "Aylantiring — yangi savol chiqadi (Yopishgacha)", ru: "Крутите — новый вопрос (пока не Закрыть)", en: "Spin for a new question (until Close)", de: "Drehen — neue Frage (bis Schließen)" },
+  roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question", de: "Ihre Frage" },
+  speaker_on: { uz: "Gromkofon yoqildi", ru: "Громкая связь", en: "Speaker on", de: "Lautsprecher an" },
+  speaker_off: { uz: "Oddiy rejim", ru: "Обычный режим", en: "Earpiece mode", de: "Normal" },
+  flip_cam: { uz: "Kamera aylantirildi", ru: "Камера переключена", en: "Camera flipped", de: "Kamera gewechselt" },
   feedback_title: { uz: "Suhbatni baholang", ru: "Оцените разговор", en: "Rate the call" },
   feedback_hint: { uz: "1–5 yulduz", ru: "1–5 звёзд", en: "1–5 stars" },
   feedback_skip: { uz: "O‘tkazib yuborish", ru: "Пропустить", en: "Skip" },
@@ -1030,27 +1050,125 @@ const GAME_NAMES = {
 };
 
 const WOULD_RATHER = [
-  { uz: "Dengizmi yoki tog‘?", ru: "Море или горы?", en: "Sea or mountains?" },
-  { uz: "Kino uyda yoki kinoteatr?", ru: "Кино дома или в кинотеатре?", en: "Movie at home or cinema?" },
-  { uz: "Ertalab mi yoki kechqurun?", ru: "Утро или вечер?", en: "Morning or evening person?" },
-  { uz: "Choy mi yoki qahva?", ru: "Чай или кофе?", en: "Tea or coffee?" },
-  { uz: "Sayohat rejasizmi yoki batafsil?", ru: "Путешествие без плана или с планом?", en: "Spontaneous trip or planned?" },
+  { uz: "Dengizmi yoki tog‘?", ru: "Море или горы?", en: "Sea or mountains?", de: "Meer oder Berge?" },
+  { uz: "Kino uyda yoki kinoteatr?", ru: "Кино дома или в кинотеатре?", en: "Movie at home or cinema?", de: "Film zu Hause oder Kino?" },
+  { uz: "Ertalab mi yoki kechqurun?", ru: "Утро или вечер?", en: "Morning or evening person?", de: "Morgen- oder Abendmensch?" },
+  { uz: "Choy mi yoki qahva?", ru: "Чай или кофе?", en: "Tea or coffee?", de: "Tee oder Kaffee?" },
+  { uz: "Sayohat rejasizmi yoki batafsil?", ru: "Путешествие без плана или с планом?", en: "Spontaneous trip or planned?", de: "Spontanreise oder mit Plan?" },
+  { uz: "Kitobmi yoki podcast?", ru: "Книга или подкаст?", en: "Book or podcast?", de: "Buch oder Podcast?" },
+  { uz: "Shaharmi yoki qishloq?", ru: "Город или деревня?", en: "City or countryside?", de: "Stadt oder Land?" },
+  { uz: "Issiqmi yoki salqin?", ru: "Жара или прохлада?", en: "Hot weather or cool?", de: "Hitze oder Kühle?" },
+  { uz: "Pizza yoki sushi?", ru: "Пицца или суши?", en: "Pizza or sushi?", de: "Pizza oder Sushi?" },
+  { uz: "Telefon qo‘ng‘irog‘imi yoki matn?", ru: "Звонок или сообщение?", en: "Call or text?", de: "Anrufen oder schreiben?" },
+  { uz: "Katta bayrammi yoki tinch kecha?", ru: "Большой праздник или тихий вечер?", en: "Big party or quiet night?", de: "Große Party oder ruhiger Abend?" },
+  { uz: "Musiqa jonli yoki studiyami?", ru: "Живая музыка или студийная?", en: "Live music or studio?", de: "Live-Musik oder Studio?" },
 ];
 
 const ICEBREAKERS = [
-  { uz: "Oxirgi marta nima sizni kuldirgan?", ru: "Что вас недавно рассмешило?", en: "What made you laugh recently?" },
-  { uz: "Bolalikdagi sevimli o‘yiningiz?", ru: "Любимая игра в детстве?", en: "Favorite childhood game?" },
-  { uz: "Bir kunlik orzuyingiz qayerda?", ru: "Куда бы съездили на один день?", en: "Where would you go for one day?" },
-  { uz: "Qanday kitob/serial tavsiya qilasiz?", ru: "Какой фильм/сериал посоветуете?", en: "What show would you recommend?" },
-  { uz: "Eng yaxshi ovqatingiz?", ru: "Любимое блюдо?", en: "Favorite food?" },
+  { uz: "Oxirgi marta nima sizni kuldirgan?", ru: "Что вас недавно рассмешило?", en: "What made you laugh recently?", de: "Was hat Sie zuletzt zum Lachen gebracht?" },
+  { uz: "Bolalikdagi sevimli o‘yiningiz?", ru: "Любимая игра в детстве?", en: "Favorite childhood game?", de: "Lieblingsspiel in der Kindheit?" },
+  { uz: "Bir kunlik orzuyingiz qayerda?", ru: "Куда бы съездили на один день?", en: "Where would you go for one day?", de: "Wohin für einen Tag?" },
+  { uz: "Qanday kitob/serial tavsiya qilasiz?", ru: "Какой фильм/сериал посоветуете?", en: "What show would you recommend?", de: "Welchen Film/Serie empfehlen?" },
+  { uz: "Eng yaxshi ovqatingiz?", ru: "Любимое блюдо?", en: "Favorite food?", de: "Lieblingsessen?" },
+  { uz: "Hozir qaysi qo‘shiq kayfiyatingizga mos?", ru: "Какая песня сейчас подходит настроению?", en: "What song fits your mood now?", de: "Welches Lied passt jetzt?" },
+  { uz: "Do‘stingiz sizni qanday ta’riflaydi?", ru: "Как вас описал бы друг?", en: "How would a friend describe you?", de: "Wie würde ein Freund Sie beschreiben?" },
+  { uz: "Oxirgi marta yangi narsa o‘rganganingiz?", ru: "Чему вы недавно научились?", en: "What did you learn recently?", de: "Was haben Sie zuletzt gelernt?" },
+  { uz: "Ideal dam olish kuni qanday?", ru: "Идеальный выходной — какой?", en: "What is your ideal day off?", de: "Wie ist Ihr idealer freier Tag?" },
+  { uz: "Qaysi shaharga qayta bormoqchisiz?", ru: "В какой город хотите вернуться?", en: "Which city would you revisit?", de: "In welche Stadt zurück?" },
+  { uz: "Ertalab birinchi nima qilasiz?", ru: "Что делаете первым утром?", en: "First thing you do in the morning?", de: "Was machen Sie morgens zuerst?" },
+  { uz: "Eng g‘alati hobbyingiz?", ru: "Самое странное хобби?", en: "Your weirdest hobby?", de: "Seltsamstes Hobby?" },
+  { uz: "Qaysi tilni hali o‘rganmoqchisiz?", ru: "Какой язык ещё хотите выучить?", en: "Which language do you still want to learn?", de: "Welche Sprache noch lernen?" },
+  { uz: "Kino qahramoni bo‘lsangiz kim?", ru: "Каким героем фильма были бы?", en: "Which movie character would you be?", de: "Welcher Filmheld wären Sie?" },
+  { uz: "Eng yaxshi maslahatingiz nima?", ru: "Ваш лучший совет?", en: "Your best piece of advice?", de: "Ihr bester Rat?" },
+  { uz: "Qanday ob-havo kayfiyatni ko‘taradi?", ru: "Какая погода поднимает настроение?", en: "What weather lifts your mood?", de: "Welches Wetter hebt die Laune?" },
+  { uz: "Oxirgi marta kimga rahmat aytganingiz?", ru: "Кому недавно сказали спасибо?", en: "Who did you thank recently?", de: "Wem zuletzt gedankt?" },
+  { uz: "Sevimli faslingiz va nima uchun?", ru: "Любимый сезон и почему?", en: "Favorite season and why?", de: "Lieblingsjahreszeit und warum?" },
+  { uz: "Agar ertaga ta’til bo‘lsa nima qilasiz?", ru: "Если завтра выходной — что сделаете?", en: "If tomorrow were free, what would you do?", de: "Wenn morgen frei wäre?" },
+  { uz: "Suhbatda eng qiziq mavzu sizda?", ru: "О чём вам интереснее всего говорить?", en: "What topic do you love talking about?", de: "Worüber sprechen Sie gern?" },
+  { uz: "Qanday muvaffaqiyatni eslaysiz?", ru: "Какой свой успех вспоминаете?", en: "What success do you remember fondly?", de: "Welchen Erfolg erinnern Sie?" },
+  { uz: "Telefoningizdagi oxirgi rasm nima?", ru: "Что на последнем фото в телефоне?", en: "What’s the last photo on your phone?", de: "Letztes Foto auf dem Handy?" },
+  { uz: "Qaysi skillni 1 oyda o‘rganasiz?", ru: "Какой навык освоите за месяц?", en: "What skill would you learn in a month?", de: "Welche Fähigkeit in einem Monat?" },
+  { uz: "Do‘stlar bilan qanday kecha ideal?", ru: "Идеальный вечер с друзьями?", en: "Ideal evening with friends?", de: "Idealabend mit Freunden?" },
 ];
 
+const TOPIC_ICEBREAKERS = {
+  friends: [
+    { uz: "Yangi do‘stdan nima kutasiz?", ru: "Чего ждёте от новой дружбы?", en: "What do you hope for in a new friend?", de: "Was erwarten Sie von einer Freundschaft?" },
+    { uz: "Do‘stlar bilan eng kulgili xotira?", ru: "Самый смешной момент с друзьями?", en: "Funniest memory with friends?", de: "Lustigste Erinnerung mit Freunden?" },
+    { uz: "Yolg‘izmi yoki kompaniyada dam olasiz?", ru: "Отдыхаете одни или в компании?", en: "Do you recharge alone or with people?", de: "Allein oder in Gesellschaft?" },
+    { uz: "Qanday umumiy hobby qidiryapsiz?", ru: "Какое общее хобби ищете?", en: "What shared hobby are you looking for?", de: "Welches gemeinsame Hobby?" },
+    { uz: "Birinchi uchrashuvda nima gaplashasiz?", ru: "О чём говорите при первой встрече?", en: "What do you talk about when meeting?", de: "Worüber beim Kennenlernen?" },
+    { uz: "Online do‘stlikka ishonasizmi?", ru: "Верите в онлайн-дружбу?", en: "Do you believe in online friendship?", de: "Glauben Sie an Online-Freundschaft?" },
+    { uz: "Qaysi o‘yin/sport birga yoqadi?", ru: "Какая игра/спорт вместе нравится?", en: "Which game/sport would you do together?", de: "Welches Spiel/Sport zusammen?" },
+    { uz: "Do‘stingizga qanday yordam berasiz?", ru: "Как обычно поддерживаете друга?", en: "How do you support a friend?", de: "Wie unterstützen Sie Freunde?" },
+  ],
+  dating: [
+    { uz: "Birinchi uchrashuv qayerda bo‘lsin?", ru: "Где должно быть первое свидание?", en: "Where should a first date be?", de: "Wo sollte das erste Date sein?" },
+    { uz: "Sizni nima birinchi jalb qiladi?", ru: "Что вас привлекает сначала?", en: "What attracts you first?", de: "Was zieht Sie zuerst an?" },
+    { uz: "Romantik gestmi yoki oddiy e’tibor?", ru: "Романтичный жест или простое внимание?", en: "Grand gesture or small attention?", de: "Große Geste oder kleine Aufmerksamkeit?" },
+    { uz: "Ideal kechki suhbat qanday?", ru: "Какой идеальный вечерний разговор?", en: "What makes an ideal evening chat?", de: "Wie ist das ideale Abendgespräch?" },
+    { uz: "Qiziquvchanlikmi yoki tinchlik?", ru: "Азарт или спокойствие в отношениях?", en: "Adventure or calm in a relationship?", de: "Abenteuer oder Ruhe?" },
+    { uz: "Qanday bayramni birga nishonlaysiz?", ru: "Какой праздник отметите вместе?", en: "Which holiday would you celebrate together?", de: "Welchen Feiertag zusammen?" },
+    { uz: "Sevgi tiliniz qaysi?", ru: "Ваш язык любви?", en: "What’s your love language?", de: "Was ist Ihre Liebessprache?" },
+    { uz: "Uzoq suhbat uchun eng yaxshi mavzu?", ru: "Лучшая тема для долгого разговора?", en: "Best topic for a long talk?", de: "Bestes Thema für langes Gespräch?" },
+  ],
+  study: [
+    { uz: "Hozir nima o‘rganyapsiz?", ru: "Что сейчас изучаете?", en: "What are you studying now?", de: "Was lernen Sie gerade?" },
+    { uz: "Eng qiyin fan/mavzu qaysi?", ru: "Самый сложный предмет/тема?", en: "Hardest subject/topic for you?", de: "Schwerstes Fach/Thema?" },
+    { uz: "Qanday o‘qish usuli ishlaydi?", ru: "Какой метод учёбы работает?", en: "Which study method works for you?", de: "Welche Lernmethode hilft?" },
+    { uz: "Kelajakda qaysi skill kerak?", ru: "Какой навык нужен в будущем?", en: "What skill will you need later?", de: "Welche Fähigkeit später?" },
+    { uz: "Mentor yoki o‘zingiz mustaqil?", ru: "Ментор или самостоятельное обучение?", en: "Mentor or self-learning?", de: "Mentor oder allein lernen?" },
+    { uz: "Oxirgi foydali kitob/kurs?", ru: "Последняя полезная книга/курс?", en: "Last useful book/course?", de: "Letztes nützliches Buch/Kurs?" },
+    { uz: "Imtihon oldidan nima qilasiz?", ru: "Что делаете перед экзаменом?", en: "What do you do before an exam?", de: "Was vor der Prüfung?" },
+    { uz: "Birga qanday loyiha qilardik?", ru: "Какой проект сделали бы вместе?", en: "What project would we do together?", de: "Welches Projekt zusammen?" },
+  ],
+  speak: [
+    { uz: "Bugun qaysi so‘zni o‘rgandingiz?", ru: "Какое слово выучили сегодня?", en: "What word did you learn today?", de: "Welches Wort heute gelernt?" },
+    { uz: "Eng qiyin talaffuz qaysi?", ru: "Какое произношение самое сложное?", en: "Which pronunciation is hardest?", de: "Welche Aussprache ist schwer?" },
+    { uz: "Sevimli iborangiz shu tilda?", ru: "Любимая фраза на этом языке?", en: "Favorite phrase in this language?", de: "Lieblingsphrase in dieser Sprache?" },
+    { uz: "Filmni originalda ko‘rasizmi?", ru: "Смотрите фильмы в оригинале?", en: "Do you watch films in original?", de: "Filme im Original?" },
+    { uz: "Qanday mavzuda mashq qilamiz?", ru: "На какую тему потренируемся?", en: "What topic shall we practice?", de: "Welches Thema üben wir?" },
+    { uz: "Xato qilsam tuzatasizmi?", ru: "Будете исправлять ошибки?", en: "Will you correct my mistakes?", de: "Korrigieren Sie Fehler?" },
+    { uz: "3 ta oddiy jumla ayting shu tilda", ru: "Скажите 3 простые фразы на языке", en: "Say 3 simple sentences in the language", de: "Sagen Sie 3 einfache Sätze" },
+    { uz: "Nima uchun bu tilni o‘rganyapsiz?", ru: "Почему учите этот язык?", en: "Why are you learning this language?", de: "Warum lernen Sie die Sprache?" },
+    { uz: "Eng yoqqan so‘z/ibora?", ru: "Самое любимое слово/фраза?", en: "Your favorite word/phrase?", de: "Lieblingswort/-phrase?" },
+    { uz: "1 daqiqada o‘zingizni tanishtiring", ru: "Представьтесь за 1 минуту", en: "Introduce yourself in 1 minute", de: "Stellen Sie sich in 1 Minute vor" },
+  ],
+};
+
 let currentLang = "uz";
+let matchTopic = "any";
+let sessionGameLang = null;
+let usedRouletteIndexes = new Set();
+
 function tr(key, vars) {
   const entry = TRANSLATIONS[key] || {};
   let str = entry[currentLang] || entry.uz || key;
   if (vars) for (const k in vars) str = str.replace(`{${k}}`, vars[k]);
   return str;
+}
+
+function gameLang() {
+  if (sessionGameLang) return sessionGameLang;
+  if (matchTopic === "speak_ru") return "ru";
+  if (matchTopic === "speak_en") return "en";
+  if (matchTopic === "speak_uz") return "uz";
+  if (matchTopic === "speak_de") return "de";
+  return currentLang === "de" ? "de" : (currentLang || "uz");
+}
+
+function topicBucket(topic) {
+  const t = topic || matchTopic || "any";
+  if (String(t).startsWith("speak_")) return "speak";
+  if (t === "friends" || t === "dating" || t === "study") return t;
+  return "any";
+}
+
+function activeIcebreakers(topic) {
+  const bucket = topicBucket(topic);
+  const extra = TOPIC_ICEBREAKERS[bucket] || [];
+  // Bitta umumiy ro'yxat — index sync ishlashi uchun
+  return bucket === "any" ? ICEBREAKERS : [...extra, ...ICEBREAKERS];
 }
 
 function applyStaticTranslations() {
@@ -1413,6 +1531,7 @@ async function loadMe() {
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     currentLang = me.language || "uz";
+    matchTopic = me.match_topic || "any";
     applyStaticTranslations();
     userLabel.textContent = tr("hi", { name: me.name || "" });
     document.getElementById("profileName").value = me.name || "";
@@ -1423,7 +1542,7 @@ async function loadMe() {
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
-    document.getElementById("profileTopic").value = me.match_topic || "any";
+    document.getElementById("profileTopic").value = matchTopic;
     setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
     setAvatarUI(me.avatar_url, me.name);
     updateProfilePreview();
@@ -1544,6 +1663,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
       }),
     });
     currentLang = newLang;
+    matchTopic = document.getElementById("profileTopic").value || "any";
     applyStaticTranslations();
     statusEl.textContent = tr("saved_ok");
     userLabel.textContent = tr("hi", { name: document.getElementById("profileName").value });
@@ -1682,6 +1802,9 @@ let callRoomId = null;
 let callPollTimer = null;
 let isMuted = false;
 let videoOn = false;
+let facingMode = "user";
+let speakerOn = false;
+let sessionTopic = "any";
 
 function attachRemoteTrack(track) {
   if (track.kind === "audio") {
@@ -1708,13 +1831,19 @@ async function enterCall(roomId, partnerId, lk = {}) {
   callPartnerId = partnerId;
   isMuted = false;
   videoOn = false;
+  facingMode = "user";
+  speakerOn = false;
+  sessionTopic = matchTopic || "any";
+  sessionGameLang = null;
 
   searchView.classList.remove("active");
   bottomNav.style.display = "none";
   callView.style.display = "flex";
   document.getElementById("callStatus").textContent = tr("connecting");
-  document.getElementById("muteBtn").classList.remove("active-toggle");
-  document.getElementById("videoBtn").classList.remove("active-toggle");
+  document.getElementById("muteBtn")?.classList.remove("active-toggle");
+  document.getElementById("videoBtn")?.classList.remove("active-toggle");
+  document.getElementById("speakerBtn")?.classList.remove("active-toggle");
+  document.getElementById("flipCamBtn")?.classList.add("hidden");
   const callAv = document.getElementById("callAvatar");
   if (callAv) {
     callAv.style.display = "grid";
@@ -1819,6 +1948,7 @@ function resetGameUI() {
   activeGame = null;
   gameHost = false;
   rouletteBusy = false;
+  usedRouletteIndexes = new Set();
   if (rouletteTimer) {
     clearInterval(rouletteTimer);
     rouletteTimer = null;
@@ -1830,6 +1960,8 @@ function resetGameUI() {
   if (choices) choices.innerHTML = "";
   const nextBtn = document.getElementById("gameNextBtn");
   if (nextBtn) nextBtn.style.display = "";
+  const acceptBtn = document.getElementById("gameAcceptBtn");
+  if (acceptBtn) acceptBtn.style.display = "";
 }
 
 function gameName(id) {
@@ -1842,16 +1974,34 @@ function pickPrompt(list) {
 }
 
 function pickPromptIndex(list) {
-  return Math.floor(Math.random() * list.length);
+  if (!list.length) return 0;
+  if (usedRouletteIndexes.size >= list.length) usedRouletteIndexes.clear();
+  let idx = Math.floor(Math.random() * list.length);
+  let guard = 0;
+  while (usedRouletteIndexes.has(idx) && guard < 40) {
+    idx = Math.floor(Math.random() * list.length);
+    guard += 1;
+  }
+  usedRouletteIndexes.add(idx);
+  return idx;
 }
 
 function promptText(item) {
-  return item[currentLang] || item.uz;
+  if (!item) return "";
+  if (typeof item === "string") return item;
+  const lang = gameLang();
+  return item[lang] || item.en || item.uz || item.ru || item.de || "";
+}
+
+function applySessionMeta(msg) {
+  if (msg?.topic) sessionTopic = msg.topic;
+  if (msg?.lang) sessionGameLang = msg.lang;
 }
 
 function openGame(game, asHost, seed) {
   activeGame = game;
   gameHost = !!asHost;
+  usedRouletteIndexes = new Set();
   document.getElementById("gamePickPanel")?.classList.remove("open");
   document.getElementById("gameInviteBox")?.classList.remove("open");
   const panel = document.getElementById("gamePanel");
@@ -1873,7 +2023,10 @@ function renderRouletteUI(state) {
   choices.innerHTML = "";
   const spinBtn = document.createElement("button");
   spinBtn.id = "rouletteSpinBtn";
-  spinBtn.textContent = state?.spinning ? tr("roulette_spinning") : tr("roulette_spin");
+  const spinLabel = state?.spinning
+    ? tr("roulette_spinning")
+    : (state?.landed ? tr("roulette_spin_again") : tr("roulette_spin"));
+  spinBtn.textContent = spinLabel;
   spinBtn.disabled = !!state?.spinning || rouletteBusy;
   spinBtn.onclick = () => startRouletteSpin(true);
   choices.appendChild(spinBtn);
@@ -1881,29 +2034,50 @@ function renderRouletteUI(state) {
 
 function startRouletteSpin(broadcast) {
   if (activeGame !== "icebreaker" || rouletteBusy) return;
-  const finalIdx = pickPromptIndex(ICEBREAKERS);
-  if (broadcast) sendGameData({ t: "game_spin", game: "icebreaker", index: finalIdx });
-  runRouletteAnimation(finalIdx, false);
+  const list = activeIcebreakers(sessionTopic);
+  const finalIdx = pickPromptIndex(list);
+  const finalText = promptText(list[finalIdx]);
+  if (broadcast) {
+    sendGameData({
+      t: "game_spin",
+      game: "icebreaker",
+      index: finalIdx,
+      text: finalText,
+      topic: sessionTopic,
+      lang: gameLang(),
+    });
+  }
+  runRouletteAnimation(finalIdx, finalText, false);
 }
 
-function runRouletteAnimation(finalIdx, fromPeer) {
+function runRouletteAnimation(finalIdx, finalText, fromPeer) {
   rouletteBusy = true;
   if (rouletteTimer) clearInterval(rouletteTimer);
+  const list = activeIcebreakers(sessionTopic);
   let ticks = 0;
-  // Ikkala tomonda bir xil davomiylik — natija ham bir xil index
-  const totalTicks = 20 + (finalIdx % 8);
-  renderRouletteUI({ spinning: true, text: promptText(ICEBREAKERS[0]) });
+  const totalTicks = 20 + ((finalIdx || 0) % 8);
+  renderRouletteUI({ spinning: true, text: promptText(list[0]) || "…" });
   rouletteTimer = setInterval(() => {
     ticks += 1;
     const el = document.getElementById("rouletteText");
-    if (el) el.textContent = promptText(ICEBREAKERS[ticks % ICEBREAKERS.length]);
+    if (el) el.textContent = promptText(list[ticks % list.length]);
     if (ticks >= totalTicks) {
       clearInterval(rouletteTimer);
       rouletteTimer = null;
-      const q = ICEBREAKERS[finalIdx % ICEBREAKERS.length];
-      renderRouletteUI({ landed: true, text: promptText(q) });
+      const q = list[(finalIdx || 0) % list.length];
+      const text = finalText || promptText(q);
+      renderRouletteUI({ landed: true, text });
       rouletteBusy = false;
-      if (!fromPeer) sendGameData({ t: "game_landed", game: "icebreaker", index: finalIdx });
+      if (!fromPeer) {
+        sendGameData({
+          t: "game_landed",
+          game: "icebreaker",
+          index: finalIdx,
+          text,
+          topic: sessionTopic,
+          lang: gameLang(),
+        });
+      }
     }
   }, 90);
 }
@@ -1930,9 +2104,10 @@ function renderGameRound(seed) {
       ? "3 ta gap ayting (2 rost, 1 yolg‘on). Hamroh topadi."
       : "Hamroh 3 ta gap aytadi — yolg‘onini toping.";
   } else if (activeGame === "icebreaker") {
-    if (seed?.landed && typeof seed.index === "number") {
-      const q = ICEBREAKERS[seed.index % ICEBREAKERS.length];
-      renderRouletteUI({ landed: true, text: promptText(q) });
+    if (seed?.landed && (seed.text || typeof seed.index === "number")) {
+      const list = activeIcebreakers(sessionTopic);
+      const q = list[(seed.index || 0) % list.length];
+      renderRouletteUI({ landed: true, text: seed.text || promptText(q) });
     } else {
       renderRouletteUI({});
     }
@@ -1942,11 +2117,18 @@ function renderGameRound(seed) {
 function handleGameMessage(msg) {
   if (!msg || !msg.t) return;
   if (msg.t === "game_invite") {
+    applySessionMeta(msg);
     document.getElementById("gameInviteText").textContent = tr("game_invite", { game: gameName(msg.game) });
     document.getElementById("gameInviteBox")?.classList.add("open");
     document.getElementById("gamePickPanel")?.classList.remove("open");
+    document.getElementById("gameAcceptBtn").style.display = "";
     document.getElementById("gameAcceptBtn").onclick = () => {
-      sendGameData({ t: "game_accept", game: msg.game });
+      sendGameData({
+        t: "game_accept",
+        game: msg.game,
+        topic: sessionTopic || matchTopic,
+        lang: sessionGameLang || gameLang(),
+      });
       openGame(msg.game, false);
     };
     document.getElementById("gameDeclineBtn").onclick = () => {
@@ -1954,18 +2136,22 @@ function handleGameMessage(msg) {
       document.getElementById("gameInviteBox")?.classList.remove("open");
     };
   } else if (msg.t === "game_accept") {
+    applySessionMeta(msg);
     tg?.showAlert?.(tr("connected"));
     openGame(msg.game, true);
   } else if (msg.t === "game_decline") {
     tg?.showAlert?.(tr("game_declined"));
     resetGameUI();
   } else if (msg.t === "game_spin" && msg.game === "icebreaker") {
+    applySessionMeta(msg);
     if (activeGame !== "icebreaker") openGame("icebreaker", false);
-    runRouletteAnimation(msg.index, true);
+    runRouletteAnimation(msg.index, msg.text, true);
   } else if (msg.t === "game_landed" && msg.game === "icebreaker") {
+    applySessionMeta(msg);
     if (!rouletteBusy) {
-      const q = ICEBREAKERS[msg.index % ICEBREAKERS.length];
-      renderRouletteUI({ landed: true, text: promptText(q) });
+      const list = activeIcebreakers(sessionTopic);
+      const q = list[(msg.index || 0) % list.length];
+      renderRouletteUI({ landed: true, text: msg.text || promptText(q) });
     }
   } else if (msg.t === "game_sync" && activeGame === msg.game) {
     renderGameRound({ prompt: msg.prompt });
@@ -1987,7 +2173,9 @@ document.getElementById("gamePickCancel")?.addEventListener("click", () => {
 document.querySelectorAll(".g-pick").forEach((btn) => {
   btn.addEventListener("click", () => {
     const game = btn.dataset.game;
-    sendGameData({ t: "game_invite", game });
+    sessionTopic = matchTopic || "any";
+    sessionGameLang = gameLang();
+    sendGameData({ t: "game_invite", game, topic: sessionTopic, lang: sessionGameLang });
     document.getElementById("gamePickPanel")?.classList.remove("open");
     document.getElementById("gameInviteText").textContent = tr("game_waiting");
     document.getElementById("gameInviteBox")?.classList.add("open");
@@ -2071,6 +2259,11 @@ function cleanupCall(notifyServer) {
   setSearchingUI(false);
   videoOn = false;
   isMuted = false;
+  facingMode = "user";
+  speakerOn = false;
+  sessionGameLang = null;
+  document.getElementById("flipCamBtn")?.classList.add("hidden");
+  document.getElementById("speakerBtn")?.classList.remove("active-toggle");
   callRoomId = null;
   callPartnerId = null;
   if (endedRoom && endedPartner) openFeedbackSheet(endedRoom, endedPartner);
@@ -2152,6 +2345,19 @@ document.getElementById("reportReasons").addEventListener("click", async (e) => 
   }
 });
 
+function attachLocalCameraPreview() {
+  const localVideo = document.getElementById("localVideo");
+  const pub = lkRoom?.localParticipant?.getTrackPublication?.(LivekitClient.Track.Source.Camera);
+  if (!pub?.track || !localVideo) return;
+  const el = pub.track.attach();
+  el.muted = true;
+  el.autoplay = true;
+  el.playsInline = true;
+  el.id = "localVideo";
+  el.style.cssText = "position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:96px;border-radius:14px;background:#000;display:block;z-index:2;transform:scaleX(" + (facingMode === "user" ? "-1" : "1") + ");";
+  localVideo.replaceWith(el);
+}
+
 document.getElementById("muteBtn").addEventListener("click", async () => {
   if (!lkRoom) return;
   isMuted = !isMuted;
@@ -2159,31 +2365,73 @@ document.getElementById("muteBtn").addEventListener("click", async () => {
   document.getElementById("muteBtn").classList.toggle("active-toggle", isMuted);
 });
 
+async function setSpeakerMode(on) {
+  speakerOn = !!on;
+  document.getElementById("speakerBtn")?.classList.toggle("active-toggle", speakerOn);
+  try {
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audiooutput");
+    const speaker = devices.find((d) => /speaker|loud|динамик|gromko/i.test(d.label || ""));
+    const earpiece = devices.find((d) => /earpiece|receiver|phone|наушник/i.test(d.label || ""));
+    const target = speakerOn ? (speaker || devices[devices.length - 1]) : (earpiece || devices[0]);
+    const audioEl = document.getElementById("remoteAudio");
+    if (audioEl) audioEl.volume = 1;
+    if (target?.deviceId && audioEl && typeof audioEl.setSinkId === "function") {
+      await audioEl.setSinkId(target.deviceId);
+    }
+    if (target?.deviceId && lkRoom && typeof lkRoom.switchActiveDevice === "function") {
+      await lkRoom.switchActiveDevice("audiooutput", target.deviceId);
+    }
+  } catch (_) {
+    // Telegram WebView ba'zan audio routingni cheklaydi
+  }
+}
+
+document.getElementById("speakerBtn")?.addEventListener("click", async () => {
+  if (!lkRoom) return;
+  await setSpeakerMode(!speakerOn);
+  tg?.showAlert?.(speakerOn ? tr("speaker_on") : tr("speaker_off"));
+});
+
 document.getElementById("videoBtn").addEventListener("click", async () => {
   if (!lkRoom) return;
   const btn = document.getElementById("videoBtn");
+  const flipBtn = document.getElementById("flipCamBtn");
   try {
     videoOn = !videoOn;
-    await lkRoom.localParticipant.setCameraEnabled(videoOn);
-    btn.classList.toggle("active-toggle", videoOn);
-    const localVideo = document.getElementById("localVideo");
     if (videoOn) {
-      const pub = lkRoom.localParticipant.getTrackPublication(LivekitClient.Track.Source.Camera);
-      if (pub?.track) {
-        const el = pub.track.attach();
-        el.muted = true;
-        el.autoplay = true;
-        el.playsInline = true;
-        el.id = "localVideo";
-        el.style.cssText = "position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:96px;border-radius:14px;background:#000;display:block;z-index:2;";
-        localVideo.replaceWith(el);
-      }
-    } else if (localVideo) {
-      localVideo.style.display = "none";
+      await lkRoom.localParticipant.setCameraEnabled(true, { facingMode });
+      attachLocalCameraPreview();
+      flipBtn?.classList.remove("hidden");
+    } else {
+      await lkRoom.localParticipant.setCameraEnabled(false);
+      const localVideo = document.getElementById("localVideo");
+      if (localVideo) localVideo.style.display = "none";
+      flipBtn?.classList.add("hidden");
     }
+    btn.classList.toggle("active-toggle", videoOn);
   } catch (e) {
     videoOn = false;
+    flipBtn?.classList.add("hidden");
     tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
+  }
+});
+
+document.getElementById("flipCamBtn")?.addEventListener("click", async () => {
+  if (!lkRoom || !videoOn) return;
+  facingMode = facingMode === "user" ? "environment" : "user";
+  try {
+    const pub = lkRoom.localParticipant.getTrackPublication(LivekitClient.Track.Source.Camera);
+    if (pub?.track && typeof pub.track.restartTrack === "function") {
+      await pub.track.restartTrack({ facingMode });
+    } else {
+      await lkRoom.localParticipant.setCameraEnabled(false);
+      await lkRoom.localParticipant.setCameraEnabled(true, { facingMode });
+    }
+    attachLocalCameraPreview();
+    tg?.HapticFeedback?.impactOccurred?.("light");
+  } catch (e) {
+    facingMode = facingMode === "user" ? "environment" : "user";
+    tg?.showAlert(currentLang === "ru" ? "Камеру переключить нельзя" : "Kamerani almashtirib bo‘lmadi");
   }
 });
 
