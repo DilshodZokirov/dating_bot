@@ -28,7 +28,17 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=roulette2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=comms1"
+
+
+def _ui_lang(user: User | None) -> str:
+    """Bot/UI matnlari — dastur tili (ui_language), yo‘q bo‘lsa matching tili."""
+    if not user:
+        return "uz"
+    ui = getattr(user, "ui_language", None)
+    if ui is not None:
+        return ui.value if hasattr(ui, "value") else str(ui)
+    return user.language.value
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -93,15 +103,16 @@ async def cmd_start(message: Message, state: FSMContext):
             user = await session.get(User, message.from_user.id)
 
         if user:
+            lang = _ui_lang(user)
             await message.answer(
-                t(user.language.value, "welcome_back", name=user.name),
-                reply_markup=_webapp_kb(user.language.value),
+                t(lang, "welcome_back", name=user.name),
+                reply_markup=_webapp_kb(lang),
             )
-            inline = _webapp_inline(user.language.value)
+            inline = _webapp_inline(lang)
             if inline:
-                await message.answer(t(user.language.value, "open_mini_app"), reply_markup=inline)
+                await message.answer(t(lang, "open_mini_app"), reply_markup=inline)
             elif not settings.webapp_url:
-                await message.answer(t(user.language.value, "webapp_url_missing"))
+                await message.answer(t(lang, "webapp_url_missing"))
             return
 
         await message.answer(t("uz", "reg_hello"))
@@ -116,7 +127,7 @@ async def cmd_app(message: Message, state: FSMContext):
     await state.clear()
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
-    lang = user.language.value if user else "uz"
+    lang = _ui_lang(user)
     if not settings.webapp_url:
         await message.answer(t(lang, "webapp_url_missing"))
         return
@@ -141,7 +152,7 @@ async def on_proposal_callback(callback: CallbackQuery):
 
     async with async_session() as session:
         user = await session.get(User, user_id)
-    lang = user.language.value if user else "uz"
+    lang = _ui_lang(user)
 
     result = await respond_to_proposal(user_id, proposal_id, decision)
     outcome = result.get("outcome")
@@ -230,6 +241,7 @@ async def process_language(message: Message, state: FSMContext):
             gender=data["gender"],
             looking_for=data["looking_for"],
             language=data["language"],
+            ui_language=data["language"],
             prefer_age_min=pref_min,
             prefer_age_max=pref_max,
             is_verified=False,  # keyinchalik yosh tasdiqlash bosqichi qo'shiladi
@@ -254,7 +266,7 @@ async def cmd_help(message: Message, state: FSMContext):
     await state.clear()
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
-    lang = user.language.value if user else "uz"
+    lang = _ui_lang(user)
     await message.answer(t(lang, "how_it_works"), reply_markup=_webapp_kb(lang) if user else None)
     await message.answer(t(lang, "help_commands"))
 
@@ -272,9 +284,10 @@ async def cmd_search(message: Message, state: FSMContext):
         await message.answer(t("uz", "need_register"))
         return
 
+    lang = _ui_lang(user)
     await message.answer(
-        t(user.language.value, "search_check_app"),
-        reply_markup=_webapp_kb(user.language.value),
+        t(lang, "search_check_app"),
+        reply_markup=_webapp_kb(lang),
     )
 
 
@@ -321,7 +334,7 @@ async def cmd_stop(message: Message, state: FSMContext):
             await set_result(other["user_id"], "requeued")
 
     await state.clear()
-    lang = user.language.value if user else "uz"
+    lang = _ui_lang(user)
     await message.answer(t(lang, "stop_confirm"))
 
 
@@ -331,7 +344,7 @@ async def cmd_reset(message: Message, state: FSMContext):
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
         if user:
-            lang = user.language.value
+            lang = _ui_lang(user)
             await cancel_wait(user.id, user.looking_for.value)
             await session.delete(user)
             await session.commit()
@@ -455,7 +468,7 @@ async def fallback_text(message: Message, state: FSMContext):
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
     if user:
-        lang = user.language.value
+        lang = _ui_lang(user)
     if current:
         await message.answer(t(lang, "bad_step"))
         return
