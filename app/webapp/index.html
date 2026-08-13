@@ -1050,6 +1050,25 @@ const TRANSLATIONS = {
   feedback_thanks: { uz: "Rahmat!", ru: "Спасибо!", en: "Thanks!", de: "Danke!", tg: "Раҳмат!", tr: "Teşekkürler!", ko: "감사합니다!", ja: "ありがとう！", zh: "谢谢！" },
   cam_err: { uz: "Kamera ruxsati berilmadi", ru: "Камера недоступна", en: "Camera unavailable", de: "Kamera nicht verfügbar", tg: "Камера дастрас нест", tr: "Kamera kullanılamıyor", ko: "카메라를 사용할 수 없음", ja: "カメラを使用できません", zh: "无法使用相机" },
   flip_err: { uz: "Kamerani almashtirib bo‘lmadi", ru: "Камеру переключить нельзя", en: "Cannot flip camera", de: "Kamera nicht wechselbar", tg: "Камераро иваз карда нашуд", tr: "Kamera değiştirilemedi", ko: "카메라를 전환할 수 없음", ja: "カメラを切り替えられません", zh: "无法切换镜头" },
+  game_pick_title: { uz: "O‘yin tanlang", ru: "Выберите игру", en: "Choose a game", de: "Spiel wählen", tg: "Бозиро интихоб кунед", tr: "Oyun seçin", ko: "게임을 선택하세요", ja: "ゲームを選んでください", zh: "请选择游戏" },
+  game_next: { uz: "Keyingi", ru: "Далее", en: "Next", de: "Weiter", tg: "Баъдӣ", tr: "Sonraki", ko: "다음", ja: "次へ", zh: "下一个" },
+  game_close: { uz: "Yopish", ru: "Закрыть", en: "Close", de: "Schließen", tg: "Пӯшидан", tr: "Kapat", ko: "닫기", ja: "閉じる", zh: "关闭" },
+  game_cancel: { uz: "Bekor", ru: "Отмена", en: "Cancel", de: "Abbrechen", tg: "Бекор", tr: "İptal", ko: "취소", ja: "キャンセル", zh: "取消" },
+  variant_1: { uz: "1-variant", ru: "Вариант 1", en: "Option 1", de: "Option 1", tg: "Варианти 1", tr: "1. seçenek", ko: "선택 1", ja: "選択肢1", zh: "选项1" },
+  variant_2: { uz: "2-variant", ru: "Вариант 2", en: "Option 2", de: "Option 2", tg: "Варианти 2", tr: "2. seçenek", ko: "선택 2", ja: "選択肢2", zh: "选项2" },
+  your_pick: { uz: " — siz: {choice}", ru: " — вы: {choice}", en: " — you: {choice}", de: " — Sie: {choice}", tg: " — шумо: {choice}", tr: " — siz: {choice}", ko: " — 당신: {choice}", ja: " — あなた: {choice}", zh: " — 你：{choice}" },
+  partner_pick: { uz: " · hamroh: {choice}", ru: " · собеседник: {choice}", en: " · partner: {choice}", de: " · Partner: {choice}", tg: " · ҳамроҳ: {choice}", tr: " · partner: {choice}", ko: " · 상대: {choice}", ja: " · 相手: {choice}", zh: " · 对方：{choice}" },
+  two_truths_host: { uz: "3 ta gap ayting (2 rost, 1 yolg‘on). Hamroh topadi.", ru: "Скажите 3 фразы (2 правда, 1 ложь). Собеседник угадает.", en: "Say 3 statements (2 true, 1 lie). Partner guesses.", de: "Sagen Sie 3 Sätze (2 wahr, 1 falsch).", tg: "3 ҷумла гӯед (2 рост, 1 дурӯғ).", tr: "3 cümle söyleyin (2 doğru, 1 yalan).", ko: "문장 3개 (진실 2, 거짓말 1). 상대가 맞춥니다.", ja: "文を3つ（真実2・嘘1）。相手が当てます。", zh: "说3句话（2真1假）。对方来猜。" },
+  two_truths_guest: { uz: "Hamroh 3 ta gap aytadi — yolg‘onini toping.", ru: "Собеседник скажет 3 фразы — найдите ложь.", en: "Partner says 3 statements — find the lie.", de: "Partner sagt 3 Sätze — finden Sie die Lüge.", tg: "Ҳамроҳ 3 ҷумла мегӯяд — дурӯғро ёбед.", tr: "Partner 3 cümle söyler — yalanı bulun.", ko: "상대가 문장 3개를 말합니다 — 거짓을 찾으세요.", ja: "相手が3つ言います — 嘘を見つけて。", zh: "对方说3句 — 找出假的。" },
+  reason_spam: { uz: "Spam / reklama", ru: "Спам / реклама", en: "Spam / ads", de: "Spam / Werbung", tg: "Спам / реклама", tr: "Spam / reklam", ko: "스팸 / 광고", ja: "スパム / 広告", zh: "垃圾广告" },
+  reason_harassment: { uz: "Haqorat / ta’qib", ru: "Оскорбления / преследование", en: "Harassment", de: "Belästigung", tg: "Таҳқир / таъқиб", tr: "Hakaret / taciz", ko: "괴롭힘", ja: "嫌がらせ", zh: "骚扰辱骂" },
+  reason_inappropriate: { uz: "Nomaqbul kontent", ru: "Неприемлемый контент", en: "Inappropriate", de: "Unangemessen", tg: "Номуносиб", tr: "Uygunsuz içerik", ko: "부적절한 콘텐츠", ja: "不適切なコンテンツ", zh: "不当内容" },
+  reason_underage: { uz: "Yoshga mos emas", ru: "Не соответствует возрасту", en: "Underage concern", de: "Altersproblem", tg: "Синну сол номувофиқ", tr: "Yaşa uygun değil", ko: "연령 부적합", ja: "年齢不適合", zh: "年龄不符" },
+  reason_other: { uz: "Boshqa", ru: "Другое", en: "Other", de: "Sonstiges", tg: "Дигар", tr: "Diğer", ko: "기타", ja: "その他", zh: "其他" },
+  disconnected: { uz: "Uzildi", ru: "Отключено", en: "Disconnected", de: "Getrennt", tg: "Қатъ шуд", tr: "Bağlantı kesildi", ko: "연결 끊김", ja: "切断されました", zh: "已断开" },
+  livekit_missing: { uz: "LiveKit JS yuklanmadi", ru: "LiveKit JS не загрузился", en: "LiveKit JS failed to load", de: "LiveKit JS nicht geladen", tg: "LiveKit JS бор нашуд", tr: "LiveKit JS yüklenmedi", ko: "LiveKit JS 로드 실패", ja: "LiveKit JSの読込失敗", zh: "LiveKit JS 加载失败" },
+  busy_suffix: { uz: " · busy", ru: " · занят", en: " · busy", de: " · beschäftigt", tg: " · банд", tr: " · meşgul", ko: " · 바쁨", ja: " · 取り込み中", zh: " · 忙碌" },
+  open_mini_app: { uz: "Mini Appni ochish:", ru: "Открыть Mini App:", en: "Open Mini App:", de: "Mini App öffnen:", tg: "Mini App-ро кушоед:", tr: "Mini App'i açın:", ko: "미니 앱 열기:", ja: "ミニアプリを開く:", zh: "打开迷你应用：" },
 };
 const GAME_NAMES = {
   would_rather: { uz: "Yaxshiroq qaysi?", ru: "Что лучше?", en: "Would you rather?", de: "Was ist besser?", tg: "Кадоме беҳтар?", tr: "Hangisini tercih edersin?", ko: "어느 쪽이 나을까요?", ja: "どっちがいい？", zh: "你更喜欢哪个？" },
@@ -1336,6 +1355,12 @@ function applyStaticTranslations() {
   setText("avatarChangeBtn", "avatar_upload");
   setText("avatarRemoveBtn", "avatar_remove");
   setText("gameOpenBtn", "game_open");
+  setText("gamePickTitle", "game_pick_title");
+  setText("gamePickCancel", "game_cancel");
+  setText("gameNextBtn", "game_next");
+  setText("gameEndBtn", "game_close");
+  setText("gameAcceptBtn", "accept");
+  setText("gameDeclineBtn", "decline");
   setText("feedbackTitle", "feedback_title");
   setText("feedbackHint", "feedback_hint");
   setText("feedbackSkipBtn", "feedback_skip");
@@ -1346,6 +1371,15 @@ function applyStaticTranslations() {
   setText("reportCancelBtn", "report_cancel");
   setText("pAcceptBtn", "accept");
   setText("pDeclineBtn", "decline");
+  document.querySelectorAll("#reportReasons [data-reason]").forEach((btn) => {
+    const key = "reason_" + btn.dataset.reason;
+    if (TRANSLATIONS[key]) btn.textContent = tr(key);
+  });
+  document.querySelectorAll(".g-pick[data-game]").forEach((btn) => {
+    btn.textContent = gameName(btn.dataset.game);
+  });
+  const mainBtn = document.getElementById("mainBtn");
+  if (mainBtn) mainBtn.setAttribute("aria-label", tr("nav_search"));
   if (!searching) {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
@@ -1693,8 +1727,12 @@ async function bootApp() {
   window.Telegram?.WebApp?.expand?.();
   await loadCities();
   await loadAgeRanges();
-  await loadTopics();
   await loadMe();
+  await loadTopics();
+  if (document.getElementById("profileTopic") && matchTopic) {
+    document.getElementById("profileTopic").value = matchTopic;
+  }
+  applyStaticTranslations();
   startPresencePing();
 }
 
@@ -1991,7 +2029,7 @@ async function enterCall(roomId, partnerId, lk = {}) {
   }
 
   if (!window.LivekitClient) {
-    document.getElementById("callStatus").textContent = "LiveKit JS yuklanmadi";
+    document.getElementById("callStatus").textContent = tr("livekit_missing");
     return;
   }
 
@@ -2032,7 +2070,7 @@ async function enterCall(roomId, partnerId, lk = {}) {
   });
   lkRoom.on(RoomEvent.ParticipantConnected, () => onPeerReady());
   lkRoom.on(RoomEvent.Disconnected, () => {
-    document.getElementById("callStatus").textContent = "Uzildi";
+    document.getElementById("callStatus").textContent = tr("disconnected");
   });
   lkRoom.on(RoomEvent.DataReceived, (payload) => {
     try {
@@ -2230,17 +2268,15 @@ function renderGameRound(seed) {
     body.textContent = promptText(q);
     ["A", "B"].forEach((label, i) => {
       const b = document.createElement("button");
-      b.textContent = i === 0 ? "1-variant" : "2-variant";
+      b.textContent = i === 0 ? tr("variant_1") : tr("variant_2");
       b.onclick = () => {
         sendGameData({ t: "game_pick", game: "would_rather", choice: label });
-        body.textContent = promptText(q) + ` — siz: ${label}`;
+        body.textContent = promptText(q) + tr("your_pick", { choice: label });
       };
       choices.appendChild(b);
     });
   } else if (activeGame === "two_truths") {
-    body.textContent = gameHost
-      ? "3 ta gap ayting (2 rost, 1 yolg‘on). Hamroh topadi."
-      : "Hamroh 3 ta gap aytadi — yolg‘onini toping.";
+    body.textContent = gameHost ? tr("two_truths_host") : tr("two_truths_guest");
   } else if (activeGame === "icebreaker") {
     if (seed?.landed && (seed.text || typeof seed.index === "number")) {
       const list = activeIcebreakers(sessionTopic);
@@ -2295,7 +2331,7 @@ function handleGameMessage(msg) {
     renderGameRound({ prompt: msg.prompt });
   } else if (msg.t === "game_pick") {
     const body = document.getElementById("gameBody");
-    if (body) body.textContent = (body.textContent || "") + ` · hamroh: ${msg.choice}`;
+    if (body) body.textContent = (body.textContent || "") + tr("partner_pick", { choice: msg.choice });
   } else if (msg.t === "game_end") {
     resetGameUI();
   }
@@ -2571,6 +2607,16 @@ document.getElementById("flipCamBtn")?.addEventListener("click", async () => {
     facingMode = facingMode === "user" ? "environment" : "user";
     tg?.showAlert(tr("flip_err"));
   }
+});
+
+document.getElementById("profileLanguage")?.addEventListener("change", async () => {
+  const lang = document.getElementById("profileLanguage").value;
+  profileLanguage = lang;
+  currentLang = uiLang(lang);
+  applyStaticTranslations();
+  const topicVal = document.getElementById("profileTopic")?.value || matchTopic;
+  await loadTopics();
+  if (document.getElementById("profileTopic")) document.getElementById("profileTopic").value = topicVal;
 });
 
 bootApp();
