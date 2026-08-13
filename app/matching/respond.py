@@ -25,6 +25,7 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
         "search_scope": proposal[f"{prefix}_search_scope"],
         "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 18),
         "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 99),
+        "match_topic": proposal.get(f"{prefix}_match_topic", "any"),
     }
 
 

@@ -31,6 +31,7 @@ from app.matching.respond import respond_to_proposal
 from app.matching.age_brackets import age_range_options, clamp_prefer
 from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.models import (
+    CallFeedback,
     CallSession,
     Language,
     LookingFor,
@@ -44,6 +45,7 @@ from app.moderation import add_block, add_report, get_banned_ids, get_blocked_id
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
 from app.telegram_client import notify_admins
+from app.topics import DEFAULT_TOPIC, MATCH_TOPICS, TOPIC_IDS
 
 router = APIRouter(prefix="/api")
 
@@ -68,6 +70,7 @@ def _queue_payload(user: User) -> dict:
         "search_scope": user.search_scope.value,
         "prefer_age_min": getattr(user, "prefer_age_min", None) or settings.min_age,
         "prefer_age_max": getattr(user, "prefer_age_max", None) or 99,
+        "match_topic": getattr(user, "match_topic", None) or "any",
     }
 
 
@@ -87,6 +90,7 @@ def _other_side(proposal: dict, responder_id: int) -> dict:
         "search_scope": proposal[f"{prefix}_search_scope"],
         "prefer_age_min": proposal.get(f"{prefix}_prefer_age_min", 18),
         "prefer_age_max": proposal.get(f"{prefix}_prefer_age_max", 99),
+        "match_topic": proposal.get(f"{prefix}_match_topic", "any"),
     }
 
 
@@ -116,6 +120,7 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "is_banned": user.is_banned,
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
+        "match_topic": getattr(user, "match_topic", None) or "any",
     }
 
 
@@ -130,6 +135,7 @@ class ProfileUpdate(BaseModel):
     looking_for: LookingFor | None = None
     prefer_age_min: int | None = Field(default=None, ge=18, le=99)
     prefer_age_max: int | None = Field(default=None, ge=18, le=99)
+    match_topic: str | None = Field(default=None, max_length=32)
 
 
 @router.get("/cities")
@@ -140,6 +146,11 @@ async def get_cities():
 @router.get("/age-ranges")
 async def get_age_ranges():
     return {"ranges": age_range_options(), "min_age": settings.min_age}
+
+
+@router.get("/topics")
+async def get_topics():
+    return {"topics": MATCH_TOPICS, "default": DEFAULT_TOPIC}
 
 
 async def _build_ice_servers() -> dict:
@@ -221,6 +232,11 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             lo, hi = clamp_prefer(lo, hi, settings.min_age)
             user.prefer_age_min = lo
             user.prefer_age_max = hi
+        if update.match_topic is not None:
+            topic = update.match_topic.strip()
+            if topic not in TOPIC_IDS:
+                raise HTTPException(status_code=400, detail="Noto'g'ri mavzu")
+            user.match_topic = topic
 
         await session.commit()
 
@@ -317,6 +333,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
         user.id, user.gender.value, user.looking_for.value, user.age,
         user.language.value, user.city, user.search_scope.value,
         user.prefer_age_min or settings.min_age, user.prefer_age_max or 99,
+        getattr(user, "match_topic", None) or "any",
     )
 
     # Ikkalasi bir vaqtda bosganda: men navbatga tushganimdan keyin yana bir marta
@@ -368,6 +385,7 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
         search_scope=user.search_scope.value,
         prefer_age_min=user.prefer_age_min or settings.min_age,
         prefer_age_max=user.prefer_age_max or 99,
+        match_topic=getattr(user, "match_topic", None) or "any",
         exclude_ids=exclude,
     )
     if not candidate:
@@ -742,3 +760,41 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         "partner_id": partner.id,
         "partner_online": True,
     }
+
+
+class FeedbackRequest(BaseModel):
+    room_id: str
+    partner_id: int
+    stars: int = Field(ge=1, le=5)
+
+
+@router.post("/call/feedback")
+async def call_feedback(payload: FeedbackRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizni baholab bo'lmaydi")
+
+    async with async_session() as session:
+        existing = (
+            await session.execute(
+                select(CallFeedback).where(
+                    CallFeedback.room_id == payload.room_id,
+                    CallFeedback.from_user_id == me_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            existing.stars = payload.stars
+            existing.to_user_id = payload.partner_id
+        else:
+            session.add(
+                CallFeedback(
+                    room_id=payload.room_id,
+                    from_user_id=me_id,
+                    to_user_id=payload.partner_id,
+                    stars=payload.stars,
+                )
+            )
+        await session.commit()
+    return {"status": "ok", "stars": payload.stars}

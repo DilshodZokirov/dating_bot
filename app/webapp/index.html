@@ -431,10 +431,11 @@
   .safety-row {
     position: relative;
     z-index: 2;
-    display: flex;
+    display: none;
     gap: 8px;
     width: min(100%, 340px);
   }
+  .safety-row.visible { display: flex; }
   .safety-btn {
     flex: 1;
     padding: 10px 6px;
@@ -614,6 +615,49 @@
     color: #fff;
     background: radial-gradient(circle at 35% 30%, #ff9a74, var(--accent));
   }
+
+  .game-bar {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 340px);
+    margin-bottom: 10px;
+    display: none;
+  }
+  .game-bar.visible { display: block; }
+  .game-bar select, .game-panel button, .game-invite button {
+    font: inherit;
+  }
+  .game-bar > button, .game-invite button, .game-panel .g-btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06);
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .game-invite, .game-panel {
+    display: none;
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(7,21,18,0.85);
+    border: 1px solid var(--line);
+  }
+  .game-invite.open, .game-panel.open { display: block; }
+  .game-invite p, .game-panel p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.35; }
+  .game-invite .row, .game-panel .row { display: flex; gap: 8px; }
+  .game-invite .row button, .game-panel .row button { flex: 1; }
+  .game-choice {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 8px;
+  }
+  .star-row { display: flex; gap: 8px; justify-content: center; margin: 12px 0; }
+  .star-row button {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer;
+  }
+  .star-row button.on { color: #f5c542; border-color: rgba(245,197,66,0.5); }
 </style>
 </head>
 <body>
@@ -660,6 +704,34 @@
     <video id="localVideo" autoplay playsinline muted></video>
     <audio id="remoteAudio" autoplay></audio>
     <div class="call-status" id="callStatus">Ulanmoqda…</div>
+    <div class="game-bar" id="gameBar">
+      <button type="button" id="gameOpenBtn">O‘yin tanlash</button>
+      <div class="game-invite" id="gameInviteBox">
+        <p id="gameInviteText"></p>
+        <div class="row">
+          <button type="button" id="gameDeclineBtn">Yo‘q</button>
+          <button type="button" id="gameAcceptBtn" class="g-btn">Roziman</button>
+        </div>
+      </div>
+      <div class="game-panel" id="gamePanel">
+        <p id="gameTitle"></p>
+        <p id="gameBody"></p>
+        <div class="game-choice" id="gameChoices"></div>
+        <div class="row" style="margin-top:10px">
+          <button type="button" id="gameNextBtn">Keyingi</button>
+          <button type="button" id="gameEndBtn">Yopish</button>
+        </div>
+      </div>
+      <div class="game-panel" id="gamePickPanel">
+        <p id="gamePickTitle">O‘yin tanlang</p>
+        <div class="game-choice">
+          <button type="button" data-game="would_rather" class="g-pick">Yaxshiroq qaysi?</button>
+          <button type="button" data-game="two_truths" class="g-pick">Ikki rost, bir yolg‘on</button>
+          <button type="button" data-game="icebreaker" class="g-pick">Muzlatgich savollar</button>
+        </div>
+        <button type="button" id="gamePickCancel" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted)">Bekor</button>
+      </div>
+    </div>
     <div class="call-controls">
       <button class="call-btn" id="muteBtn" title="Mute">
         <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
@@ -671,10 +743,25 @@
         <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.71c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.66c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
       </button>
     </div>
-    <div class="safety-row">
+    <div class="safety-row" id="safetyRow">
       <button type="button" class="safety-btn" id="savePartnerBtn">Saqlash</button>
       <button type="button" class="safety-btn" id="blockBtn">Bloklash</button>
       <button type="button" class="safety-btn danger" id="reportBtn">Shikoyat</button>
+    </div>
+  </div>
+
+  <div class="report-sheet" id="feedbackSheet">
+    <div class="report-panel">
+      <h3 id="feedbackTitle">Suhbatni baholang</h3>
+      <p id="feedbackHint">1–5 yulduz</p>
+      <div class="star-row" id="starRow">
+        <button type="button" data-star="1">★</button>
+        <button type="button" data-star="2">★</button>
+        <button type="button" data-star="3">★</button>
+        <button type="button" data-star="4">★</button>
+        <button type="button" data-star="5">★</button>
+      </div>
+      <button type="button" class="report-cancel" id="feedbackSkipBtn">O‘tkazib yuborish</button>
     </div>
   </div>
 
@@ -740,6 +827,10 @@
 
       <h2 class="section-label" id="prefsSectionTitle">Aloqa sozlamalari</h2>
       <p class="section-hint" id="prefsSectionHint">Kim bilan suhbatlashmoqchisiz</p>
+      <div class="field">
+        <label id="lblTopic">Suhbat mavzusi</label>
+        <select id="profileTopic"></select>
+      </div>
       <div class="field">
         <label id="lblLookingFor">Suhbatdosh</label>
         <select id="profileLookingFor">
@@ -819,6 +910,7 @@ const TRANSLATIONS = {
   lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
   lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for" },
   lbl_prefer_age: { uz: "Suhbatdosh yoshi", ru: "Возраст собеседника", en: "Partner age" },
+  lbl_topic: { uz: "Suhbat mavzusi", ru: "Тема общения", en: "Conversation topic" },
   prefs_title: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat preferences" },
   prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to" },
   lf_male: { uz: "Erkak", ru: "Мужчина", en: "Male" },
@@ -875,7 +967,37 @@ const TRANSLATIONS = {
   hi: { uz: "Salom, {name}", ru: "Привет, {name}", en: "Hi, {name}" },
   accept: { uz: "Roziman", ru: "Принять", en: "Accept" },
   decline: { uz: "Yo‘q", ru: "Нет", en: "No" },
+  game_open: { uz: "O‘yin tanlash", ru: "Выбрать игру", en: "Choose a game" },
+  game_invite: { uz: "Hamroh o‘yin taklif qildi: {game}. Qabul qilasizmi?", ru: "Собеседник предлагает игру: {game}. Принять?", en: "Partner invites you to: {game}. Accept?" },
+  game_waiting: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
+  game_declined: { uz: "O‘yin rad etildi", ru: "Игра отклонена", en: "Game declined" },
+  feedback_title: { uz: "Suhbatni baholang", ru: "Оцените разговор", en: "Rate the call" },
+  feedback_hint: { uz: "1–5 yulduz", ru: "1–5 звёзд", en: "1–5 stars" },
+  feedback_skip: { uz: "O‘tkazib yuborish", ru: "Пропустить", en: "Skip" },
+  feedback_thanks: { uz: "Rahmat!", ru: "Спасибо!", en: "Thanks!" },
 };
+
+const GAME_NAMES = {
+  would_rather: { uz: "Yaxshiroq qaysi?", ru: "Что лучше?", en: "Would you rather?" },
+  two_truths: { uz: "Ikki rost, bir yolg‘on", ru: "Две правды и ложь", en: "Two truths and a lie" },
+  icebreaker: { uz: "Muzlatgich savollar", ru: "Льдоколы", en: "Icebreaker questions" },
+};
+
+const WOULD_RATHER = [
+  { uz: "Dengizmi yoki tog‘?", ru: "Море или горы?", en: "Sea or mountains?" },
+  { uz: "Kino uyda yoki kinoteatr?", ru: "Кино дома или в кинотеатре?", en: "Movie at home or cinema?" },
+  { uz: "Ertalab mi yoki kechqurun?", ru: "Утро или вечер?", en: "Morning or evening person?" },
+  { uz: "Choy mi yoki qahva?", ru: "Чай или кофе?", en: "Tea or coffee?" },
+  { uz: "Sayohat rejasizmi yoki batafsil?", ru: "Путешествие без плана или с планом?", en: "Spontaneous trip or planned?" },
+];
+
+const ICEBREAKERS = [
+  { uz: "Oxirgi marta nima sizni kuldirgan?", ru: "Что вас недавно рассмешило?", en: "What made you laugh recently?" },
+  { uz: "Bolalikdagi sevimli o‘yiningiz?", ru: "Любимая игра в детстве?", en: "Favorite childhood game?" },
+  { uz: "Bir kunlik orzuyingiz qayerda?", ru: "Куда бы съездили на один день?", en: "Where would you go for one day?" },
+  { uz: "Qanday kitob/serial tavsiya qilasiz?", ru: "Какой фильм/сериал посоветуете?", en: "What show would you recommend?" },
+  { uz: "Eng yaxshi ovqatingiz?", ru: "Любимое блюдо?", en: "Favorite food?" },
+];
 
 let currentLang = "uz";
 function tr(key, vars) {
@@ -902,6 +1024,7 @@ function applyStaticTranslations() {
   setText("lblScope", "lbl_scope");
   setText("lblLookingFor", "lbl_looking_for");
   setText("lblPreferAge", "lbl_prefer_age");
+  setText("lblTopic", "lbl_topic");
   setText("prefsSectionTitle", "prefs_title");
   setText("prefsSectionHint", "prefs_hint");
   setText("lfMale", "lf_male");
@@ -920,6 +1043,10 @@ function applyStaticTranslations() {
   setText("savePartnerBtn", "save_partner_btn");
   setText("avatarChangeBtn", "avatar_upload");
   setText("avatarRemoveBtn", "avatar_remove");
+  setText("gameOpenBtn", "game_open");
+  setText("feedbackTitle", "feedback_title");
+  setText("feedbackHint", "feedback_hint");
+  setText("feedbackSkipBtn", "feedback_skip");
   setText("blockBtn", "block_btn");
   setText("reportBtn", "report_btn");
   setText("reportTitle", "report_title");
@@ -1194,6 +1321,31 @@ async function loadAgeRanges() {
   }
 }
 
+async function loadTopics() {
+  const select = document.getElementById("profileTopic");
+  if (!select) return;
+  select.innerHTML = "";
+  try {
+    const data = await api("/api/topics");
+    for (const t of data.topics || []) {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t[currentLang] || t.uz;
+      select.appendChild(opt);
+    }
+  } catch (_) {
+    [
+      ["any", "Farqi yo'q"], ["friends", "Do'st topish"], ["dating", "Juft / tanishuv"],
+      ["study", "Ilmiy / o'qish"], ["speak_en", "Ingliz speaking"], ["speak_de", "Nemis speaking"],
+    ].forEach(([v, label]) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+  }
+}
+
 function setPreferAgeSelect(minV, maxV) {
   const select = document.getElementById("profilePreferAge");
   if (!select) return;
@@ -1225,6 +1377,7 @@ async function loadMe() {
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
+    document.getElementById("profileTopic").value = me.match_topic || "any";
     setPreferAgeSelect(me.prefer_age_min || 18, me.prefer_age_max || 99);
     setAvatarUI(me.avatar_url, me.name);
     updateProfilePreview();
@@ -1243,6 +1396,7 @@ async function bootApp() {
   window.Telegram?.WebApp?.expand?.();
   await loadCities();
   await loadAgeRanges();
+  await loadTopics();
   await loadMe();
   startPresencePing();
 }
@@ -1338,6 +1492,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
         search_scope: document.getElementById("profileSearchScope").value,
         age: Number.isFinite(ageVal) ? ageVal : undefined,
         looking_for: document.getElementById("profileLookingFor").value,
+        match_topic: document.getElementById("profileTopic").value,
         prefer_age_min: pMin,
         prefer_age_max: pMax,
       }),
@@ -1545,26 +1700,39 @@ async function enterCall(roomId, partnerId, lk = {}) {
 
   const { Room, RoomEvent } = LivekitClient;
   lkRoom = new Room({ adaptiveStream: true, dynacast: true });
+  resetGameUI();
+  setSafetyVisible(false);
+  setGameBarVisible(false);
+
+  const onPeerReady = () => {
+    document.getElementById("callStatus").textContent = tr("connected");
+    setSafetyVisible(true);
+    setGameBarVisible(true);
+  };
 
   lkRoom.on(RoomEvent.TrackSubscribed, (track) => {
     attachRemoteTrack(track);
-    document.getElementById("callStatus").textContent = tr("connected");
+    onPeerReady();
   });
   lkRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
     track.detach().forEach((el) => el.remove());
   });
-  lkRoom.on(RoomEvent.ParticipantConnected, () => {
-    document.getElementById("callStatus").textContent = tr("connected");
-  });
+  lkRoom.on(RoomEvent.ParticipantConnected, () => onPeerReady());
   lkRoom.on(RoomEvent.Disconnected, () => {
     document.getElementById("callStatus").textContent = "Uzildi";
+  });
+  lkRoom.on(RoomEvent.DataReceived, (payload) => {
+    try {
+      const msg = JSON.parse(new TextDecoder().decode(payload));
+      handleGameMessage(msg);
+    } catch (_) {}
   });
 
   try {
     await lkRoom.connect(url, token);
     await lkRoom.localParticipant.setMicrophoneEnabled(true);
-    document.getElementById("callStatus").textContent =
-      lkRoom.remoteParticipants.size > 0 ? tr("connected") : tr("waiting_peer");
+    if (lkRoom.remoteParticipants.size > 0) onPeerReady();
+    else document.getElementById("callStatus").textContent = tr("waiting_peer");
   } catch (e) {
     document.getElementById("callStatus").textContent = "LiveKit: " + e.message;
     return;
@@ -1581,8 +1749,185 @@ async function enterCall(roomId, partnerId, lk = {}) {
   }, 2500);
 }
 
+function setSafetyVisible(on) {
+  document.getElementById("safetyRow")?.classList.toggle("visible", !!on);
+}
+function setGameBarVisible(on) {
+  document.getElementById("gameBar")?.classList.toggle("visible", !!on);
+}
+
+function sendGameData(obj) {
+  if (!lkRoom) return;
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  lkRoom.localParticipant.publishData(bytes, { reliable: true }).catch(() => {});
+}
+
+let activeGame = null;
+let gameHost = false;
+let pendingFeedback = null;
+let feedbackStars = 0;
+
+function resetGameUI() {
+  activeGame = null;
+  gameHost = false;
+  document.getElementById("gameInviteBox")?.classList.remove("open");
+  document.getElementById("gamePanel")?.classList.remove("open");
+  document.getElementById("gamePickPanel")?.classList.remove("open");
+  const choices = document.getElementById("gameChoices");
+  if (choices) choices.innerHTML = "";
+}
+
+function gameName(id) {
+  const g = GAME_NAMES[id] || {};
+  return g[currentLang] || g.uz || id;
+}
+
+function pickPrompt(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function promptText(item) {
+  return item[currentLang] || item.uz;
+}
+
+function openGame(game, asHost, seed) {
+  activeGame = game;
+  gameHost = !!asHost;
+  document.getElementById("gamePickPanel")?.classList.remove("open");
+  document.getElementById("gameInviteBox")?.classList.remove("open");
+  const panel = document.getElementById("gamePanel");
+  panel?.classList.add("open");
+  document.getElementById("gameTitle").textContent = gameName(game);
+  renderGameRound(seed);
+}
+
+function renderGameRound(seed) {
+  const body = document.getElementById("gameBody");
+  const choices = document.getElementById("gameChoices");
+  choices.innerHTML = "";
+  if (activeGame === "would_rather") {
+    const q = seed?.prompt || pickPrompt(WOULD_RATHER);
+    if (gameHost && !seed?.prompt) sendGameData({ t: "game_sync", game: "would_rather", prompt: q });
+    body.textContent = promptText(q);
+    ["A", "B"].forEach((label, i) => {
+      const b = document.createElement("button");
+      b.textContent = i === 0 ? "1-variant" : "2-variant";
+      b.onclick = () => {
+        sendGameData({ t: "game_pick", game: "would_rather", choice: label });
+        body.textContent = promptText(q) + ` — siz: ${label}`;
+      };
+      choices.appendChild(b);
+    });
+  } else if (activeGame === "two_truths") {
+    body.textContent = gameHost
+      ? "3 ta gap ayting (2 rost, 1 yolg‘on). Hamroh topadi."
+      : "Hamroh 3 ta gap aytadi — yolg‘onini toping.";
+  } else if (activeGame === "icebreaker") {
+    const q = seed?.prompt || pickPrompt(ICEBREAKERS);
+    if (gameHost && !seed?.prompt) sendGameData({ t: "game_sync", game: "icebreaker", prompt: q });
+    body.textContent = promptText(q);
+  }
+}
+
+function handleGameMessage(msg) {
+  if (!msg || !msg.t) return;
+  if (msg.t === "game_invite") {
+    document.getElementById("gameInviteText").textContent = tr("game_invite", { game: gameName(msg.game) });
+    document.getElementById("gameInviteBox")?.classList.add("open");
+    document.getElementById("gamePickPanel")?.classList.remove("open");
+    document.getElementById("gameAcceptBtn").onclick = () => {
+      sendGameData({ t: "game_accept", game: msg.game });
+      openGame(msg.game, false);
+    };
+    document.getElementById("gameDeclineBtn").onclick = () => {
+      sendGameData({ t: "game_decline", game: msg.game });
+      document.getElementById("gameInviteBox")?.classList.remove("open");
+    };
+  } else if (msg.t === "game_accept") {
+    tg?.showAlert?.(tr("connected"));
+    openGame(msg.game, true);
+  } else if (msg.t === "game_decline") {
+    tg?.showAlert?.(tr("game_declined"));
+    resetGameUI();
+  } else if (msg.t === "game_sync" && activeGame === msg.game) {
+    renderGameRound({ prompt: msg.prompt });
+  } else if (msg.t === "game_pick") {
+    const body = document.getElementById("gameBody");
+    if (body) body.textContent = (body.textContent || "") + ` · hamroh: ${msg.choice}`;
+  } else if (msg.t === "game_end") {
+    resetGameUI();
+  }
+}
+
+document.getElementById("gameOpenBtn")?.addEventListener("click", () => {
+  document.getElementById("gamePickPanel")?.classList.add("open");
+  document.getElementById("gamePanel")?.classList.remove("open");
+});
+document.getElementById("gamePickCancel")?.addEventListener("click", () => {
+  document.getElementById("gamePickPanel")?.classList.remove("open");
+});
+document.querySelectorAll(".g-pick").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const game = btn.dataset.game;
+    sendGameData({ t: "game_invite", game });
+    document.getElementById("gamePickPanel")?.classList.remove("open");
+    document.getElementById("gameInviteText").textContent = tr("game_waiting");
+    document.getElementById("gameInviteBox")?.classList.add("open");
+    document.getElementById("gameAcceptBtn").style.display = "none";
+    document.getElementById("gameDeclineBtn").textContent = tr("cancel_link");
+    document.getElementById("gameDeclineBtn").onclick = () => {
+      sendGameData({ t: "game_end" });
+      resetGameUI();
+      document.getElementById("gameAcceptBtn").style.display = "";
+    };
+  });
+});
+document.getElementById("gameNextBtn")?.addEventListener("click", () => {
+  if (!activeGame || !gameHost) return;
+  renderGameRound();
+});
+document.getElementById("gameEndBtn")?.addEventListener("click", () => {
+  sendGameData({ t: "game_end" });
+  resetGameUI();
+});
+
+function openFeedbackSheet(roomId, partnerId) {
+  if (!roomId || !partnerId) return;
+  pendingFeedback = { roomId, partnerId };
+  feedbackStars = 0;
+  document.querySelectorAll("#starRow button").forEach((b) => b.classList.remove("on"));
+  document.getElementById("feedbackSheet")?.classList.add("open");
+}
+function closeFeedbackSheet() {
+  document.getElementById("feedbackSheet")?.classList.remove("open");
+  pendingFeedback = null;
+}
+document.getElementById("starRow")?.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-star]");
+  if (!btn || !pendingFeedback) return;
+  feedbackStars = parseInt(btn.dataset.star, 10);
+  document.querySelectorAll("#starRow button").forEach((b) => {
+    b.classList.toggle("on", parseInt(b.dataset.star, 10) <= feedbackStars);
+  });
+  try {
+    await api("/api/call/feedback", {
+      method: "POST",
+      body: JSON.stringify({
+        room_id: pendingFeedback.roomId,
+        partner_id: pendingFeedback.partnerId,
+        stars: feedbackStars,
+      }),
+    });
+    tg?.showAlert?.(tr("feedback_thanks"));
+  } catch (_) {}
+  closeFeedbackSheet();
+});
+document.getElementById("feedbackSkipBtn")?.addEventListener("click", closeFeedbackSheet);
+
 function cleanupCall(notifyServer) {
   clearInterval(callPollTimer);
+  const endedRoom = callRoomId;
+  const endedPartner = callPartnerId;
   if (notifyServer && callRoomId && callPartnerId) {
     api("/api/call/end", {
       method: "POST",
@@ -1599,12 +1944,18 @@ function cleanupCall(notifyServer) {
   if (lv) { lv.style.display = "none"; lv.srcObject = null; }
   const avatar = document.getElementById("callAvatar");
   if (avatar) avatar.style.display = "grid";
+  setSafetyVisible(false);
+  setGameBarVisible(false);
+  resetGameUI();
   callView.style.display = "none";
   bottomNav.style.display = "flex";
   searchView.classList.add("active");
   setSearchingUI(false);
   videoOn = false;
   isMuted = false;
+  callRoomId = null;
+  callPartnerId = null;
+  if (endedRoom && endedPartner) openFeedbackSheet(endedRoom, endedPartner);
 }
 
 document.getElementById("endCallBtn").addEventListener("click", () => cleanupCall(true));
