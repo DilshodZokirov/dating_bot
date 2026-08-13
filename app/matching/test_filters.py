@@ -8,6 +8,7 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import _age_pref_compatible, _city_compatible
+from app.topics import topic_compatible
 
 
 def test_default_prefer_ages_is_open():
@@ -25,3 +26,11 @@ def test_city_scope():
     assert _city_compatible("Toshkent", "country", "Samarqand", "country")
     assert not _city_compatible("Toshkent", "city", "Samarqand", "country")
     assert _city_compatible("Toshkent", "city", "Toshkent", "city")
+
+
+def test_topic_compatible():
+    assert topic_compatible("friends", "friends")
+    assert topic_compatible("any", "speak_en")
+    assert topic_compatible("speak_en", "any")
+    assert not topic_compatible("friends", "dating")
+    assert not topic_compatible("speak_en", "speak_de")
