@@ -69,6 +69,86 @@ def _city_compatible(a_city: str | None, a_scope: str, b_city: str | None, b_sco
     return True
 
 
+def _candidate_compatible(
+    gender: str,
+    looking_for: str,
+    age: int,
+    language: str,
+    city: str | None,
+    search_scope: str,
+    prefer_age_min: int,
+    prefer_age_max: int,
+    match_topic: str,
+    candidate: dict,
+    exclude_ids: set[int],
+) -> bool:
+    if candidate.get("user_id") in exclude_ids:
+        return False
+    c_min, c_max = _pref_ages(candidate)
+    if not _age_pref_compatible(
+        age, prefer_age_min, prefer_age_max,
+        candidate["age"], c_min, c_max,
+    ):
+        return False
+    if candidate.get("language") != language:
+        return False
+    if not _city_compatible(
+        city, search_scope, candidate.get("city"), candidate.get("search_scope", "country")
+    ):
+        return False
+    if looking_for != "any" and candidate["gender"] != looking_for:
+        return False
+    if candidate["looking_for"] != "any" and candidate["looking_for"] != gender:
+        return False
+    if not topic_compatible(match_topic, candidate.get("match_topic")):
+        return False
+    return True
+
+
+async def count_compatible_waiters(
+    gender: str,
+    looking_for: str,
+    age: int,
+    language: str,
+    city: str | None,
+    search_scope: str,
+    prefer_age_min: int = 12,
+    prefer_age_max: int = 100,
+    match_topic: str = "any",
+    exclude_ids: set[int] | None = None,
+) -> int:
+    """
+    Hozir navbatda turgan va shu sozlamalar bilan mos keladigan odamlar soni.
+    UI uchun — foydalanuvchi bo‘sh qidiruvga vaqt sarflamasin.
+    """
+    exclude_ids = set(exclude_ids or set())
+    queue_names = [_queue_key(gender), _queue_key("any")]
+    seen_queues: set[str] = set()
+    seen_users: set[int] = set()
+    count = 0
+    for q in queue_names:
+        if q in seen_queues:
+            continue
+        seen_queues.add(q)
+        raw_candidates = await redis_client.lrange(q, 0, -1)
+        for raw in raw_candidates:
+            try:
+                candidate = json.loads(raw)
+            except Exception:
+                continue
+            uid = candidate.get("user_id")
+            if uid is None or uid in seen_users:
+                continue
+            if not _candidate_compatible(
+                gender, looking_for, age, language, city, search_scope,
+                prefer_age_min, prefer_age_max, match_topic, candidate, exclude_ids,
+            ):
+                continue
+            seen_users.add(uid)
+            count += 1
+    return count
+
+
 async def find_candidate(
     gender: str,
     looking_for: str,
@@ -97,27 +177,11 @@ async def find_candidate(
             raw_candidates = await redis_client.lrange(opposite_queue, 0, -1)
             for raw in raw_candidates:
                 candidate = json.loads(raw)
-                if candidate.get("user_id") in exclude_ids:
-                    continue
-                c_min, c_max = _pref_ages(candidate)
-                if not _age_pref_compatible(
-                    age, prefer_age_min, prefer_age_max,
-                    candidate["age"], c_min, c_max,
+                if not _candidate_compatible(
+                    gender, looking_for, age, language, city, search_scope,
+                    prefer_age_min, prefer_age_max, match_topic, candidate, exclude_ids,
                 ):
                     continue
-                if candidate.get("language") != language:
-                    continue
-                if not _city_compatible(
-                    city, search_scope, candidate.get("city"), candidate.get("search_scope", "country")
-                ):
-                    continue
-                if looking_for != "any" and candidate["gender"] != looking_for:
-                    continue
-                if candidate["looking_for"] != "any" and candidate["looking_for"] != gender:
-                    continue
-                if not topic_compatible(match_topic, candidate.get("match_topic")):
-                    continue
-
                 await redis_client.lrem(opposite_queue, 1, raw)
                 return candidate
         return None

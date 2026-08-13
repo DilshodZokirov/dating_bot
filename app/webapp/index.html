@@ -125,6 +125,23 @@
     line-height: 1.45;
   }
 
+  .pool-line {
+    margin: 4px 0 0;
+    max-width: 18rem;
+    font-size: 0.86rem;
+    line-height: 1.4;
+    color: var(--muted);
+    min-height: 1.2em;
+    transition: color 0.2s ease;
+  }
+  .pool-line.has-people {
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+  .pool-line.empty-pool {
+    color: #c9a27a;
+  }
+
   .comms-link {
     margin-top: 6px;
     border: none;
@@ -823,6 +840,7 @@
       <p class="greeting" id="userLabel">…</p>
       <p class="headline" id="titleText">Yangi suhbatni boshlang</p>
       <p class="subhead" id="hintText">Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.</p>
+      <p class="pool-line" id="poolLine" aria-live="polite"></p>
 
       <button type="button" class="search-orb" id="mainBtn" aria-label="Qidirish">
         <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
@@ -1092,6 +1110,15 @@ const TRANSLATIONS = {
   },
   idle_hint: { uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.", ru: "Найдём собеседника и сразу подключим к видеозвонку.", en: "We’ll find a match and connect you to a video call.", de: "Wir finden ein Match und verbinden Sie mit einem Videoanruf.", tg: "Ҳамсуҳбати мувофиқ ёфта, фавран ба видеозанг пайваст мекунем.", tr: "Uygun birini bulup hemen görüntülü aramaya bağlarız.", ko: "맞는 상대를 찾아 바로 영상 통화로 연결합니다.", ja: "マッチを見つけてすぐにビデオ通話に接続します。", zh: "找到匹配对象后立即连接视频通话。",
     ar: "سنجد شريكًا مناسبًا ونوصلك بمكالمة فيديو فورًا.",
+  },
+  pool_zero: { uz: "Hozir sizning sozlamalaringiz bo‘yicha hech kim qidirayotgani yo‘q", ru: "Сейчас по вашим настройкам никто не ищет", en: "No one is searching with your settings right now", de: "Gerade sucht niemand mit Ihren Einstellungen", tg: "Ҳоло бо танзимоти шумо ҳеҷ кас ҷустуҷӯ намекунад", tr: "Şu an ayarlarınıza göre kimse aramıyor", ko: "지금 설정에 맞는 검색 중인 사람이 없습니다", ja: "今、設定に合う検索中の人はいません", zh: "目前没有人按你的设置在搜索",
+    ar: "لا أحد يبحث بإعداداتك الآن",
+  },
+  pool_one: { uz: "Hozir 1 kishi sizning yo‘nalishingizda qidirayapti", ru: "Сейчас 1 человек ищет в вашем направлении", en: "1 person is searching in your direction now", de: "1 Person sucht gerade in Ihrer Richtung", tg: "Ҳоло 1 нафар дар самти шумо ҷустуҷӯ дорад", tr: "Şu an yönünüzde 1 kişi arıyor", ko: "지금 같은 방향으로 1명이 검색 중", ja: "今、同じ条件で1人が検索中", zh: "目前有 1 人按你的方向在搜索",
+    ar: "شخص واحد يبحث في اتجاهك الآن",
+  },
+  pool_many: { uz: "Hozir {n} kishi sizning yo‘nalishingizda qidirayapti", ru: "Сейчас {n} человек ищут в вашем направлении", en: "{n} people are searching in your direction now", de: "{n} Personen suchen gerade in Ihrer Richtung", tg: "Ҳоло {n} нафар дар самти шумо ҷустуҷӯ доранд", tr: "Şu an yönünüzde {n} kişi arıyor", ko: "지금 같은 방향으로 {n}명이 검색 중", ja: "今、同じ条件で{n}人が検索中", zh: "目前有 {n} 人按你的方向在搜索",
+    ar: "{n} أشخاص يبحثون في اتجاهك الآن",
   },
   guide_title: { uz: "Qanday ishlaydi", ru: "Как это работает", en: "How it works", de: "So geht’s", tg: "Чӣ гуна кор мекунад", tr: "Nasıl çalışır", ko: "사용 방법", ja: "使い方", zh: "怎么用",
     ar: "كيف يعمل",
@@ -1827,6 +1854,7 @@ function applyStaticTranslations() {
     titleText.textContent = tr("idle_title");
     hintText.textContent = tr("idle_hint");
   }
+  if (lastPoolCount != null) renderPoolCount(lastPoolCount);
 }
 
 const tg = window.Telegram?.WebApp;
@@ -1871,6 +1899,7 @@ function refreshTelegramContext() {
 const mainBtn = document.getElementById("mainBtn");
 const titleText = document.getElementById("titleText");
 const hintText = document.getElementById("hintText");
+const poolLine = document.getElementById("poolLine");
 const cancelLink = document.getElementById("cancelLink");
 const userLabel = document.getElementById("userLabel");
 const errorBox = document.getElementById("errorBox");
@@ -1880,9 +1909,54 @@ const callView = document.getElementById("callView");
 const bottomNav = document.getElementById("bottomNav");
 
 let pollTimer = null;
+let poolTimer = null;
 let searching = false;
 let currentProposalId = null;
 let proposalWaitUntil = 0;
+let lastPoolCount = null;
+
+function renderPoolCount(n) {
+  if (!poolLine) return;
+  if (currentProposalId || (errorBox && errorBox.style.display === "block" && !searching && mainBtn.style.display === "none")) {
+    poolLine.textContent = "";
+    poolLine.classList.remove("has-people", "empty-pool");
+    return;
+  }
+  const count = Number.isFinite(Number(n)) ? Math.max(0, Number(n)) : null;
+  if (count === null) {
+    poolLine.textContent = "";
+    poolLine.classList.remove("has-people", "empty-pool");
+    return;
+  }
+  lastPoolCount = count;
+  poolLine.classList.toggle("has-people", count > 0);
+  poolLine.classList.toggle("empty-pool", count === 0);
+  if (count === 0) poolLine.textContent = tr("pool_zero");
+  else if (count === 1) poolLine.textContent = tr("pool_one");
+  else poolLine.textContent = tr("pool_many", { n: String(count) });
+  poolLine.style.display = "block";
+}
+
+async function refreshPoolCount() {
+  if (!initData || !meLoaded) return;
+  if (callView && callView.style.display === "block") return;
+  if (currentProposalId) {
+    renderPoolCount(null);
+    return;
+  }
+  try {
+    const data = await api("/api/search/pool");
+    renderPoolCount(data.count);
+  } catch (_) {
+    /* jim */ 
+  }
+}
+
+function startPoolPolling() {
+  if (poolTimer) clearInterval(poolTimer);
+  refreshPoolCount();
+  poolTimer = setInterval(refreshPoolCount, 8000);
+}
 
 async function api(path, options = {}) {
   refreshTelegramContext();
@@ -1908,6 +1982,7 @@ function showError(msg) {
   mainBtn.style.display = "none";
   titleText.style.display = "none";
   hintText.style.display = "none";
+  if (poolLine) poolLine.style.display = "none";
   proposalCard.style.display = "none";
 }
 
@@ -1917,6 +1992,10 @@ function resetSearchUIElements() {
   mainBtn.style.display = "grid";
   titleText.style.display = "block";
   hintText.style.display = "block";
+  if (poolLine) {
+    poolLine.style.display = "block";
+    if (lastPoolCount != null) renderPoolCount(lastPoolCount);
+  }
 }
 
 function setSearchingUI(isSearching) {
@@ -1928,6 +2007,7 @@ function setSearchingUI(isSearching) {
   titleText.textContent = isSearching ? tr("searching_title") : tr("idle_title");
   hintText.textContent = isSearching ? tr("searching_hint") : tr("idle_hint");
   resetSearchUIElements();
+  refreshPoolCount();
 }
 
 function showProposal(proposalId, name, age, gender, avatarUrl) {
@@ -1938,6 +2018,7 @@ function showProposal(proposalId, name, age, gender, avatarUrl) {
   titleText.style.display = "block";
   titleText.textContent = tr("proposal_question");
   hintText.style.display = "none";
+  if (poolLine) poolLine.style.display = "none";
   cancelLink.style.display = "inline";
   const commsBtn = document.getElementById("commsOpenBtn");
   if (commsBtn) commsBtn.style.display = "none";
@@ -2218,6 +2299,7 @@ async function bootApp() {
   }
   applyStaticTranslations();
   startPresencePing();
+  startPoolPolling();
   if (meLoaded) maybeShowGuide();
 }
 
@@ -2273,8 +2355,13 @@ async function pollStatus() {
       titleText.textContent = tr("searching_title");
       hintText.textContent = tr("requeued_hint");
       hintText.style.display = "block";
+      if (poolLine) poolLine.style.display = "block";
       cancelLink.style.display = "inline";
       proposalCard.style.display = "none";
+      if (result.compatible_count != null) renderPoolCount(result.compatible_count);
+      else refreshPoolCount();
+    } else if (result.outcome === "waiting" && result.compatible_count != null) {
+      renderPoolCount(result.compatible_count);
     }
   } catch (e) {
     clearInterval(pollTimer);
@@ -2361,6 +2448,7 @@ document.getElementById("saveCommsBtn")?.addEventListener("click", async () => {
     matchTopic = document.getElementById("profileTopic").value || "any";
     await loadTopics();
     document.getElementById("profileTopic").value = matchTopic;
+    await refreshPoolCount();
     if (statusEl) statusEl.textContent = tr("saved_ok");
     tg?.HapticFeedback?.notificationOccurred?.("success");
     setTimeout(() => { if (statusEl) statusEl.textContent = ""; hideCommsSheet(); }, 700);

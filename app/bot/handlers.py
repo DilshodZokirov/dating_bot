@@ -28,7 +28,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=comms1"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=pool1"
 
 
 def _ui_lang(user: User | None) -> str:

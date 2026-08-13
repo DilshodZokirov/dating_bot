@@ -20,6 +20,7 @@ from app.database import async_session
 from app.matching.queue import (
     cancel_proposals_by_user,
     cancel_wait,
+    count_compatible_waiters,
     create_mutual_proposal,
     find_candidate,
     join_queue,
@@ -342,6 +343,38 @@ async def get_avatar(user_id: int):
     return FileResponse(path, media_type=media, headers={"Cache-Control": "public, max-age=3600"})
 
 
+async def _compatible_pool_count(user: User) -> int:
+    exclude = await get_blocked_ids(user.id)
+    exclude |= await get_banned_ids()
+    exclude.add(user.id)
+    return await count_compatible_waiters(
+        gender=user.gender.value,
+        looking_for=user.looking_for.value,
+        age=user.age,
+        language=user.language.value,
+        city=user.city,
+        search_scope=user.search_scope.value,
+        prefer_age_min=user.prefer_age_min if user.prefer_age_min is not None else 12,
+        prefer_age_max=user.prefer_age_max if user.prefer_age_max is not None else 100,
+        match_topic=normalize_topic(getattr(user, "match_topic", None)),
+        exclude_ids=exclude,
+    )
+
+
+@router.get("/search/pool")
+async def search_pool(x_telegram_init_data: str | None = Header(default=None)):
+    """Sozlamalaringizga mos, hozir qidirayotgan odamlar soni."""
+    tg_user = _auth(x_telegram_init_data)
+    async with async_session() as session:
+        user = await session.get(User, tg_user["id"])
+    if not user:
+        raise HTTPException(status_code=400, detail="Avval botda /start orqali ro'yxatdan o'ting")
+    if user.is_banned:
+        raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
+    count = await _compatible_pool_count(user)
+    return {"count": count}
+
+
 @router.post("/search/start")
 async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
@@ -398,7 +431,13 @@ async def search_status(x_telegram_init_data: str | None = Header(default=None))
             await pop_result(uid)
             return proposal
 
-    return {"outcome": "waiting"}
+    count = 0
+    if user and not user.is_banned:
+        try:
+            count = await _compatible_pool_count(user)
+        except Exception:
+            count = 0
+    return {"outcome": "waiting", "compatible_count": count}
 
 
 async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False) -> dict | None:
