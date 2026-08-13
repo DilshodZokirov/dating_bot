@@ -658,6 +658,48 @@
     background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer;
   }
   .star-row button.on { color: #f5c542; border-color: rgba(245,197,66,0.5); }
+
+  .roulette-wheel {
+    margin: 8px 0 12px;
+    padding: 18px 14px;
+    border-radius: 16px;
+    border: 1px dashed rgba(232,111,74,0.45);
+    background: rgba(232,111,74,0.08);
+    text-align: center;
+    min-height: 72px;
+    display: grid;
+    place-items: center;
+  }
+  .roulette-wheel .r-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .roulette-wheel .r-text {
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+  .roulette-wheel.spinning .r-text {
+    animation: rouletteBlur 0.12s linear infinite;
+  }
+  @keyframes rouletteBlur {
+    0% { opacity: 0.35; transform: translateY(4px); filter: blur(1px); }
+    50% { opacity: 1; transform: translateY(0); filter: none; }
+    100% { opacity: 0.35; transform: translateY(-4px); filter: blur(1px); }
+  }
+  .roulette-wheel.landed {
+    border-style: solid;
+    border-color: rgba(61,186,122,0.55);
+    background: rgba(61,186,122,0.1);
+    animation: roulettePop 0.35s ease;
+  }
+  @keyframes roulettePop {
+    from { transform: scale(0.96); }
+    to { transform: scale(1); }
+  }
 </style>
 </head>
 <body>
@@ -727,7 +769,7 @@
         <div class="game-choice">
           <button type="button" data-game="would_rather" class="g-pick">Yaxshiroq qaysi?</button>
           <button type="button" data-game="two_truths" class="g-pick">Ikki rost, bir yolg‘on</button>
-          <button type="button" data-game="icebreaker" class="g-pick">Muzlatgich savollar</button>
+          <button type="button" data-game="icebreaker" class="g-pick">Savol ruletkasi</button>
         </div>
         <button type="button" id="gamePickCancel" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted)">Bekor</button>
       </div>
@@ -971,6 +1013,10 @@ const TRANSLATIONS = {
   game_invite: { uz: "Hamroh o‘yin taklif qildi: {game}. Qabul qilasizmi?", ru: "Собеседник предлагает игру: {game}. Принять?", en: "Partner invites you to: {game}. Accept?" },
   game_waiting: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
   game_declined: { uz: "O‘yin rad etildi", ru: "Игра отклонена", en: "Game declined" },
+  roulette_spin: { uz: "Aylantirish", ru: "Крутить", en: "Spin" },
+  roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…" },
+  roulette_hint: { uz: "Kimdir aylantiradi — savol tasodifan tushadi", ru: "Кто-то крутит — вопрос выпадает случайно", en: "Anyone spins — a random question drops" },
+  roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question" },
   feedback_title: { uz: "Suhbatni baholang", ru: "Оцените разговор", en: "Rate the call" },
   feedback_hint: { uz: "1–5 yulduz", ru: "1–5 звёзд", en: "1–5 stars" },
   feedback_skip: { uz: "O‘tkazib yuborish", ru: "Пропустить", en: "Skip" },
@@ -980,7 +1026,7 @@ const TRANSLATIONS = {
 const GAME_NAMES = {
   would_rather: { uz: "Yaxshiroq qaysi?", ru: "Что лучше?", en: "Would you rather?" },
   two_truths: { uz: "Ikki rost, bir yolg‘on", ru: "Две правды и ложь", en: "Two truths and a lie" },
-  icebreaker: { uz: "Muzlatgich savollar", ru: "Льдоколы", en: "Icebreaker questions" },
+  icebreaker: { uz: "Savol ruletkasi", ru: "Рулетка вопросов", en: "Question roulette" },
 };
 
 const WOULD_RATHER = [
@@ -1766,15 +1812,24 @@ let activeGame = null;
 let gameHost = false;
 let pendingFeedback = null;
 let feedbackStars = 0;
+let rouletteTimer = null;
+let rouletteBusy = false;
 
 function resetGameUI() {
   activeGame = null;
   gameHost = false;
+  rouletteBusy = false;
+  if (rouletteTimer) {
+    clearInterval(rouletteTimer);
+    rouletteTimer = null;
+  }
   document.getElementById("gameInviteBox")?.classList.remove("open");
   document.getElementById("gamePanel")?.classList.remove("open");
   document.getElementById("gamePickPanel")?.classList.remove("open");
   const choices = document.getElementById("gameChoices");
   if (choices) choices.innerHTML = "";
+  const nextBtn = document.getElementById("gameNextBtn");
+  if (nextBtn) nextBtn.style.display = "";
 }
 
 function gameName(id) {
@@ -1784,6 +1839,10 @@ function gameName(id) {
 
 function pickPrompt(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function pickPromptIndex(list) {
+  return Math.floor(Math.random() * list.length);
 }
 
 function promptText(item) {
@@ -1798,7 +1857,55 @@ function openGame(game, asHost, seed) {
   const panel = document.getElementById("gamePanel");
   panel?.classList.add("open");
   document.getElementById("gameTitle").textContent = gameName(game);
+  const nextBtn = document.getElementById("gameNextBtn");
+  if (nextBtn) nextBtn.style.display = game === "icebreaker" ? "none" : "";
   renderGameRound(seed);
+}
+
+function renderRouletteUI(state) {
+  const body = document.getElementById("gameBody");
+  const choices = document.getElementById("gameChoices");
+  body.innerHTML = `
+    <div class="roulette-wheel ${state?.spinning ? "spinning" : ""} ${state?.landed ? "landed" : ""}" id="rouletteWheel">
+      <div class="r-label">${state?.landed ? tr("roulette_result") : tr("roulette_hint")}</div>
+      <div class="r-text" id="rouletteText">${state?.text || "★ ★ ★"}</div>
+    </div>`;
+  choices.innerHTML = "";
+  const spinBtn = document.createElement("button");
+  spinBtn.id = "rouletteSpinBtn";
+  spinBtn.textContent = state?.spinning ? tr("roulette_spinning") : tr("roulette_spin");
+  spinBtn.disabled = !!state?.spinning || rouletteBusy;
+  spinBtn.onclick = () => startRouletteSpin(true);
+  choices.appendChild(spinBtn);
+}
+
+function startRouletteSpin(broadcast) {
+  if (activeGame !== "icebreaker" || rouletteBusy) return;
+  const finalIdx = pickPromptIndex(ICEBREAKERS);
+  if (broadcast) sendGameData({ t: "game_spin", game: "icebreaker", index: finalIdx });
+  runRouletteAnimation(finalIdx, false);
+}
+
+function runRouletteAnimation(finalIdx, fromPeer) {
+  rouletteBusy = true;
+  if (rouletteTimer) clearInterval(rouletteTimer);
+  let ticks = 0;
+  // Ikkala tomonda bir xil davomiylik — natija ham bir xil index
+  const totalTicks = 20 + (finalIdx % 8);
+  renderRouletteUI({ spinning: true, text: promptText(ICEBREAKERS[0]) });
+  rouletteTimer = setInterval(() => {
+    ticks += 1;
+    const el = document.getElementById("rouletteText");
+    if (el) el.textContent = promptText(ICEBREAKERS[ticks % ICEBREAKERS.length]);
+    if (ticks >= totalTicks) {
+      clearInterval(rouletteTimer);
+      rouletteTimer = null;
+      const q = ICEBREAKERS[finalIdx % ICEBREAKERS.length];
+      renderRouletteUI({ landed: true, text: promptText(q) });
+      rouletteBusy = false;
+      if (!fromPeer) sendGameData({ t: "game_landed", game: "icebreaker", index: finalIdx });
+    }
+  }, 90);
 }
 
 function renderGameRound(seed) {
@@ -1823,9 +1930,12 @@ function renderGameRound(seed) {
       ? "3 ta gap ayting (2 rost, 1 yolg‘on). Hamroh topadi."
       : "Hamroh 3 ta gap aytadi — yolg‘onini toping.";
   } else if (activeGame === "icebreaker") {
-    const q = seed?.prompt || pickPrompt(ICEBREAKERS);
-    if (gameHost && !seed?.prompt) sendGameData({ t: "game_sync", game: "icebreaker", prompt: q });
-    body.textContent = promptText(q);
+    if (seed?.landed && typeof seed.index === "number") {
+      const q = ICEBREAKERS[seed.index % ICEBREAKERS.length];
+      renderRouletteUI({ landed: true, text: promptText(q) });
+    } else {
+      renderRouletteUI({});
+    }
   }
 }
 
@@ -1849,6 +1959,14 @@ function handleGameMessage(msg) {
   } else if (msg.t === "game_decline") {
     tg?.showAlert?.(tr("game_declined"));
     resetGameUI();
+  } else if (msg.t === "game_spin" && msg.game === "icebreaker") {
+    if (activeGame !== "icebreaker") openGame("icebreaker", false);
+    runRouletteAnimation(msg.index, true);
+  } else if (msg.t === "game_landed" && msg.game === "icebreaker") {
+    if (!rouletteBusy) {
+      const q = ICEBREAKERS[msg.index % ICEBREAKERS.length];
+      renderRouletteUI({ landed: true, text: promptText(q) });
+    }
   } else if (msg.t === "game_sync" && activeGame === msg.game) {
     renderGameRound({ prompt: msg.prompt });
   } else if (msg.t === "game_pick") {
