@@ -956,120 +956,105 @@
 
 <script>
 const TRANSLATIONS = {
-  idle_title: { uz: "Yangi suhbatni boshlang", ru: "Начните новый разговор", en: "Start a new chat" },
-  idle_hint: {
-    uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.",
-    ru: "Найдём собеседника и сразу подключим к видеозвонку.",
-    en: "We’ll find a match and connect you to a video call.",
-  },
-  searching_title: { uz: "Suhbatdosh qidirilmoqda…", ru: "Ищем собеседника…", en: "Searching…" },
-  searching_hint: {
-    uz: "Bir necha soniya ichida mos odam topiladi.",
-    ru: "Подходящий человек найдётся через несколько секунд.",
-    en: "A match will appear shortly.",
-  },
-  requeued_hint: { uz: "Boshqa suhbatdosh qidirilmoqda…", ru: "Ищем другого…", en: "Looking for another partner…" },
-  proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло.", en: "Proposal expired." },
-  proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "Proposal unavailable." },
-  cancel_link: { uz: "To‘xtatish", ru: "Остановить", en: "Stop" },
-  not_registered: { uz: "Avval botda /start orqali ro‘yxatdan o‘ting.", ru: "Сначала /start в боте.", en: "Register in the bot via /start first." },
-  no_init_data: {
-    uz: "Telegram Mini App ichidan oching: bot → Menu.",
-    ru: "Откройте Mini App из бота → Menu.",
-    en: "Open the Mini App from the bot menu.",
-  },
-  profile_title: { uz: "Profil", ru: "Профиль", en: "Profile" },
-  profile_lead: { uz: "Rasm, ism va qidiruv sozlamalari", ru: "Фото, имя и параметры поиска", en: "Photo, name and search settings" },
-  lbl_name: { uz: "Ism", ru: "Имя", en: "Name" },
-  lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age" },
-  lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests" },
-  lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location" },
-  lbl_language: { uz: "Til (qidiruv shu til bo‘yicha)", ru: "Язык (поиск по языку)", en: "Language (match by language)" },
-  lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region" },
-  lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope" },
-  lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for" },
-  lbl_prefer_age: { uz: "Suhbatdosh yoshi (0–100)", ru: "Возраст собеседника (0–100)", en: "Partner age (0–100)" },
-  lbl_prefer_age_min: { uz: "Quyi chegara", ru: "Нижняя", en: "Min" },
-  lbl_prefer_age_max: { uz: "Yuqori chegara", ru: "Верхняя", en: "Max" },
-  lbl_topic: { uz: "Suhbat mavzusi", ru: "Тема общения", en: "Conversation topic" },
-  prefs_title: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat preferences" },
-  prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to" },
-  lf_male: { uz: "Erkak", ru: "Мужчина", en: "Male" },
-  lf_female: { uz: "Ayol", ru: "Женщина", en: "Female" },
-  lf_any: { uz: "Farqi yo‘q", ru: "Неважно", en: "Anyone" },
-  city_none: { uz: "Tanlanmagan", ru: "Не выбрано", en: "Not selected" },
-  scope_country: { uz: "Butun O‘zbekiston", ru: "По всему Узбекистану", en: "All over Uzbekistan" },
-  scope_city: { uz: "Faqat o‘z shahrim", ru: "Только в моём городе", en: "Only in my city" },
-  save_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
-  saved_ok: { uz: "Saqlandi", ru: "Сохранено", en: "Saved" },
-  save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: " },
-  nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search" },
-  nav_profile: { uz: "Profil", ru: "Профиль", en: "Profile" },
-  nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved" },
-  avatar_upload: { uz: "Rasm yuklash", ru: "Загрузить фото", en: "Upload photo" },
-  avatar_remove: { uz: "O‘chirish", ru: "Удалить", en: "Remove" },
-  avatar_ok: { uz: "Rasm saqlandi", ru: "Фото сохранено", en: "Photo saved" },
-  avatar_removed: { uz: "Rasm o‘chirildi", ru: "Фото удалено", en: "Photo removed" },
-  avatar_err: { uz: "Rasm yuklanmadi", ru: "Не удалось загрузить", en: "Upload failed" },
-  gender_male: { uz: "Erkak", ru: "Мужской", en: "Male" },
-  gender_female: { uz: "Ayol", ru: "Женский", en: "Female" },
-  p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} · {gender}" },
-  proposal_question: { uz: "Shu kishi bilan suhbatlashasizmi?", ru: "Поговорить с этим человеком?", en: "Chat with this person?" },
-  waiting_partner_title: { uz: "Javobingiz qabul qilindi", ru: "Ответ принят", en: "Response received" },
-  waiting_partner_hint: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
-  connecting: { uz: "Ulanmoqda…", ru: "Подключение…", en: "Connecting…" },
-  connected: { uz: "Ulandi", ru: "Соединено", en: "Connected" },
-  waiting_peer: { uz: "Ulandi — hamroh kutilmoqda", ru: "Подключено — ждём собеседника", en: "Connected — waiting for partner" },
-  call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "Call ended." },
-  block_btn: { uz: "Bloklash", ru: "Блок", en: "Block" },
-  report_btn: { uz: "Shikoyat", ru: "Жалоба", en: "Report" },
-  report_title: { uz: "Shikoyat sababi", ru: "Причина жалобы", en: "Report reason" },
-  report_hint: {
-    uz: "Hamroh bloklanadi va qo‘ng‘iroq tugaydi.",
-    ru: "Собеседник будет заблокирован, звонок завершится.",
-    en: "Partner will be blocked and the call will end.",
-  },
-  report_cancel: { uz: "Bekor", ru: "Отмена", en: "Cancel" },
-  block_ok: { uz: "Bloklandi.", ru: "Заблокирован.", en: "Blocked." },
-  report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent." },
-  safety_need_partner: { uz: "Hamroh yo‘q.", ru: "Нет собеседника.", en: "No partner." },
-  save_partner_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save" },
-  save_partner_ok: { uz: "Saqlanganlarga qo‘shildi", ru: "Добавлено в сохранённые", en: "Saved" },
-  saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved" },
-  saved_hint: { uz: "Online bo‘lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "Invite when they are online." },
-  saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet." },
-  invite_btn: { uz: "Chaqirish", ru: "Пригласить", en: "Invite" },
-  remove_btn: { uz: "O‘chirish", ru: "Удалить", en: "Remove" },
-  invite_ok: { uz: "Taklif yuborildi.", ru: "Приглашение отправлено.", en: "Invite sent." },
-  offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник не в сети.", en: "Partner is offline." },
-  busy_err: { uz: "Suhbatdosh band.", ru: "Собеседник занят.", en: "Partner is busy." },
-  online_label: { uz: "online", ru: "онлайн", en: "online" },
-  offline_label: { uz: "offline", ru: "офлайн", en: "offline" },
-  hi: { uz: "Salom, {name}", ru: "Привет, {name}", en: "Hi, {name}" },
-  accept: { uz: "Roziman", ru: "Принять", en: "Accept" },
-  decline: { uz: "Yo‘q", ru: "Нет", en: "No" },
-  game_open: { uz: "O‘yin tanlash", ru: "Выбрать игру", en: "Choose a game" },
-  game_invite: { uz: "Hamroh o‘yin taklif qildi: {game}. Qabul qilasizmi?", ru: "Собеседник предлагает игру: {game}. Принять?", en: "Partner invites you to: {game}. Accept?" },
-  game_waiting: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…" },
-  game_declined: { uz: "O‘yin rad etildi", ru: "Игра отклонена", en: "Game declined" },
-  roulette_spin: { uz: "Aylantirish", ru: "Крутить", en: "Spin", de: "Drehen" },
-  roulette_spin_again: { uz: "Yana aylantirish", ru: "Крутить ещё", en: "Spin again", de: "Nochmal" },
-  roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…", de: "Dreht…" },
-  roulette_hint: { uz: "Aylantiring — yangi savol chiqadi (Yopishgacha)", ru: "Крутите — новый вопрос (пока не Закрыть)", en: "Spin for a new question (until Close)", de: "Drehen — neue Frage (bis Schließen)" },
-  roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question", de: "Ihre Frage" },
-  speaker_on: { uz: "Gromkofon yoqildi", ru: "Громкая связь", en: "Speaker on", de: "Lautsprecher an" },
-  speaker_off: { uz: "Oddiy rejim", ru: "Обычный режим", en: "Earpiece mode", de: "Normal" },
-  flip_cam: { uz: "Kamera aylantirildi", ru: "Камера переключена", en: "Camera flipped", de: "Kamera gewechselt" },
-  feedback_title: { uz: "Suhbatni baholang", ru: "Оцените разговор", en: "Rate the call" },
-  feedback_hint: { uz: "1–5 yulduz", ru: "1–5 звёзд", en: "1–5 stars" },
-  feedback_skip: { uz: "O‘tkazib yuborish", ru: "Пропустить", en: "Skip" },
-  feedback_thanks: { uz: "Rahmat!", ru: "Спасибо!", en: "Thanks!" },
+  idle_title: { uz: "Yangi suhbatni boshlang", ru: "Начните новый разговор", en: "Start a new chat", tr: "Yeni bir sohbet başlatın" },
+  idle_hint: { uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.", ru: "Найдём собеседника и сразу подключим к видеозвонку.", en: "We’ll find a match and connect you to a video call.", tr: "Uygun birini bulup hemen görüntülü aramaya bağlarız." },
+  searching_title: { uz: "Suhbatdosh qidirilmoqda…", ru: "Ищем собеседника…", en: "Searching…", tr: "Eşleşme aranıyor…" },
+  searching_hint: { uz: "Bir necha soniya ichida mos odam topiladi.", ru: "Подходящий человек найдётся через несколько секунд.", en: "A match will appear shortly.", tr: "Birkaç saniye içinde uygun biri bulunur." },
+  requeued_hint: { uz: "Boshqa suhbatdosh qidirilmoqda…", ru: "Ищем другого…", en: "Looking for another partner…", tr: "Başka biri aranıyor…" },
+  proposal_expired: { uz: "Taklif muddati tugadi. Qayta qidirishingiz mumkin.", ru: "Время предложения истекло.", en: "Proposal expired.", tr: "Teklif süresi doldu. Tekrar arayabilirsiniz." },
+  proposal_invalid: { uz: "Taklif allaqachon yopilgan.", ru: "Предложение уже закрыто.", en: "Proposal unavailable.", tr: "Teklif artık geçerli değil." },
+  cancel_link: { uz: "To‘xtatish", ru: "Остановить", en: "Stop", tr: "Durdur" },
+  not_registered: { uz: "Avval botda /start orqali ro‘yxatdan o‘ting.", ru: "Сначала /start в боте.", en: "Register in the bot via /start first.", tr: "Önce botta /start ile kayıt olun." },
+  no_init_data: { uz: "Telegram Mini App ichidan oching: bot → Menu.", ru: "Откройте Mini App из бота → Menu.", en: "Open the Mini App from the bot menu.", tr: "Telegram Mini App içinden açın: bot → Menu." },
+  profile_title: { uz: "Profil", ru: "Профиль", en: "Profile", tr: "Profil" },
+  profile_lead: { uz: "Rasm, ism va qidiruv sozlamalari", ru: "Фото, имя и параметры поиска", en: "Photo, name and search settings", tr: "Fotoğraf, isim ve arama ayarları" },
+  lbl_name: { uz: "Ism", ru: "Имя", en: "Name", tr: "İsim" },
+  lbl_age: { uz: "Yoshim", ru: "Мой возраст", en: "My age", tr: "Yaşım" },
+  lbl_bio: { uz: "Qiziqishlar", ru: "Интересы", en: "Interests", tr: "İlgi alanları" },
+  lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location", tr: "Konum" },
+  lbl_language: { uz: "Til (qidiruv shu til bo‘yicha)", ru: "Язык (поиск по языку)", en: "Language (match by language)", tr: "Dil (arama bu dile göre)" },
+  lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region", tr: "Şehir / Bölge" },
+  lbl_scope: { uz: "Qidiruv doirasi", ru: "Область поиска", en: "Search scope", tr: "Arama kapsamı" },
+  lbl_looking_for: { uz: "Suhbatdosh", ru: "Собеседник", en: "Looking for", tr: "Sohbet partneri" },
+  lbl_prefer_age: { uz: "Suhbatdosh yoshi (0–100)", ru: "Возраст собеседника (0–100)", en: "Partner age (0–100)", tr: "Partner yaşı (0–100)" },
+  lbl_prefer_age_min: { uz: "Quyi chegara", ru: "Нижняя", en: "Min", tr: "Alt sınır" },
+  lbl_prefer_age_max: { uz: "Yuqori chegara", ru: "Верхняя", en: "Max", tr: "Üst sınır" },
+  lbl_topic: { uz: "Suhbat mavzusi", ru: "Тема общения", en: "Conversation topic", tr: "Sohbet konusu" },
+  prefs_title: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat preferences", tr: "Sohbet ayarları" },
+  prefs_hint: { uz: "Kim bilan suhbatlashmoqchisiz", ru: "С кем хотите общаться", en: "Who you want to talk to", tr: "Kiminle konuşmak istiyorsunuz" },
+  lf_male: { uz: "Erkak", ru: "Мужчина", en: "Male", tr: "Erkek" },
+  lf_female: { uz: "Ayol", ru: "Женщина", en: "Female", tr: "Kadın" },
+  lf_any: { uz: "Farqi yo‘q", ru: "Неважно", en: "Anyone", tr: "Fark etmez" },
+  city_none: { uz: "Tanlanmagan", ru: "Не выбрано", en: "Not selected", tr: "Seçilmedi" },
+  scope_country: { uz: "Butun O‘zbekiston", ru: "По всему Узбекистану", en: "All over Uzbekistan", tr: "Tüm Özbekistan" },
+  scope_city: { uz: "Faqat o‘z shahrim", ru: "Только в моём городе", en: "Only in my city", tr: "Sadece kendi şehrim" },
+  save_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save", tr: "Kaydet" },
+  saved_ok: { uz: "Saqlandi", ru: "Сохранено", en: "Saved", tr: "Kaydedildi" },
+  save_error: { uz: "Xatolik: ", ru: "Ошибка: ", en: "Error: ", tr: "Hata: " },
+  nav_search: { uz: "Qidirish", ru: "Поиск", en: "Search", tr: "Ara" },
+  nav_profile: { uz: "Profil", ru: "Профиль", en: "Profile", tr: "Profil" },
+  nav_saved: { uz: "Saqlangan", ru: "Избранное", en: "Saved", tr: "Kayıtlı" },
+  avatar_upload: { uz: "Rasm yuklash", ru: "Загрузить фото", en: "Upload photo", tr: "Fotoğraf yükle" },
+  avatar_remove: { uz: "O‘chirish", ru: "Удалить", en: "Remove", tr: "Sil" },
+  avatar_ok: { uz: "Rasm saqlandi", ru: "Фото сохранено", en: "Photo saved", tr: "Fotoğraf kaydedildi" },
+  avatar_removed: { uz: "Rasm o‘chirildi", ru: "Фото удалено", en: "Photo removed", tr: "Fotoğraf silindi" },
+  avatar_err: { uz: "Rasm yuklanmadi", ru: "Не удалось загрузить", en: "Upload failed", tr: "Yükleme başarısız" },
+  gender_male: { uz: "Erkak", ru: "Мужской", en: "Male", tr: "Erkek" },
+  gender_female: { uz: "Ayol", ru: "Женский", en: "Female", tr: "Kadın" },
+  p_meta: { uz: "{age} yosh · {gender}", ru: "{age} лет · {gender}", en: "{age} · {gender}", tr: "{age} yaş · {gender}" },
+  proposal_question: { uz: "Shu kishi bilan suhbatlashasizmi?", ru: "Поговорить с этим человеком?", en: "Chat with this person?", tr: "Bu kişiyle sohbet eder misiniz?" },
+  waiting_partner_title: { uz: "Javobingiz qabul qilindi", ru: "Ответ принят", en: "Response received", tr: "Yanıtınız alındı" },
+  waiting_partner_hint: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…", tr: "Partnerin yanıtı bekleniyor…" },
+  connecting: { uz: "Ulanmoqda…", ru: "Подключение…", en: "Connecting…", tr: "Bağlanıyor…" },
+  connected: { uz: "Ulandi", ru: "Соединено", en: "Connected", tr: "Bağlandı" },
+  waiting_peer: { uz: "Ulandi — hamroh kutilmoqda", ru: "Подключено — ждём собеседника", en: "Connected — waiting for partner", tr: "Bağlandı — partner bekleniyor" },
+  call_ended_alert: { uz: "Suhbat tugadi.", ru: "Разговор завершён.", en: "Call ended.", tr: "Görüşme bitti." },
+  block_btn: { uz: "Bloklash", ru: "Блок", en: "Block", tr: "Engelle" },
+  report_btn: { uz: "Shikoyat", ru: "Жалоба", en: "Report", tr: "Şikayet" },
+  report_title: { uz: "Shikoyat sababi", ru: "Причина жалобы", en: "Report reason", tr: "Şikayet nedeni" },
+  report_hint: { uz: "Hamroh bloklanadi va qo‘ng‘iroq tugaydi.", ru: "Собеседник будет заблокирован, звонок завершится.", en: "Partner will be blocked and the call will end.", tr: "Partner engellenir ve arama sona erer." },
+  report_cancel: { uz: "Bekor", ru: "Отмена", en: "Cancel", tr: "İptal" },
+  block_ok: { uz: "Bloklandi.", ru: "Заблокирован.", en: "Blocked.", tr: "Engellendi." },
+  report_ok: { uz: "Shikoyat yuborildi. Rahmat.", ru: "Жалоба отправлена.", en: "Report sent.", tr: "Şikayet gönderildi. Teşekkürler." },
+  safety_need_partner: { uz: "Hamroh yo‘q.", ru: "Нет собеседника.", en: "No partner.", tr: "Partner yok." },
+  save_partner_btn: { uz: "Saqlash", ru: "Сохранить", en: "Save", tr: "Kaydet" },
+  save_partner_ok: { uz: "Saqlanganlarga qo‘shildi", ru: "Добавлено в сохранённые", en: "Saved", tr: "Kayıtlılara eklendi" },
+  saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved", tr: "Kayıtlılar" },
+  saved_hint: { uz: "Online bo‘lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "Invite when they are online.", tr: "Çevrimiçiyse sohbete davet edebilirsiniz." },
+  saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet.", tr: "Henüz kayıtlı partner yok." },
+  invite_btn: { uz: "Chaqirish", ru: "Пригласить", en: "Invite", tr: "Davet et" },
+  remove_btn: { uz: "O‘chirish", ru: "Удалить", en: "Remove", tr: "Kaldır" },
+  invite_ok: { uz: "Taklif yuborildi.", ru: "Приглашение отправлено.", en: "Invite sent.", tr: "Davet gönderildi." },
+  offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник не в сети.", en: "Partner is offline.", tr: "Partner şu an çevrimdışı." },
+  busy_err: { uz: "Suhbatdosh band.", ru: "Собеседник занят.", en: "Partner is busy.", tr: "Partner meşgul." },
+  online_label: { uz: "online", ru: "онлайн", en: "online", tr: "çevrimiçi" },
+  offline_label: { uz: "offline", ru: "офлайн", en: "offline", tr: "çevrimdışı" },
+  hi: { uz: "Salom, {name}", ru: "Привет, {name}", en: "Hi, {name}", tr: "Merhaba, {name}" },
+  accept: { uz: "Roziman", ru: "Принять", en: "Accept", tr: "Kabul" },
+  decline: { uz: "Yo‘q", ru: "Нет", en: "No", tr: "Hayır" },
+  game_open: { uz: "O‘yin tanlash", ru: "Выбрать игру", en: "Choose a game", tr: "Oyun seç" },
+  game_invite: { uz: "Hamroh o‘yin taklif qildi: {game}. Qabul qilasizmi?", ru: "Собеседник предлагает игру: {game}. Принять?", en: "Partner invites you to: {game}. Accept?", tr: "Partner oyun önerdi: {game}. Kabul ediyor musunuz?" },
+  game_waiting: { uz: "Hamroh javobini kutmoqdamiz…", ru: "Ждём ответа…", en: "Waiting for partner…", tr: "Partner yanıtı bekleniyor…" },
+  game_declined: { uz: "O‘yin rad etildi", ru: "Игра отклонена", en: "Game declined", tr: "Oyun reddedildi" },
+  roulette_spin: { uz: "Aylantirish", ru: "Крутить", en: "Spin", tr: "Çevir" },
+  roulette_spin_again: { uz: "Yana aylantirish", ru: "Крутить ещё", en: "Spin again", tr: "Tekrar çevir" },
+  roulette_spinning: { uz: "Aylanmoqda…", ru: "Крутится…", en: "Spinning…", tr: "Dönüyor…" },
+  roulette_hint: { uz: "Aylantiring — yangi savol chiqadi (Yopishgacha)", ru: "Крутите — новый вопрос (пока не Закрыть)", en: "Spin for a new question (until Close)", tr: "Çevirin — yeni soru gelir (Kapat’a kadar)" },
+  roulette_result: { uz: "Savolingiz", ru: "Ваш вопрос", en: "Your question", tr: "Sorunuz" },
+  speaker_on: { uz: "Gromkofon yoqildi", ru: "Громкая связь", en: "Speaker on", tr: "Hoparlör açık" },
+  speaker_off: { uz: "Oddiy rejim", ru: "Обычный режим", en: "Earpiece mode", tr: "Normal mod" },
+  flip_cam: { uz: "Kamera aylantirildi", ru: "Камера переключена", en: "Camera flipped", tr: "Kamera değiştirildi" },
+  feedback_title: { uz: "Suhbatni baholang", ru: "Оцените разговор", en: "Rate the call", tr: "Görüşmeyi puanlayın" },
+  feedback_hint: { uz: "1–5 yulduz", ru: "1–5 звёзд", en: "1–5 stars", tr: "1–5 yıldız" },
+  feedback_skip: { uz: "O‘tkazib yuborish", ru: "Пропустить", en: "Skip", tr: "Atla" },
+  feedback_thanks: { uz: "Rahmat!", ru: "Спасибо!", en: "Thanks!", tr: "Teşekkürler!" },
+  cam_err: { uz: "Kamera ruxsati berilmadi", ru: "Камера недоступна", en: "Camera unavailable", tr: "Kamera kullanılamıyor" },
+  flip_err: { uz: "Kamerani almashtirib bo‘lmadi", ru: "Камеру переключить нельзя", en: "Cannot flip camera", tr: "Kamera değiştirilemedi" },
 };
-
 const GAME_NAMES = {
-  would_rather: { uz: "Yaxshiroq qaysi?", ru: "Что лучше?", en: "Would you rather?" },
-  two_truths: { uz: "Ikki rost, bir yolg‘on", ru: "Две правды и ложь", en: "Two truths and a lie" },
-  icebreaker: { uz: "Savol ruletkasi", ru: "Рулетка вопросов", en: "Question roulette" },
+  would_rather: { uz: "Yaxshiroq qaysi?", ru: "Что лучше?", en: "Would you rather?", tr: "Hangisini tercih edersin?" },
+  two_truths: { uz: "Ikki rost, bir yolg‘on", ru: "Две правды и ложь", en: "Two truths and a lie", tr: "İki doğru bir yalan" },
+  icebreaker: { uz: "Savol ruletkasi", ru: "Рулетка вопросов", en: "Question roulette", tr: "Soru ruleti" },
 };
 
 const WOULD_RATHER = [
@@ -1153,14 +1138,19 @@ let matchTopic = "any";
 let sessionGameLang = null;
 let usedRouletteIndexes = new Set();
 
-/** UI tarjimalari faqat uz/ru/en — boshqa tillarda interfeys o‘zbekcha */
+/** UI: uz/ru/en/tr — boshqa tillarda interfeys o‘zbekcha */
 function uiLang(lang) {
-  return lang === "ru" || lang === "en" ? lang : "uz";
+  if (lang === "ru" || lang === "en" || lang === "tr") return lang;
+  return "uz";
+}
+
+function applyDocumentLang() {
+  document.documentElement.lang = currentLang || "uz";
 }
 
 function tr(key, vars) {
   const entry = TRANSLATIONS[key] || {};
-  let str = entry[currentLang] || entry.uz || key;
+  let str = entry[currentLang] || entry.en || entry.uz || key;
   if (vars) for (const k in vars) str = str.replace(`{${k}}`, vars[k]);
   return str;
 }
@@ -1307,6 +1297,7 @@ function activeIcebreakers(topic) {
 }
 
 function applyStaticTranslations() {
+  applyDocumentLang();
   const setText = (id, key) => {
     const el = document.getElementById(id);
     if (el) el.textContent = tr(key);
@@ -1810,6 +1801,8 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
     currentLang = uiLang(newLang);
     matchTopic = document.getElementById("profileTopic").value || "any";
     applyStaticTranslations();
+    await loadTopics();
+    document.getElementById("profileTopic").value = matchTopic;
     statusEl.textContent = tr("saved_ok");
     userLabel.textContent = tr("hi", { name: document.getElementById("profileName").value });
     updateProfilePreview();
@@ -2557,7 +2550,7 @@ document.getElementById("videoBtn").addEventListener("click", async () => {
   } catch (e) {
     videoOn = false;
     flipBtn?.classList.add("hidden");
-    tg?.showAlert(currentLang === "ru" ? "Камера недоступна" : "Kamera ruxsati berilmadi");
+    tg?.showAlert(tr("cam_err"));
   }
 });
 
@@ -2576,7 +2569,7 @@ document.getElementById("flipCamBtn")?.addEventListener("click", async () => {
     tg?.HapticFeedback?.impactOccurred?.("light");
   } catch (e) {
     facingMode = facingMode === "user" ? "environment" : "user";
-    tg?.showAlert(currentLang === "ru" ? "Камеру переключить нельзя" : "Kamerani almashtirib bo‘lmadi");
+    tg?.showAlert(tr("flip_err"));
   }
 });
 
