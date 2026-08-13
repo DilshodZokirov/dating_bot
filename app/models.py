@@ -64,7 +64,13 @@ class User(Base):
     age: Mapped[int] = mapped_column(Integer)
     gender: Mapped[Gender] = mapped_column(Enum(Gender))
     looking_for: Mapped[LookingFor] = mapped_column(Enum(LookingFor))
+    # Matching / suhbat tili (aloqa sozlamalari)
     language: Mapped[Language] = mapped_column(Enum(Language), default=Language.uz)
+    # Mini App + bot interfeys tili (profil)
+    ui_language: Mapped[Language] = mapped_column(
+        Enum(Language, name="language", create_type=False),
+        default=Language.uz,
+    )
 
     bio: Mapped[str | None] = mapped_column(String(300), nullable=True)  # qiziqishlar
     location: Mapped[str | None] = mapped_column(String(100), nullable=True)  # erkin matn (masalan tuman)

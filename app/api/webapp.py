@@ -111,6 +111,11 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "gender": user.gender.value,
         "looking_for": user.looking_for.value,
         "language": user.language.value,
+        "ui_language": (
+            user.ui_language.value
+            if getattr(user, "ui_language", None) is not None
+            else user.language.value
+        ),
         "bio": user.bio,
         "location": user.location,
         "city": user.city,
@@ -128,7 +133,8 @@ class ProfileUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=64)
     bio: str | None = Field(default=None, max_length=300)
     location: str | None = Field(default=None, max_length=100)
-    language: Language | None = None
+    language: Language | None = None  # suhbat / matching tili
+    ui_language: Language | None = None  # dastur (UI) tili
     city: str | None = Field(default=None, max_length=64)
     search_scope: SearchScope | None = None
     age: int | None = Field(default=None, ge=12, le=100)
@@ -237,6 +243,8 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
             user.location = update.location.strip()[:100]
         if update.language is not None:
             user.language = update.language
+        if update.ui_language is not None:
+            user.ui_language = update.ui_language
         if update.city is not None:
             user.city = update.city.strip()[:64] or None
         if update.search_scope is not None:

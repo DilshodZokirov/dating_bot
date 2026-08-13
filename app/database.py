@@ -69,3 +69,28 @@ async def init_db():
                     )
             except Exception:
                 pass
+        # Dastur tili (UI) — matching tilidan alohida
+        try:
+            async with conn.begin_nested():
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_language language")
+                )
+        except Exception:
+            try:
+                async with conn.begin_nested():
+                    await conn.execute(
+                        text(
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_language VARCHAR(16) DEFAULT 'uz'"
+                        )
+                    )
+            except Exception:
+                pass
+        await conn.execute(
+            text(
+                """
+                UPDATE users
+                SET ui_language = language
+                WHERE ui_language IS NULL
+                """
+            )
+        )

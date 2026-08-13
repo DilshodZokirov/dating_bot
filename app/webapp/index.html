@@ -125,6 +125,27 @@
     line-height: 1.45;
   }
 
+  .comms-link {
+    margin-top: 6px;
+    border: none;
+    background: transparent;
+    color: var(--accent-2);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    padding: 6px 10px;
+  }
+  .comms-link:active { opacity: 0.75; }
+  .comms-panel {
+    max-height: min(82vh, 720px);
+    overflow: auto;
+  }
+  .comms-form { text-align: left; margin-top: 8px; }
+  .comms-form .save-btn { margin-top: 8px; }
+
   .search-orb {
     margin-top: 28px;
     width: 168px;
@@ -807,6 +828,7 @@
         <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
       </button>
       <button type="button" class="stop-link" id="cancelLink">To‘xtatish</button>
+      <button type="button" class="comms-link" id="commsOpenBtn">Aloqa sozlamalari</button>
       <div class="error-panel" id="errorBox"></div>
 
       <div class="proposal" id="proposalCard">
@@ -884,6 +906,69 @@
     </div>
   </div>
 
+  <div class="report-sheet" id="commsSheet" aria-hidden="true">
+    <div class="report-panel comms-panel">
+      <h3 id="commsTitle">Aloqa sozlamalari</h3>
+      <p id="commsLead">Qidiruv va suhbat shu yerda sozlanadi</p>
+      <div class="form comms-form">
+        <div class="field">
+          <label id="lblCommsLanguage">Aloqa tili</label>
+          <select id="commsLanguage">
+            <option value="uz">O‘zbek</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="tg">Tojik</option>
+            <option value="tr">Türkçe</option>
+            <option value="ko">한국어</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+            <option value="ar">العربية</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="lblCity">Shahar / Viloyat</label>
+          <select id="profileCity"><option value="" id="cityNoneOpt">Tanlanmagan</option></select>
+        </div>
+        <div class="field">
+          <label id="lblScope">Qidiruv doirasi</label>
+          <select id="profileSearchScope">
+            <option value="country" id="scopeCountryOpt">Butun O‘zbekiston</option>
+            <option value="city" id="scopeCityOpt">Faqat o‘z shahrim</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="lblTopic">Suhbat mavzusi</label>
+          <select id="profileTopic"></select>
+        </div>
+        <div class="field">
+          <label id="lblLookingFor">Suhbatdosh</label>
+          <select id="profileLookingFor">
+            <option value="female" id="lfFemale">Ayol</option>
+            <option value="male" id="lfMale">Erkak</option>
+            <option value="any" id="lfAny">Farqi yo‘q</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:6px">
+          <label id="lblPreferAge">Suhbatdosh yoshi</label>
+        </div>
+        <div class="age-range-row">
+          <div class="field">
+            <label id="lblPreferAgeMin">Quyi</label>
+            <select id="profilePreferAgeMin"></select>
+          </div>
+          <div class="field">
+            <label id="lblPreferAgeMax">Yuqori</label>
+            <select id="profilePreferAgeMax"></select>
+          </div>
+        </div>
+        <button class="save-btn" id="saveCommsBtn">Saqlash</button>
+        <div class="save-status" id="commsSaveStatus"></div>
+      </div>
+      <button type="button" class="report-cancel" id="commsCloseBtn">Yopish</button>
+    </div>
+  </div>
+
   <div class="report-sheet" id="guideSheet" aria-hidden="true">
     <div class="report-panel">
       <h3 id="guideTitle">Qanday ishlaydi</h3>
@@ -932,7 +1017,7 @@
   <div class="view" id="profileView">
     <div class="page-head">
       <h1 id="profileTitle">Profil</h1>
-      <p id="profileLead">Rasm, ism va qidiruv sozlamalari</p>
+      <p id="profileLead">Rasm, ism va dastur tili</p>
     </div>
     <div class="profile-hero">
       <div class="avatar-wrap">
@@ -954,8 +1039,8 @@
       <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
       <div class="field"><label id="lblLocation">Yashash joyi</label><input type="text" id="profileLocation" maxlength="100"></div>
       <div class="field">
-        <label id="lblLanguage">Til</label>
-        <select id="profileLanguage">
+        <label id="lblUiLanguage">Dastur tili</label>
+        <select id="profileUiLanguage">
           <option value="uz">O‘zbek</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
@@ -967,45 +1052,6 @@
           <option value="zh">中文</option>
           <option value="ar">العربية</option>
         </select>
-      </div>
-      <div class="field">
-        <label id="lblCity">Shahar / Viloyat</label>
-        <select id="profileCity"><option value="" id="cityNoneOpt">Tanlanmagan</option></select>
-      </div>
-      <div class="field">
-        <label id="lblScope">Qidiruv doirasi</label>
-        <select id="profileSearchScope">
-          <option value="country" id="scopeCountryOpt">Butun O‘zbekiston</option>
-          <option value="city" id="scopeCityOpt">Faqat o‘z shahrim</option>
-        </select>
-      </div>
-
-      <h2 class="section-label" id="prefsSectionTitle">Aloqa sozlamalari</h2>
-      <p class="section-hint" id="prefsSectionHint">Kim bilan suhbatlashmoqchisiz</p>
-      <div class="field">
-        <label id="lblTopic">Suhbat mavzusi</label>
-        <select id="profileTopic"></select>
-      </div>
-      <div class="field">
-        <label id="lblLookingFor">Suhbatdosh</label>
-        <select id="profileLookingFor">
-          <option value="female" id="lfFemale">Ayol</option>
-          <option value="male" id="lfMale">Erkak</option>
-          <option value="any" id="lfAny">Farqi yo‘q</option>
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:6px">
-        <label id="lblPreferAge">Suhbatdosh yoshi</label>
-      </div>
-      <div class="age-range-row">
-        <div class="field">
-          <label id="lblPreferAgeMin">Quyi</label>
-          <select id="profilePreferAgeMin"></select>
-        </div>
-        <div class="field">
-          <label id="lblPreferAgeMax">Yuqori</label>
-          <select id="profilePreferAgeMax"></select>
-        </div>
       </div>
 
       <button class="save-btn" id="saveProfileBtn">Saqlash</button>
@@ -1062,8 +1108,8 @@ const TRANSLATIONS = {
   guide_step3: { uz: "Video suhbat darhol boshlanadi", ru: "Сразу начнётся видеозвонок", en: "A video call starts right away", de: "Der Videoanruf startet sofort", tg: "Видеозанг фавран оғоз мешавад", tr: "Görüntülü sohbet hemen başlar", ko: "바로 영상 통화가 시작됩니다", ja: "すぐにビデオ通話が始まります", zh: "视频通话立即开始",
     ar: "تبدأ مكالمة الفيديو فورًا",
   },
-  guide_note: { uz: "Til va yosh oralig‘ini Profil’da sozlang.", ru: "Язык и возраст настройте в Профиле.", en: "Set language and age range in Profile.", de: "Sprache und Altersbereich im Profil setzen.", tg: "Забон ва синну солро дар Профил танзим кунед.", tr: "Dil ve yaş aralığını Profil’de ayarlayın.", ko: "언어와 나이 범위는 프로필에서.", ja: "言語と年齢はプロフィールで設定。", zh: "在资料里设置语言和年龄范围。",
-    ar: "اضبط اللغة ونطاق العمر في الملف.",
+  guide_note: { uz: "Aloqa tilini va yoshni «Aloqa sozlamalari»da sozlang.", ru: "Язык общения и возраст — в «Параметрах общения».", en: "Set chat language and age in Chat settings.", de: "Chat-Sprache und Alter in den Chat-Einstellungen.", tg: "Забони суҳбат ва синну солро дар «Танзимоти суҳбат» танзим кунед.", tr: "Sohbet dili ve yaşı «Sohbet ayarları»nda ayarlayın.", ko: "대화 언어와 나이는 채팅 설정에서.", ja: "会話言語と年齢はチャット設定で。", zh: "在聊天设置中设置交流语言和年龄。",
+    ar: "اضبط لغة التواصل والعمر في إعدادات التواصل.",
   },
   guide_ok: { uz: "Tushundim", ru: "Понятно", en: "Got it", de: "Verstanden", tg: "Фаҳмидам", tr: "Anladım", ko: "알겠어요", ja: "わかった", zh: "知道了",
     ar: "فهمت",
@@ -1095,8 +1141,23 @@ const TRANSLATIONS = {
   profile_title: { uz: "Profil", ru: "Профиль", en: "Profile", de: "Profil", tg: "Профил", tr: "Profil", ko: "프로필", ja: "プロフィール", zh: "资料",
     ar: "الملف الشخصي",
   },
-  profile_lead: { uz: "Rasm, ism va qidiruv sozlamalari", ru: "Фото, имя и параметры поиска", en: "Photo, name and search settings", de: "Foto, Name und Sucheinstellungen", tg: "Акс, ном ва танзимоти ҷустуҷӯ", tr: "Fotoğraf, isim ve arama ayarları", ko: "사진, 이름 및 검색 설정", ja: "写真・名前・検索設定", zh: "照片、姓名和搜索设置",
-    ar: "الصورة والاسم وإعدادات البحث",
+  profile_lead: { uz: "Rasm, ism va dastur tili", ru: "Фото, имя и язык приложения", en: "Photo, name and app language", de: "Foto, Name und App-Sprache", tg: "Акс, ном ва забони барнома", tr: "Fotoğraf, isim ve uygulama dili", ko: "사진, 이름 및 앱 언어", ja: "写真・名前・アプリ言語", zh: "照片、姓名和应用语言",
+    ar: "الصورة والاسم ولغة التطبيق",
+  },
+  lbl_ui_language: { uz: "Dastur tili", ru: "Язык приложения", en: "App language", de: "App-Sprache", tg: "Забони барнома", tr: "Uygulama dili", ko: "앱 언어", ja: "アプリ言語", zh: "应用语言",
+    ar: "لغة التطبيق",
+  },
+  lbl_comms_language: { uz: "Aloqa tili (qidiruv shu til bo‘yicha)", ru: "Язык общения (поиск по языку)", en: "Chat language (match by language)", de: "Chat-Sprache (Suche danach)", tg: "Забони суҳбат (ҷустуҷӯ)", tr: "Sohbet dili (arama bu dile göre)", ko: "대화 언어 (이 언어로 매칭)", ja: "会話言語（この言語でマッチ）", zh: "交流语言（按此语言匹配）",
+    ar: "لغة التواصل (البحث حسب اللغة)",
+  },
+  comms_open: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat settings", de: "Chat-Einstellungen", tg: "Танзимоти суҳбат", tr: "Sohbet ayarları", ko: "채팅 설정", ja: "チャット設定", zh: "聊天设置",
+    ar: "إعدادات التواصل",
+  },
+  comms_lead: { uz: "Qidiruv va suhbat shu yerda sozlanadi", ru: "Поиск и общение настраиваются здесь", en: "Search and chat are set here", de: "Suche und Chat hier einstellen", tg: "Ҷустуҷӯ ва суҳбат ин ҷо танзим мешавад", tr: "Arama ve sohbet burada ayarlanır", ko: "검색과 대화는 여기에서 설정", ja: "検索と会話はここで設定", zh: "搜索和聊天在这里设置",
+    ar: "يتم ضبط البحث والدردشة هنا",
+  },
+  close_btn: { uz: "Yopish", ru: "Закрыть", en: "Close", de: "Schließen", tg: "Пӯшидан", tr: "Kapat", ko: "닫기", ja: "閉じる", zh: "关闭",
+    ar: "إغلاق",
   },
   lbl_name: { uz: "Ism", ru: "Имя", en: "Name", de: "Name", tg: "Ном", tr: "İsim", ko: "이름", ja: "名前", zh: "姓名",
     ar: "الاسم",
@@ -1109,9 +1170,6 @@ const TRANSLATIONS = {
   },
   lbl_location: { uz: "Yashash joyi", ru: "Место проживания", en: "Location", de: "Wohnort", tg: "Ҷои зист", tr: "Konum", ko: "위치", ja: "居住地", zh: "所在地",
     ar: "الموقع",
-  },
-  lbl_language: { uz: "Til (qidiruv shu til bo‘yicha)", ru: "Язык (поиск по языку)", en: "Language (match by language)", de: "Sprache (Suche danach)", tg: "Забон (ҷустуҷӯ аз рӯи забон)", tr: "Dil (arama bu dile göre)", ko: "언어 (이 언어로 매칭)", ja: "言語（この言語でマッチ）", zh: "语言（按此语言匹配）",
-    ar: "اللغة (البحث حسب اللغة)",
   },
   lbl_city: { uz: "Shahar / Viloyat", ru: "Город / Область", en: "City / Region", de: "Stadt / Region", tg: "Шаҳр / Вилоят", tr: "Şehir / Bölge", ko: "도시 / 지역", ja: "都市 / 地域", zh: "城市 / 地区",
     ar: "المدينة / المنطقة",
@@ -1696,6 +1754,12 @@ function applyStaticTranslations() {
     if (el) el.textContent = tr(key);
   };
   setText("cancelLink", "cancel_link");
+  setText("commsOpenBtn", "comms_open");
+  setText("commsTitle", "comms_open");
+  setText("commsLead", "comms_lead");
+  setText("commsCloseBtn", "close_btn");
+  setText("lblCommsLanguage", "lbl_comms_language");
+  setText("lblUiLanguage", "lbl_ui_language");
   setText("guideTitle", "guide_title");
   setText("guideLead", "guide_lead");
   setText("guideStep1", "guide_step1");
@@ -1709,7 +1773,6 @@ function applyStaticTranslations() {
   setText("lblAge", "lbl_age");
   setText("lblBio", "lbl_bio");
   setText("lblLocation", "lbl_location");
-  setText("lblLanguage", "lbl_language");
   setText("lblCity", "lbl_city");
   setText("lblScope", "lbl_scope");
   setText("lblLookingFor", "lbl_looking_for");
@@ -1717,8 +1780,6 @@ function applyStaticTranslations() {
   setText("lblPreferAgeMin", "lbl_prefer_age_min");
   setText("lblPreferAgeMax", "lbl_prefer_age_max");
   setText("lblTopic", "lbl_topic");
-  setText("prefsSectionTitle", "prefs_title");
-  setText("prefsSectionHint", "prefs_hint");
   setText("lfMale", "lf_male");
   setText("lfFemale", "lf_female");
   setText("lfAny", "lf_any");
@@ -1726,6 +1787,7 @@ function applyStaticTranslations() {
   setText("scopeCountryOpt", "scope_country");
   setText("scopeCityOpt", "scope_city");
   setText("saveProfileBtn", "save_btn");
+  setText("saveCommsBtn", "save_btn");
   setText("navSearchLabel", "nav_search");
   setText("navProfileLabel", "nav_profile");
   setText("navSavedLabel", "nav_saved");
@@ -1861,6 +1923,8 @@ function setSearchingUI(isSearching) {
   searching = isSearching;
   mainBtn.classList.toggle("searching", isSearching);
   cancelLink.style.display = isSearching ? "inline" : "none";
+  const commsBtn = document.getElementById("commsOpenBtn");
+  if (commsBtn) commsBtn.style.display = isSearching ? "none" : "";
   titleText.textContent = isSearching ? tr("searching_title") : tr("idle_title");
   hintText.textContent = isSearching ? tr("searching_hint") : tr("idle_hint");
   resetSearchUIElements();
@@ -1875,6 +1939,8 @@ function showProposal(proposalId, name, age, gender, avatarUrl) {
   titleText.textContent = tr("proposal_question");
   hintText.style.display = "none";
   cancelLink.style.display = "inline";
+  const commsBtn = document.getElementById("commsOpenBtn");
+  if (commsBtn) commsBtn.style.display = "none";
   document.getElementById("pName").textContent = name;
   document.getElementById("pMeta").textContent = tr("p_meta", {
     age,
@@ -2077,7 +2143,7 @@ async function loadMe() {
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
     profileLanguage = me.language || "uz";
-    currentLang = uiLang(profileLanguage);
+    currentLang = uiLang(me.ui_language || me.language || "uz");
     matchTopic = me.match_topic || "any";
     applyStaticTranslations();
     userLabel.textContent = tr("hi", { name: me.name || "" });
@@ -2085,7 +2151,10 @@ async function loadMe() {
     document.getElementById("profileAge").value = me.age || "";
     document.getElementById("profileBio").value = me.bio || "";
     document.getElementById("profileLocation").value = me.location || "";
-    document.getElementById("profileLanguage").value = profileLanguage;
+    const uiSel = document.getElementById("profileUiLanguage");
+    if (uiSel) uiSel.value = currentLang;
+    const commsSel = document.getElementById("commsLanguage");
+    if (commsSel) commsSel.value = profileLanguage;
     document.getElementById("profileCity").value = me.city || "";
     document.getElementById("profileSearchScope").value = me.search_scope || "country";
     document.getElementById("profileLookingFor").value = me.looking_for || "any";
@@ -2228,12 +2297,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
   const statusEl = document.getElementById("saveStatus");
   statusEl.textContent = "…";
   try {
-    const newLang = document.getElementById("profileLanguage").value;
-    let pMin = parseInt(document.getElementById("profilePreferAgeMin").value, 10);
-    let pMax = parseInt(document.getElementById("profilePreferAgeMax").value, 10);
-    if (!Number.isFinite(pMin)) pMin = 12;
-    if (!Number.isFinite(pMax)) pMax = 100;
-    if (pMax < pMin) [pMin, pMax] = [pMax, pMin];
+    const uiLangVal = document.getElementById("profileUiLanguage").value;
     const ageVal = parseInt(document.getElementById("profileAge").value, 10);
     await api("/api/profile", {
       method: "POST",
@@ -2241,28 +2305,67 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
         name: document.getElementById("profileName").value,
         bio: document.getElementById("profileBio").value,
         location: document.getElementById("profileLocation").value,
-        language: newLang,
-        city: document.getElementById("profileCity").value,
-        search_scope: document.getElementById("profileSearchScope").value,
+        ui_language: uiLangVal,
         age: Number.isFinite(ageVal) ? ageVal : undefined,
-        looking_for: document.getElementById("profileLookingFor").value,
-        match_topic: document.getElementById("profileTopic").value,
-        prefer_age_min: pMin,
-        prefer_age_max: pMax,
       }),
     });
-    profileLanguage = newLang;
-    currentLang = uiLang(newLang);
-    matchTopic = document.getElementById("profileTopic").value || "any";
+    currentLang = uiLang(uiLangVal);
     applyStaticTranslations();
-    await loadTopics();
-    document.getElementById("profileTopic").value = matchTopic;
     statusEl.textContent = tr("saved_ok");
     userLabel.textContent = tr("hi", { name: document.getElementById("profileName").value });
     updateProfilePreview();
     setTimeout(() => { statusEl.textContent = ""; }, 2000);
   } catch (e) {
     statusEl.textContent = tr("save_error") + e.message;
+  }
+});
+
+function showCommsSheet() {
+  const sheet = document.getElementById("commsSheet");
+  if (!sheet) return;
+  sheet.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+}
+function hideCommsSheet() {
+  const sheet = document.getElementById("commsSheet");
+  if (!sheet) return;
+  sheet.classList.remove("open");
+  sheet.setAttribute("aria-hidden", "true");
+}
+document.getElementById("commsOpenBtn")?.addEventListener("click", showCommsSheet);
+document.getElementById("commsCloseBtn")?.addEventListener("click", hideCommsSheet);
+
+document.getElementById("saveCommsBtn")?.addEventListener("click", async () => {
+  const statusEl = document.getElementById("commsSaveStatus");
+  if (statusEl) statusEl.textContent = "…";
+  try {
+    const matchLang = document.getElementById("commsLanguage").value;
+    let pMin = parseInt(document.getElementById("profilePreferAgeMin").value, 10);
+    let pMax = parseInt(document.getElementById("profilePreferAgeMax").value, 10);
+    if (!Number.isFinite(pMin)) pMin = 12;
+    if (!Number.isFinite(pMax)) pMax = 100;
+    if (pMax < pMin) [pMin, pMax] = [pMax, pMin];
+    await api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({
+        language: matchLang,
+        city: document.getElementById("profileCity").value,
+        search_scope: document.getElementById("profileSearchScope").value,
+        looking_for: document.getElementById("profileLookingFor").value,
+        match_topic: document.getElementById("profileTopic").value,
+        prefer_age_min: pMin,
+        prefer_age_max: pMax,
+      }),
+    });
+    profileLanguage = matchLang;
+    matchTopic = document.getElementById("profileTopic").value || "any";
+    await loadTopics();
+    document.getElementById("profileTopic").value = matchTopic;
+    if (statusEl) statusEl.textContent = tr("saved_ok");
+    tg?.HapticFeedback?.notificationOccurred?.("success");
+    setTimeout(() => { if (statusEl) statusEl.textContent = ""; hideCommsSheet(); }, 700);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = tr("save_error") + e.message;
   }
 });
 
@@ -3128,11 +3231,27 @@ document.getElementById("flipCamBtn")?.addEventListener("click", async () => {
   }
 });
 
-document.getElementById("profileLanguage")?.addEventListener("change", async () => {
-  const lang = document.getElementById("profileLanguage").value;
-  profileLanguage = lang;
+document.getElementById("profileUiLanguage")?.addEventListener("change", async () => {
+  const lang = document.getElementById("profileUiLanguage").value;
+  const prev = currentLang;
   currentLang = uiLang(lang);
   applyStaticTranslations();
+  try {
+    await api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({ ui_language: lang }),
+    });
+  } catch (e) {
+    currentLang = prev;
+    document.getElementById("profileUiLanguage").value = prev;
+    applyStaticTranslations();
+    tg?.showAlert?.(tr("save_error") + (e.message || ""));
+  }
+});
+
+document.getElementById("commsLanguage")?.addEventListener("change", async () => {
+  const lang = document.getElementById("commsLanguage").value;
+  profileLanguage = lang;
   const topicVal = document.getElementById("profileTopic")?.value || matchTopic;
   await loadTopics();
   if (document.getElementById("profileTopic")) document.getElementById("profileTopic").value = topicVal;
