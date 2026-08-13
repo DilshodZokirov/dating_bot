@@ -4,16 +4,21 @@ Bot xabarlari — barcha tillar: uz/ru/en/de/tg/tr/ko/ja/zh/ar.
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "welcome_back": {
-        "uz": "Xush kelibsiz qaytib, {name}!\nSuhbatdosh qidirish uchun pastdagi <b>Menu</b> tugmasini bosing, yoki /search buyrug'ini yuboring.",
-        "ru": "С возвращением, {name}!\nЧтобы найти собеседника, нажмите кнопку <b>Menu</b> внизу или отправьте /search.",
-        "en": "Welcome back, {name}!\nTap the <b>Menu</b> button below to find a chat partner, or send /search.",
-        "de": "Willkommen zurück, {name}!\nTippen Sie unten auf <b>Menu</b> oder senden Sie /search.",
-        "tg": "Хуш омадед, {name}!\nБарои ёфтани ҳамсуҳбат <b>Menu</b>-ро пахш кунед ё /search фиристед.",
-        "tr": "Tekrar hoş geldiniz, {name}!\nPartner bulmak için <b>Menu</b> veya /search.",
-        "ko": "다시 오신 것을 환영합니다, {name}!\n상대를 찾으려면 <b>Menu</b> 또는 /search.",
-        "ja": "おかえりなさい、{name}!\n相手を探すには <b>Menu</b> か /search。",
-        "zh": "欢迎回来，{name}！\n点下方 <b>Menu</b> 或发送 /search 寻找聊天对象。",
-        "ar": "مرحبًا بعودتك، {name}!\nللعثور على شريك اضغط <b>Menu</b> أو أرسل /search.",
+        "uz": "Xush kelibsiz qaytib, {name}!\nSuhbatdosh qidirish uchun pastdagi <b>Menu → Qidirish</b> tugmasini bosing.",
+        "ru": "С возвращением, {name}!\nЧтобы найти собеседника, нажмите <b>Menu → Поиск</b> внизу.",
+        "en": "Welcome back, {name}!\nTap <b>Menu → Search</b> below to find a partner.",
+        "de": "Willkommen zurück, {name}!\nTippen Sie unten auf <b>Menu → Suche</b>.",
+        "tg": "Хуш омадед, {name}!\nБарои ҳамсуҳбат <b>Menu → Ҷустуҷӯ</b>-ро пахш кунед.",
+        "tr": "Tekrar hoş geldiniz, {name}!\nPartner için alttaki <b>Menu → Ara</b> düğmesine basın.",
+        "ko": "다시 오신 것을 환영합니다, {name}!\n상대를 찾으려면 아래 <b>Menu → 검색</b>을 누르세요.",
+        "ja": "おかえりなさい、{name}!\n相手を探すには下の <b>Menu → 検索</b> をタップ。",
+        "zh": "欢迎回来，{name}！\n点下方 <b>Menu → 搜索</b> 寻找聊天对象。",
+        "ar": "مرحبًا بعودتك، {name}!\nللعثور على شريك اضغط <b>Menu → بحث</b> بالأسفل.",
+    },
+    "menu_btn": {
+        "uz": "Qidirish", "ru": "Поиск", "en": "Search", "de": "Suche",
+        "tg": "Ҷустуҷӯ", "tr": "Ara", "ko": "검색", "ja": "検索", "zh": "搜索",
+        "ar": "بحث",
     },
     "searching": {
         "uz": "Suhbatdosh qidirilmoqda... Bekor qilish uchun /stop yuboring.",
@@ -122,16 +127,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "هذا العرض منتهٍ أو تمت الإجابة عليه.",
     },
     "stop_confirm": {
-        "uz": "Qidiruv/suhbat bekor qilindi. Qayta boshlash uchun /search.",
-        "ru": "Поиск/разговор отменён. Чтобы начать заново, отправьте /search.",
-        "en": "Search/chat cancelled. Send /search to start again.",
-        "de": "Suche/Chat abgebrochen. /search zum Neustart.",
-        "tg": "Ҷустуҷӯ/суҳбат бекор. Аз нав: /search.",
-        "tr": "Arama/sohbet iptal. Yeniden: /search.",
-        "ko": "검색/채팅 취소됨. 다시: /search.",
-        "ja": "検索/チャットをキャンセル。再開は /search。",
-        "zh": "搜索/聊天已取消。重新开始请发 /search。",
-        "ar": "أُلغي البحث/المحادثة. للبدء مجددًا أرسل /search.",
+        "uz": "Qidiruv/suhbat bekor qilindi. Qayta: <b>Menu → Qidirish</b>.",
+        "ru": "Поиск/разговор отменён. Снова: <b>Menu → Поиск</b>.",
+        "en": "Search/chat cancelled. Again: <b>Menu → Search</b>.",
+        "de": "Suche/Chat abgebrochen. Erneut: <b>Menu → Suche</b>.",
+        "tg": "Ҷустуҷӯ/суҳбат бекор. Аз нав: <b>Menu → Ҷустуҷӯ</b>.",
+        "tr": "Arama/sohbet iptal. Yeniden: <b>Menu → Ara</b>.",
+        "ko": "검색/채팅 취소됨. 다시: <b>Menu → 검색</b>.",
+        "ja": "検索/チャットをキャンセル。再開は <b>Menu → 検索</b>。",
+        "zh": "搜索/聊天已取消。重新开始：<b>Menu → 搜索</b>。",
+        "ar": "أُلغي البحث/المحادثة. مجددًا: <b>Menu → بحث</b>.",
     },
     "partner_cancelled": {
         "uz": "Suhbatdoshingiz qidiruvni bekor qildi.",
@@ -229,77 +234,77 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "مرحبًا! <b>Soyla</b> — اعثر على شريك وابدأ مكالمة فيديو.\n\nما اسمك؟",
     },
     "reg_done": {
-        "uz": "✅ Tayyor, {name}!\nMini Appni oching — qidiruv shu yerda.",
-        "ru": "✅ Готово, {name}!\nОткройте Mini App — поиск там.",
-        "en": "✅ You’re in, {name}!\nOpen the Mini App — search lives there.",
-        "de": "✅ Fertig, {name}!\nÖffnen Sie die Mini App — dort suchen.",
-        "tg": "✅ Тайёр, {name}!\nMini App-ро кушоед — ҷустуҷӯ онҷост.",
-        "tr": "✅ Hazır, {name}!\nMini App’i açın — arama orada.",
-        "ko": "✅ 준비됐어요, {name}!\n미니 앱을 여세요 — 검색은 거기에서.",
-        "ja": "✅ 準備OK、{name}!\nミニアプリを開いてください — 検索はそこです。",
-        "zh": "✅ 好了，{name}！\n打开迷你应用 — 搜索在那里。",
-        "ar": "✅ جاهز، {name}!\nافتح تطبيق الميني — البحث هناك.",
+        "uz": "✅ Tayyor, {name}!\nQidiruv: pastdagi <b>Menu → Qidirish</b>.",
+        "ru": "✅ Готово, {name}!\nПоиск: <b>Menu → Поиск</b> внизу.",
+        "en": "✅ You’re in, {name}!\nSearch: <b>Menu → Search</b> below.",
+        "de": "✅ Fertig, {name}!\nSuche: <b>Menu → Suche</b> unten.",
+        "tg": "✅ Тайёр, {name}!\nҶустуҷӯ: <b>Menu → Ҷустуҷӯ</b>.",
+        "tr": "✅ Hazır, {name}!\nArama: alttaki <b>Menu → Ara</b>.",
+        "ko": "✅ 준비됐어요, {name}!\n검색: 아래 <b>Menu → 검색</b>.",
+        "ja": "✅ 準備OK、{name}!\n検索は下の <b>Menu → 検索</b>。",
+        "zh": "✅ 好了，{name}！\n搜索：下方 <b>Menu → 搜索</b>。",
+        "ar": "✅ جاهز، {name}!\nالبحث: <b>Menu → بحث</b> بالأسفل.",
     },
     "how_it_works": {
         "uz": "<b>Qanday ishlaydi</b> (qisqa):\n\n"
-              "1) Mini Appni oching\n"
+              "1) <b>Menu → Qidirish</b> ni bosing\n"
               "2) Katta tugmani bosing — qidiruv\n"
               "3) <b>Roziman</b> → video suhbat\n\n"
-              "Til va yoshni <b>Profil</b>da sozlang.\n"
+              "Aloqa tilini Mini Appdagi <b>Aloqa sozlamalari</b>da sozlang.\n"
               "Yordam: /help",
         "ru": "<b>Как это работает</b>:\n\n"
-              "1) Откройте Mini App\n"
-              "2) Нажмите большую кнопку — поиск\n"
+              "1) Нажмите <b>Menu → Поиск</b>\n"
+              "2) Большая кнопка — поиск\n"
               "3) <b>Согласен</b> → видеозвонок\n\n"
-              "Язык и возраст — в <b>Профиле</b>.\n"
+              "Язык общения — в <b>Параметрах общения</b>.\n"
               "Помощь: /help",
         "en": "<b>How it works</b>:\n\n"
-              "1) Open the Mini App\n"
+              "1) Tap <b>Menu → Search</b>\n"
               "2) Tap the big button — search\n"
               "3) <b>Accept</b> → video call\n\n"
-              "Set language & age in <b>Profile</b>.\n"
+              "Set chat language in <b>Chat settings</b>.\n"
               "Help: /help",
         "de": "<b>So geht’s</b>:\n\n"
-              "1) Mini App öffnen\n"
-              "2) Großen Button tippen — Suche\n"
+              "1) <b>Menu → Suche</b> tippen\n"
+              "2) Großen Button — Suche\n"
               "3) <b>Annehmen</b> → Videoanruf\n\n"
-              "Sprache & Alter im <b>Profil</b>.\n"
+              "Chat-Sprache in den <b>Chat-Einstellungen</b>.\n"
               "Hilfe: /help",
         "tg": "<b>Чӣ гуна кор мекунад</b>:\n\n"
-              "1) Mini App-ро кушоед\n"
+              "1) <b>Menu → Ҷустуҷӯ</b>\n"
               "2) Тугмаи калон — ҷустуҷӯ\n"
               "3) <b>Розӣ</b> → видеозанг\n\n"
-              "Забон ва синну сол дар <b>Профил</b>.\n"
+              "Забони суҳбат — дар <b>Танзимоти суҳбат</b>.\n"
               "Ёрӣ: /help",
         "tr": "<b>Nasıl çalışır</b>:\n\n"
-              "1) Mini App’i açın\n"
-              "2) Büyük düğmeye basın — arama\n"
+              "1) <b>Menu → Ara</b>\n"
+              "2) Büyük düğme — arama\n"
               "3) <b>Kabul</b> → görüntülü sohbet\n\n"
-              "Dil ve yaş <b>Profil</b>’de.\n"
+              "Sohbet dili — <b>Sohbet ayarları</b>nda.\n"
               "Yardım: /help",
         "ko": "<b>사용 방법</b>:\n\n"
-              "1) 미니 앱 열기\n"
+              "1) <b>Menu → 검색</b>\n"
               "2) 큰 버튼 — 검색\n"
               "3) <b>수락</b> → 영상 통화\n\n"
-              "언어·나이는 <b>프로필</b>에서.\n"
+              "대화 언어는 <b>채팅 설정</b>에서.\n"
               "도움말: /help",
         "ja": "<b>使い方</b>:\n\n"
-              "1) ミニアプリを開く\n"
+              "1) <b>Menu → 検索</b>\n"
               "2) 大きなボタン — 検索\n"
               "3) <b>承諾</b> → ビデオ通話\n\n"
-              "言語と年齢は<b>プロフィール</b>で。\n"
+              "会話言語は<b>チャット設定</b>で。\n"
               "ヘルプ: /help",
         "zh": "<b>怎么用</b>:\n\n"
-              "1) 打开迷你应用\n"
+              "1) 点 <b>Menu → 搜索</b>\n"
               "2) 点大按钮 — 搜索\n"
               "3) <b>接受</b> → 视频通话\n\n"
-              "语言和年龄在<b>资料</b>里设置。\n"
+              "交流语言在<b>聊天设置</b>里。\n"
               "帮助: /help",
         "ar": "<b>كيف يعمل</b>:\n\n"
-              "1) افتح تطبيق الميني\n"
-              "2) اضغط الزر الكبير — بحث\n"
+              "1) اضغط <b>Menu → بحث</b>\n"
+              "2) الزر الكبير — بحث\n"
               "3) <b>قبول</b> → مكالمة فيديو\n\n"
-              "اللغة والعمر في <b>الملف</b>.\n"
+              "لغة التواصل في <b>إعدادات التواصل</b>.\n"
               "المساعدة: /help",
     },
     "need_register": {
@@ -327,16 +332,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "رد غير صحيح لهذه الخطوة. ابدأ من /start.",
     },
     "help_commands": {
-        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/app — Mini App\n/start — boshiga\n/reset — profilni o‘chirish",
-        "ru": "Команды:\n/help — как это работает\n/app — Mini App\n/start — в начало\n/reset — удалить профиль",
-        "en": "Commands:\n/help — how it works\n/app — Mini App\n/start — restart\n/reset — delete profile",
-        "de": "Befehle:\n/help — so geht’s\n/app — Mini App\n/start — neu\n/reset — Profil löschen",
-        "tg": "Фармонҳо:\n/help — чӣ гуна\n/app — Mini App\n/start — аз аввал\n/reset — профилро нест",
-        "tr": "Komutlar:\n/help — nasıl çalışır\n/app — Mini App\n/start — başa dön\n/reset — profil sil",
-        "ko": "명령:\n/help — 사용 방법\n/app — 미니 앱\n/start — 처음으로\n/reset — 프로필 삭제",
-        "ja": "コマンド:\n/help — 使い方\n/app — ミニアプリ\n/start — 最初から\n/reset — プロフィール削除",
-        "zh": "命令：\n/help — 怎么用\n/app — 迷你应用\n/start — 重新开始\n/reset — 删除资料",
-        "ar": "الأوامر:\n/help — كيف يعمل\n/app — تطبيق الميني\n/start — من البداية\n/reset — حذف الملف",
+        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/start — boshiga\n/reset — profilni o‘chirish\n\nQidiruv: <b>Menu → Qidirish</b>",
+        "ru": "Команды:\n/help — как это работает\n/start — в начало\n/reset — удалить профиль\n\nПоиск: <b>Menu → Поиск</b>",
+        "en": "Commands:\n/help — how it works\n/start — restart\n/reset — delete profile\n\nSearch: <b>Menu → Search</b>",
+        "de": "Befehle:\n/help — so geht’s\n/start — neu\n/reset — Profil löschen\n\nSuche: <b>Menu → Suche</b>",
+        "tg": "Фармонҳо:\n/help — чӣ гуна\n/start — аз аввал\n/reset — профил\n\nҶустуҷӯ: <b>Menu → Ҷустуҷӯ</b>",
+        "tr": "Komutlar:\n/help — nasıl çalışır\n/start — başa dön\n/reset — profil sil\n\nArama: <b>Menu → Ara</b>",
+        "ko": "명령:\n/help — 사용 방법\n/start — 처음으로\n/reset — 프로필 삭제\n\n검색: <b>Menu → 검색</b>",
+        "ja": "コマンド:\n/help — 使い方\n/start — 最初から\n/reset — プロフィール削除\n\n検索: <b>Menu → 検索</b>",
+        "zh": "命令：\n/help — 怎么用\n/start — 重新开始\n/reset — 删除资料\n\n搜索：<b>Menu → 搜索</b>",
+        "ar": "الأوامر:\n/help — كيف يعمل\n/start — من البداية\n/reset — حذف الملف\n\nالبحث: <b>Menu → بحث</b>",
     },
 }
 
