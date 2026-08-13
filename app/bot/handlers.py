@@ -28,7 +28,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=i18n3"
 
 
 def _webapp_kb(lang: str = "uz") -> ReplyKeyboardMarkup | ReplyKeyboardRemove:
@@ -64,6 +64,7 @@ language_kb = ReplyKeyboardMarkup(
         [KeyboardButton(text="O'zbek"), KeyboardButton(text="Русский"), KeyboardButton(text="English")],
         [KeyboardButton(text="Deutsch"), KeyboardButton(text="Tojik"), KeyboardButton(text="Turk")],
         [KeyboardButton(text="Koreys"), KeyboardButton(text="Yapon"), KeyboardButton(text="Xitoy")],
+        [KeyboardButton(text="Arab")],
     ],
     resize_keyboard=True,
 )
@@ -80,6 +81,7 @@ LANGUAGE_MAP = {
     "Koreys": Language.ko,
     "Yapon": Language.ja,
     "Xitoy": Language.zh,
+    "Arab": Language.ar,
 }
 
 

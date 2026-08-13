@@ -61,7 +61,7 @@ async def init_db():
             text("UPDATE users SET match_topic = 'any' WHERE match_topic LIKE 'speak_%'")
         )
         # Yangi tillar (PostgreSQL enum `language`)
-        for lang in ("de", "tg", "tr", "ko", "ja", "zh"):
+        for lang in ("de", "tg", "tr", "ko", "ja", "zh", "ar"):
             try:
                 async with conn.begin_nested():
                     await conn.execute(

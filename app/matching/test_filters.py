@@ -49,4 +49,4 @@ def test_topic_compatible():
 
 def test_languages_include_new():
     codes = {x.value for x in Language}
-    assert {"uz", "ru", "en", "de", "tg", "tr", "ko", "ja", "zh"} <= codes
+    assert {"uz", "ru", "en", "de", "tg", "tr", "ko", "ja", "zh", "ar"} <= codes

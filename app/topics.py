@@ -13,24 +13,28 @@ MATCH_TOPICS: list[dict] = [
         "uz": "Farqi yo'q", "ru": "Неважно", "en": "Anything",
         "de": "Egal", "tg": "Фарқ надорад", "tr": "Fark etmez",
         "ko": "상관없음", "ja": "どちらでも", "zh": "无所谓",
+        "ar": "لا يهم"
     },
     {
         "id": "friends",
         "uz": "Do'st topish", "ru": "Найти друзей", "en": "Find friends",
         "de": "Freunde finden", "tg": "Дӯст ёфтан", "tr": "Arkadaş bul",
         "ko": "친구 찾기", "ja": "友達を探す", "zh": "找朋友",
+        "ar": "البحث عن أصدقاء"
     },
     {
         "id": "dating",
         "uz": "Juft / tanishuv", "ru": "Пара / знакомства", "en": "Dating",
         "de": "Dating", "tg": "Ҷуфт / шиносоӣ", "tr": "Flört / tanışma",
         "ko": "데이팅", "ja": "出会い", "zh": "恋爱 / 交友",
+        "ar": "تعارف / مواعدة"
     },
     {
         "id": "study",
         "uz": "Ilmiy / o'qish", "ru": "Учёба / наука", "en": "Study",
         "de": "Lernen / Studium", "tg": "Таҳсил / илм", "tr": "Eğitim / öğrenme",
         "ko": "공부", "ja": "学習", "zh": "学习",
+        "ar": "دراسة / تعلم"
     },
 ]
 

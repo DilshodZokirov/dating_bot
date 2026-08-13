@@ -165,6 +165,7 @@ LANGUAGES = [
     {"id": "ko", "label": "한국어"},
     {"id": "ja", "label": "日本語"},
     {"id": "zh", "label": "中文"},
+    {"id": "ar", "label": "العربية"},
 ]
 
 

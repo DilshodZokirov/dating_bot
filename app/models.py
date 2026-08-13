@@ -28,6 +28,7 @@ class Language(str, enum.Enum):
     ko = "ko"  # koreys
     ja = "ja"  # yapon
     zh = "zh"  # xitoy
+    ar = "ar"  # arab
 
 
 class SearchScope(str, enum.Enum):
