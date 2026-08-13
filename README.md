@@ -29,7 +29,11 @@ Tasodifiy suhbatdosh topish: ro'yxat → matching → Mini App ichida **LiveKit 
    git pull origin main
    docker compose up -d --force-recreate
    ```
-   (To'liq `--build` ba'zan PyPI tarmoq xatosi beradi — kod volume orqali yangilanadi.)
+   Kod volume orqali yangilanadi. Yangi pip paket (masalan `python-multipart`) qo‘shilgan bo‘lsa bir marta:
+   ```powershell
+   docker compose up -d --build --force-recreate
+   ```
+   (`--build` ba'zan PyPI tarmoq xatosi beradi — shunda oddiy `up -d` yetadi: startida yetishmayotgan paket o‘rnatiladi.)
 
 3. ngrok (URL o'zgarsa `.env` + BotFather Menu URL ni yangilang):
    ```powershell
