@@ -378,7 +378,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "🎬 الفيلم المعرف:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>من الإنترنت — بلا ملف.</i>",
     },
     "link_not_found": {
-        "uz": "Bu silka bo‘yicha internetdan film nomini aniqlab bo‘lmadi.\n\nSabablar: yopiq Instagram/TikTok, preview rasm yo‘q, yoki kadr bazada topilmadi.\nOchilgan post yoki YouTube/IMDb silkasini qayta yuboring.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "uz": "Film topilmadi.\n\n<b>Eng ishonchli usul:</b>\nInstagram videodan <b>ekran rasmini</b> olib, botga <b>rasm</b> qilib yuboring (silka emas).\n\nYoki YouTube/IMDb ochiq silkasini yuboring.\nIG/TT uchun .env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — film yuklanmaydi.</i>",
         "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
         "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
         "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",
@@ -402,7 +402,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "للتعرّف على Instagram/TikTok يلزم <b>GEMINI_API_KEY</b>.\n\nhttps://aistudio.google.com/apikey",
     },
     "link_need_preview": {
-        "uz": "Bu silkadаn preview rasm olinmadi (yopiq post yoki Instagram blokladi).\n\nOchilgan post silkasini yuboring yoki ekran kadrasini rasm qilib yuboring (keyingi yangilanish).\n\n<i>Faqat nom.</i>",
+        "uz": "Instagram bu silkadan preview rasm bermadi (blok/yopiq).\n\n<b>Endi shunday qiling:</b>\n1) Instagram’da videoni oching\n2) Ekran rasmini oling (screenshot)\n3) Shu <b>rasmni</b> Soyla botga yuboring\n\nBot rasm orqali film nomini topadi.\n.env da <b>GEMINI_API_KEY</b> bo‘lishi kerak.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
         "ru": "Не удалось получить превью по ссылке (закрытый пост).\n\nПришлите открытый пост.\n\n<i>Только название.</i>",
         "en": "Couldn’t get a preview image from that link (private/blocked).\n\nSend a public post link.\n\n<i>Title only.</i>",
         "de": "Kein Vorschaubild. Öffentlichen Post senden.",

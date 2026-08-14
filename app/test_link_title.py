@@ -66,3 +66,10 @@ def test_caption_prose_is_not_used_as_page_title_fallback():
         "Vogue World: Hollywood. Known for his own standout fashion moments."
     )
     assert looks_like_prose(caption)
+
+
+def test_normalize_instagram_tracking_params():
+    from app.link_title import normalize_media_url
+
+    dirty = "https://www.instagram.com/reel/DbYLVjjsF2U/?igsh=MXhtN2Q4dWE4b2tj"
+    assert normalize_media_url(dirty) == "https://www.instagram.com/reel/DbYLVjjsF2U/"

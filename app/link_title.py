@@ -165,6 +165,21 @@ def _host_hint(url: str) -> str:
         return ""
 
 
+def normalize_media_url(url: str) -> str:
+    """Instagram/TikTok tracking parametrlarini olib tashlash."""
+    if not url:
+        return url
+    try:
+        p = urlparse(url.strip())
+        host = (p.netloc or "").lower()
+        if "instagram.com" in host or "instagr.am" in host or "tiktok.com" in host:
+            # path ni saqlab, ?igsh=... ni olib tashlaymiz
+            return f"{p.scheme}://{p.netloc}{p.path}"
+    except Exception:
+        pass
+    return url
+
+
 def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
     return any(host == h or host.endswith("." + h) for h in suffixes)
 
@@ -493,18 +508,20 @@ async def gemini_identify_movie(
     if not api_key:
         return None
 
-    endpoint = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={api_key}"
-    )
     prompt = (
         "Identify the movie or TV show shown in this image/video frame. "
-        "Ignore fashion captions, watermarks, and UI chrome. "
+        "Ignore fashion captions, watermarks, usernames, and UI chrome. "
         "Reply with ONLY the official title and year like: Inception (2010). "
         "If you cannot identify it, reply exactly: UNKNOWN"
     )
+    models = (
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-flash-latest",
+    )
     try:
-        async with httpx.AsyncClient(timeout=25, headers=_http_headers()) as client:
+        async with httpx.AsyncClient(timeout=30, headers=_http_headers()) as client:
             data = image_bytes
             ctype = mime or "image/jpeg"
             if data is None and image_url:
@@ -522,31 +539,63 @@ async def gemini_identify_movie(
                     }
                 ]
             }
-            resp = await client.post(endpoint, json=payload)
-            if resp.status_code != 200:
-                return None
-            body = resp.json()
-            text = (
-                body.get("candidates", [{}])[0]
-                .get("content", {})
-                .get("parts", [{}])[0]
-                .get("text", "")
-                .strip()
-            )
-            if not text or text.upper().startswith("UNKNOWN"):
-                return None
-            line = text.splitlines()[0].strip().strip("`\"'")
-            movie = normalize_movie_hit(line, line) or clean_title(line)
-            if movie and not looks_like_prose(movie):
-                return {
-                    "ok": True,
-                    "title": movie,
-                    "source": "Internet · Gemini Vision",
-                    "error": "",
-                }
+            for model in models:
+                endpoint = (
+                    "https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{model}:generateContent?key={api_key}"
+                )
+                resp = await client.post(endpoint, json=payload)
+                if resp.status_code != 200:
+                    continue
+                body = resp.json()
+                text_out = (
+                    body.get("candidates", [{}])[0]
+                    .get("content", {})
+                    .get("parts", [{}])[0]
+                    .get("text", "")
+                    .strip()
+                )
+                if not text_out or text_out.upper().startswith("UNKNOWN"):
+                    continue
+                line = text_out.splitlines()[0].strip().strip("`\"'")
+                movie = normalize_movie_hit(line, line) or clean_title(line)
+                if movie and not looks_like_prose(movie):
+                    return {
+                        "ok": True,
+                        "title": movie,
+                        "source": f"Internet · Gemini ({model})",
+                        "error": "",
+                    }
     except Exception:
         return None
     return None
+
+
+async def identify_movie_from_image_bytes(
+    image_bytes: bytes, mime: str = "image/jpeg"
+) -> dict:
+    """Telegram orqali yuborilgan screenshot/rasmni aniqlash."""
+    if not image_bytes:
+        return {"ok": False, "title": "", "source": "", "error": "no_image"}
+    if not _gemini_api_key():
+        return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
+
+    ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
+    if ghit and ghit.get("ok"):
+        return ghit
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+        ) as client:
+            hit = await yandex_reverse_image_movie(
+                client, image_bytes=image_bytes, mime=mime
+            )
+            if hit and hit.get("ok"):
+                return hit
+    except Exception:
+        pass
+    return {"ok": False, "title": "", "source": "", "error": "not_identified"}
 
 
 async def fetch_page_title(url: str) -> dict:
@@ -554,6 +603,7 @@ async def fetch_page_title(url: str) -> dict:
     Asosiy API: {ok, title, source, host, error}
     Caption emas — preview kadr + internet/AI.
     """
+    url = normalize_media_url(url)
     host = _host_hint(url)
     social = _host_matches(host, SOCIAL_HOSTS)
 
