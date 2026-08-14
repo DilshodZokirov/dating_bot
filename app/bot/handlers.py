@@ -15,6 +15,7 @@ from app.bot.states import Registration
 from app.config import settings
 from app.database import async_session
 from app.i18n import t
+from app.link_title import extract_urls_from_message, resolve_movie_title_from_message
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.matching.respond import respond_to_proposal
@@ -456,7 +457,7 @@ async def cmd_report_dismiss(message: Message):
 
 @router.message(F.text)
 async def fallback_text(message: Message, state: FSMContext):
-    """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz."""
+    """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz yoki silka nomini qidiramiz."""
     current = await state.get_state()
     print(f"fallback: text={message.text!r} state={current}", flush=True)
     lang = "uz"
@@ -467,5 +468,27 @@ async def fallback_text(message: Message, state: FSMContext):
     if current:
         await message.answer(t(lang, "bad_step"))
         return
+
+    # Silka bo‘lsa — faqat sahifa/film nomini aniqlash (fayl emas)
+    if extract_urls_from_message(message):
+        wait = await message.answer(t(lang, "link_looking"))
+        result = await resolve_movie_title_from_message(message)
+        try:
+            await wait.delete()
+        except Exception:
+            pass
+        if result.get("ok") and result.get("title"):
+            await message.answer(
+                t(
+                    lang,
+                    "link_found",
+                    title=result["title"],
+                    source=result.get("source") or result.get("host") or "link",
+                )
+            )
+        else:
+            await message.answer(t(lang, "link_not_found"))
+        return
+
     await _set_user_menu(message, lang)
     await message.answer(t(lang, "help_commands"), reply_markup=_clear_reply_kb())
