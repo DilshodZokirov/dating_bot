@@ -15,7 +15,11 @@ from app.bot.states import Registration
 from app.config import settings
 from app.database import async_session
 from app.i18n import t
-from app.link_title import extract_urls_from_message, resolve_movie_title_from_message
+from app.link_title import (
+    extract_urls_from_message,
+    identify_movie_from_image_bytes,
+    resolve_movie_title_from_message,
+)
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.matching.respond import respond_to_proposal
@@ -456,6 +460,35 @@ async def cmd_report_dismiss(message: Message):
     await message.answer(f"🗑 Shikoyat #{report.id} rad etildi.")
 
 
+@router.message(F.photo)
+async def identify_movie_photo(message: Message, state: FSMContext):
+    """Instagram ochilmasa — foydalanuvchi ekran rasmini yuboradi."""
+    current = await state.get_state()
+    if current:
+        return
+    lang = "uz"
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    if user:
+        lang = _ui_lang(user)
+
+    wait = await message.answer(t(lang, "link_looking"))
+    try:
+        photo = message.photo[-1]
+        file = await message.bot.get_file(photo.file_id)
+        buf = await message.bot.download_file(file.file_path)
+        raw = buf.read() if hasattr(buf, "read") else bytes(buf)
+        result = await identify_movie_from_image_bytes(raw, "image/jpeg")
+    except Exception as e:
+        print(f"photo identify error: {e}", flush=True)
+        result = {"ok": False, "error": "not_identified"}
+    try:
+        await wait.delete()
+    except Exception:
+        pass
+    await _reply_movie_result(message, lang, result)
+
+
 @router.message(F.text)
 async def fallback_text(message: Message, state: FSMContext):
     """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz yoki silka nomini qidiramiz."""
@@ -470,7 +503,7 @@ async def fallback_text(message: Message, state: FSMContext):
         await message.answer(t(lang, "bad_step"))
         return
 
-    # Silka bo‘lsa — faqat sahifa/film nomini aniqlash (fayl emas)
+    # Silka bo‘lsa — sahifa/film nomini aniqlash (fayl emas)
     if extract_urls_from_message(message):
         wait = await message.answer(t(lang, "link_looking"))
         result = await resolve_movie_title_from_message(message)
@@ -478,24 +511,28 @@ async def fallback_text(message: Message, state: FSMContext):
             await wait.delete()
         except Exception:
             pass
-        if result.get("ok") and result.get("title"):
-            await message.answer(
-                t(
-                    lang,
-                    "link_found",
-                    title=result["title"],
-                    source=result.get("source") or result.get("host") or "link",
-                )
-            )
-        else:
-            err = result.get("error") or ""
-            if err == "need_gemini":
-                await message.answer(t(lang, "link_need_gemini"))
-            elif err in ("no_image", "no_url"):
-                await message.answer(t(lang, "link_need_preview"))
-            else:
-                await message.answer(t(lang, "link_not_found"))
+        await _reply_movie_result(message, lang, result)
         return
 
     await _set_user_menu(message, lang)
     await message.answer(t(lang, "help_commands"), reply_markup=_clear_reply_kb())
+
+
+async def _reply_movie_result(message: Message, lang: str, result: dict) -> None:
+    if result.get("ok") and result.get("title"):
+        await message.answer(
+            t(
+                lang,
+                "link_found",
+                title=result["title"],
+                source=result.get("source") or result.get("host") or "link",
+            )
+        )
+        return
+    err = result.get("error") or ""
+    if err == "need_gemini":
+        await message.answer(t(lang, "link_need_gemini"))
+    elif err in ("no_image", "no_url"):
+        await message.answer(t(lang, "link_need_preview"))
+    else:
+        await message.answer(t(lang, "link_not_found"))
