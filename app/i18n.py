@@ -378,7 +378,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "🎬 الفيلم المعرف:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>من الإنترنت — بلا ملف.</i>",
     },
     "link_not_found": {
-        "uz": "Film topilmadi.\n\n<b>Eng ishonchli usul:</b>\nInstagram videodan <b>ekran rasmini</b> olib, botga <b>rasm</b> qilib yuboring (silka emas).\n\nYoki YouTube/IMDb ochiq silkasini yuboring.\nIG/TT uchun .env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "uz": "Film topilmadi.\n\n<b>Yuboring:</b> screenshot yoki qisqa <b>video</b> (20 MB gacha).\nYoki YouTube/IMDb silka.\nIG/TT: .env da <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — video/fayl saqlanmaydi.</i>",
         "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
         "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
         "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",
@@ -402,7 +402,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "للتعرّف على Instagram/TikTok يلزم <b>GEMINI_API_KEY</b>.\n\nhttps://aistudio.google.com/apikey",
     },
     "link_need_preview": {
-        "uz": "Instagram bu silkadan preview rasm bermadi (blok/yopiq).\n\n<b>Endi shunday qiling:</b>\n1) Instagram’da videoni oching\n2) Ekran rasmini oling (screenshot)\n3) Shu <b>rasmni</b> Soyla botga yuboring\n\nBot rasm orqali film nomini topadi.\n.env da <b>GEMINI_API_KEY</b> bo‘lishi kerak.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "uz": "Instagram bu silkadan preview bermadi.\n\n<b>Quyidagilardan birini yuboring:</b>\n1) Videodan <b>ekran rasmi</b> (screenshot)\n2) Yoki videoning o‘zini (qisqa klip, <b>20 MB</b> gacha)\n\nBot kadrni olib film nomini topadi. Video saqlanmaydi.\n.env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom.</i>",
         "ru": "Не удалось получить превью по ссылке (закрытый пост).\n\nПришлите открытый пост.\n\n<i>Только название.</i>",
         "en": "Couldn’t get a preview image from that link (private/blocked).\n\nSend a public post link.\n\n<i>Title only.</i>",
         "de": "Kein Vorschaubild. Öffentlichen Post senden.",
@@ -412,6 +412,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ja": "プレビューなし。公開ポストを送ってください。",
         "zh": "无法获取预览。请发送公开帖子。",
         "ar": "لا توجد معاينة. أرسل منشوراً عاماً.",
+    },
+    "link_video_too_large": {
+        "uz": "Video juda katta (maks. ~20 MB). Qisqaroq klip yoki screenshot yuboring.\n\n<i>Faqat nom — video saqlanmaydi.</i>",
+        "ru": "Видео слишком большое (макс. ~20 МБ). Пришлите короткий клип или скрин.\n\n<i>Только название.</i>",
+        "en": "Video is too large (max ~20 MB). Send a short clip or screenshot.\n\n<i>Title only.</i>",
+        "de": "Video zu groß (max. ~20 MB). Kurzer Clip oder Screenshot.",
+        "tg": "Видео калон (~20 МБ). Клип ё screenshot.",
+        "tr": "Video çok büyük (~20 MB). Kısa klip veya ekran görüntüsü.",
+        "ko": "영상이 너무 큽니다(~20MB). 짧은 클립 또는 스크린샷.",
+        "ja": "動画が大きすぎます（最大約20MB）。短いクリップかスクショを。",
+        "zh": "视频太大（最大约20MB）。请发短片段或截图。",
+        "ar": "الفيديو كبير جداً (~20MB). أرسل مقطعاً قصيراً أو لقطة شاشة.",
     },
     "link_guide": {
         "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n"
