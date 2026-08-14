@@ -2,7 +2,9 @@
 
 from app.link_title import (
     _host_matches,
+    _pick_best_title,
     clean_title,
+    extract_movie_name,
     extract_urls_from_text,
 )
 
@@ -57,8 +59,28 @@ def test_extract_instagram_caption_helper():
     html = r'{"caption":{"text":"Interstellar (2014) film"}}'
     assert "Interstellar" in _extract_instagram_caption_from_html(html)
 
+
 def test_host_matches():
     assert _host_matches("www.tiktok.com", ("tiktok.com", "vm.tiktok.com"))
     assert _host_matches("vm.tiktok.com", ("tiktok.com", "vm.tiktok.com"))
     assert _host_matches("instagram.com", ("instagram.com", "instagr.am"))
     assert not _host_matches("notinstagram.com", ("instagram.com",))
+
+
+def test_rejects_instagram_prose_caption():
+    caption = (
+        "Tonight, V stepped into the crowd, taking in live performances at "
+        "Vogue World: Hollywood. Known for his own standout fashion moments, "
+        "he kept it effortlessly stylish in a look worthy of the runway."
+    )
+    assert extract_movie_name(caption) == ""
+    assert _pick_best_title(caption, social=True) == ""
+
+
+def test_extracts_movie_from_caption_with_year():
+    caption = "🎬 Inception (2010)\nTonight, V stepped into the crowd at the premiere."
+    assert extract_movie_name(caption) == "Inception (2010)"
+
+
+def test_extracts_labeled_movie_name():
+    assert "Interstellar" in extract_movie_name("Kino: Interstellar (2014)\nTomosha qiling")

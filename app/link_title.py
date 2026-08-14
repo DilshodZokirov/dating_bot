@@ -57,8 +57,33 @@ GENERIC_TITLE_RE = re.compile(
     re.I | re.X,
 )
 
+# Caption ichidan film nomi naqshlari
+MOVIE_YEAR_RE = re.compile(
+    r"""
+    (?:^|[\n|•·\-–—:/]|🎬\s*|🎥\s*|🍿\s*)
+    ["«“]?
+    (?P<title>[A-ZА-ЯЁЎҚҒҲІЇЄĞÜŞÖÇ0-9][^(\n]{1,80}?)
+    ["»”]?
+    \s*[\(\[]?(?P<year>(?:19|20)\d{2})[\)\]]?
+    """,
+    re.I | re.X | re.M,
+)
+MOVIE_LABEL_RE = re.compile(
+    r"""
+    ^\s*(?:
+        film|movie|kino|кинои?|фильм|nomi?|название|title|name
+    )\s*[:\-–—]\s*(?P<title>.+?)\s*$
+    """,
+    re.I | re.X | re.M,
+)
+MOVIE_QUOTED_RE = re.compile(
+    r"""^[^\n]{0,20}?[«"“](?P<title>[^»"”\n]{2,80})[»"”]""",
+    re.M,
+)
+
 TIKTOK_HOSTS = ("tiktok.com", "vm.tiktok.com", "vt.tiktok.com")
 INSTAGRAM_HOSTS = ("instagram.com", "instagr.am")
+SOCIAL_HOSTS = TIKTOK_HOSTS + INSTAGRAM_HOSTS
 
 
 class _MetaParser(HTMLParser):
@@ -163,6 +188,97 @@ def clean_title(raw: str) -> str:
     return title[:200]
 
 
+def looks_like_prose_caption(text: str) -> bool:
+    """Uzun Instagram/TikTok tavsifi — film nomi emas."""
+    if not text:
+        return False
+    t = re.sub(r"\s+", " ", text).strip()
+    if len(t) >= 120:
+        return True
+    # Bir nechta gap
+    if t.count(".") + t.count("!") + t.count("?") >= 2:
+        return True
+    # Gap sifatida boshlanadi
+    if re.match(
+        r"^(tonight|today|yesterday|this\s+(week|weekend)|just|when|after|"
+        r"known\s+for|check\s+out|swipe|link\s+in|"
+        r"сегодня|вчера|смотрите|смотрите|bugun|kecha)\b",
+        t,
+        re.I,
+    ):
+        return True
+    # Ko‘p vergul + uzoq — tavsif
+    if t.count(",") >= 3 and len(t) > 70:
+        return True
+    return False
+
+
+def extract_movie_name(raw: str) -> str:
+    """
+    Caption/meta matnidan film nomini ajratib olish.
+    Oddiy tavsif matnini qaytarmaydi.
+    """
+    if not raw:
+        return ""
+    text = html_lib.unescape(raw).strip()
+    # Instagram wrapper
+    m = re.match(
+        r'^[^:]+\s+on\s+Instagram:\s*[“"«]?(.*?)[”"»]?\s*$',
+        text,
+        flags=re.I | re.S,
+    )
+    if m and m.group(1).strip():
+        text = m.group(1).strip()
+
+    # 1) Yil bilan: Inception (2010)
+    for m in MOVIE_YEAR_RE.finditer(text):
+        cand = clean_title(m.group("title"))
+        year = m.group("year")
+        if not cand or looks_like_prose_caption(cand):
+            continue
+        # Juda uzun "title" — gap emas
+        if len(cand) > 80 or cand.count(",") >= 2:
+            continue
+        return f"{cand} ({year})"[:200]
+
+    # 2) Film: / Kino: / Название:
+    for m in MOVIE_LABEL_RE.finditer(text):
+        cand = clean_title(m.group("title"))
+        if cand and not looks_like_prose_caption(cand) and len(cand) <= 80:
+            # Label qatorida yil bo‘lsa saqlaymiz
+            ym = re.search(r"\((?:19|20)\d{2}\)", m.group("title"))
+            if ym and ym.group(0) not in cand:
+                return f"{cand} {ym.group(0)}"[:200]
+            return cand
+
+    # 3) «Nom» yoki "Nom" birinchi qatorda
+    for m in MOVIE_QUOTED_RE.finditer(text):
+        cand = clean_title(m.group("title"))
+        if cand and not looks_like_prose_caption(cand) and len(cand) <= 80:
+            return cand
+
+    # 4) Birinchi qator qisqa "title-like" bo‘lsa
+    first = re.split(r"[\n|]", text, maxsplit=1)[0]
+    first = re.sub(r"^[\s🎬🎥🍿•·\-–—]+", "", first).strip()
+    first = clean_title(first)
+    if (
+        first
+        and len(first) <= 60
+        and not looks_like_prose_caption(first)
+        and not first.endswith((".", ",", ";", ":"))
+        and first.count(" ") <= 8
+    ):
+        # Gap emas: fe'l + obyekt uslubidagi uzun jumlalarni rad et
+        if not re.search(
+            r"\b(stepped|taking|known|keeping|wearing|watching|looking)\b",
+            first,
+            re.I,
+        ):
+            return first
+
+    return ""
+
+
 def _host_hint(url: str) -> str:
     try:
         host = urlparse(url).netloc.lower()
@@ -175,10 +291,25 @@ def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
     return any(host == h or host.endswith("." + h) for h in suffixes)
 
 
-def _pick_best_title(*candidates: str) -> str:
+def _pick_best_title(*candidates: str, social: bool = False) -> str:
+    """
+    social=True: Instagram/TikTok — faqat filmga o‘xshash nom;
+    oddiy caption/tavsif qaytarilmaydi.
+    """
     for raw in candidates:
-        cleaned = clean_title(raw or "")
-        if cleaned:
+        if not raw:
+            continue
+        if social:
+            movie = extract_movie_name(raw)
+            if movie:
+                return movie
+            continue
+        # Oddiy sahifa: avval film naqshi, keyin tozalangan title
+        movie = extract_movie_name(raw)
+        if movie:
+            return movie
+        cleaned = clean_title(raw)
+        if cleaned and not looks_like_prose_caption(cleaned):
             return cleaned
     return ""
 
@@ -265,7 +396,7 @@ async def _fetch_tiktok_oembed(client: httpx.AsyncClient, url: str) -> dict | No
         if "json" not in ctype:
             return None
         data = resp.json()
-        title = _pick_best_title(data.get("title") or "")
+        title = _pick_best_title(data.get("title") or "", social=True)
         if not title:
             return None
         author = (data.get("author_name") or "").strip()
@@ -290,10 +421,8 @@ async def _fetch_instagram_oembed(client: httpx.AsyncClient, url: str) -> dict |
             if "json" not in ctype:
                 continue
             data = resp.json()
-            title = _pick_best_title(
-                data.get("title") or "",
-                data.get("author_name") or "",
-            )
+            # author_name — akkaunt, film emas; captiondan faqat movie-like nom
+            title = _pick_best_title(data.get("title") or "", social=True)
             if title:
                 author = (data.get("author_name") or "").strip()
                 source = f"Instagram · {author}" if author else "Instagram"
@@ -383,6 +512,7 @@ async def _fetch_html_meta(client: httpx.AsyncClient, url: str, host: str) -> di
     og_site = parser.og_site or _meta_content(text, "og:site_name")
 
     embedded = ""
+    social = _host_matches(host, SOCIAL_HOSTS)
     if _host_matches(host, TIKTOK_HOSTS):
         embedded = _extract_tiktok_desc_from_html(text)
     elif _host_matches(host, INSTAGRAM_HOSTS):
@@ -395,6 +525,7 @@ async def _fetch_html_meta(client: httpx.AsyncClient, url: str, host: str) -> di
         og_desc,
         tw_desc,
         page_title,
+        social=social,
     )
     if not title:
         return {
@@ -402,7 +533,7 @@ async def _fetch_html_meta(client: httpx.AsyncClient, url: str, host: str) -> di
             "title": "",
             "source": "",
             "host": host,
-            "error": "no_title",
+            "error": "no_movie_title" if social else "no_title",
         }
 
     if _host_matches(host, INSTAGRAM_HOSTS):
