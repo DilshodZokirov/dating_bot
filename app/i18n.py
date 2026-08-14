@@ -251,60 +251,70 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
               "2) Katta tugmani bosing — qidiruv\n"
               "3) <b>Roziman</b> → video suhbat\n\n"
               "Aloqa tilini Mini Appdagi <b>Aloqa sozlamalari</b>da sozlang.\n"
+              "Film nomi: botga ochiq silka yuboring (batafsil: /help).\n"
               "Yordam: /help",
         "ru": "<b>Как это работает</b>:\n\n"
               "1) Нажмите <b>Menu → Поиск</b>\n"
               "2) Большая кнопка — поиск\n"
               "3) <b>Согласен</b> → видеозвонок\n\n"
               "Язык общения — в <b>Параметрах общения</b>.\n"
+              "Название фильма: пришлите открытую ссылку (подробнее: /help).\n"
               "Помощь: /help",
         "en": "<b>How it works</b>:\n\n"
               "1) Tap <b>Menu → Search</b>\n"
               "2) Tap the big button — search\n"
               "3) <b>Accept</b> → video call\n\n"
               "Set chat language in <b>Chat settings</b>.\n"
+              "Movie title: send an open link (details: /help).\n"
               "Help: /help",
         "de": "<b>So geht’s</b>:\n\n"
               "1) <b>Menu → Suche</b> tippen\n"
               "2) Großen Button — Suche\n"
               "3) <b>Annehmen</b> → Videoanruf\n\n"
               "Chat-Sprache in den <b>Chat-Einstellungen</b>.\n"
+              "Filmtitel: offenen Link senden (Details: /help).\n"
               "Hilfe: /help",
         "tg": "<b>Чӣ гуна кор мекунад</b>:\n\n"
               "1) <b>Menu → Ҷустуҷӯ</b>\n"
               "2) Тугмаи калон — ҷустуҷӯ\n"
               "3) <b>Розӣ</b> → видеозанг\n\n"
               "Забони суҳбат — дар <b>Танзимоти суҳбат</b>.\n"
+              "Номи филм: пайванди кушода фиристед (/help).\n"
               "Ёрӣ: /help",
         "tr": "<b>Nasıl çalışır</b>:\n\n"
               "1) <b>Menu → Ara</b>\n"
               "2) Büyük düğme — arama\n"
               "3) <b>Kabul</b> → görüntülü sohbet\n\n"
               "Sohbet dili — <b>Sohbet ayarları</b>nda.\n"
+              "Film adı: açık link gönderin (/help).\n"
               "Yardım: /help",
         "ko": "<b>사용 방법</b>:\n\n"
               "1) <b>Menu → 검색</b>\n"
               "2) 큰 버튼 — 검색\n"
               "3) <b>수락</b> → 영상 통화\n\n"
               "대화 언어는 <b>채팅 설정</b>에서.\n"
+              "영화 제목: 공개 링크를 보내세요 (/help).\n"
               "도움말: /help",
         "ja": "<b>使い方</b>:\n\n"
               "1) <b>Menu → 検索</b>\n"
               "2) 大きなボタン — 検索\n"
               "3) <b>承諾</b> → ビデオ通話\n\n"
               "会話言語は<b>チャット設定</b>で。\n"
+              "映画タイトル: 公開リンクを送る (/help)。\n"
               "ヘルプ: /help",
         "zh": "<b>怎么用</b>:\n\n"
               "1) 点 <b>Menu → 搜索</b>\n"
               "2) 点大按钮 — 搜索\n"
               "3) <b>接受</b> → 视频通话\n\n"
               "交流语言在<b>聊天设置</b>里。\n"
+              "电影名：发送公开链接（详情 /help）。\n"
               "帮助: /help",
         "ar": "<b>كيف يعمل</b>:\n\n"
               "1) اضغط <b>Menu → بحث</b>\n"
               "2) الزر الكبير — بحث\n"
               "3) <b>قبول</b> → مكالمة فيديو\n\n"
               "لغة التواصل في <b>إعدادات التواصل</b>.\n"
+              "اسم الفيلم: أرسل رابطاً عاماً (/help).\n"
               "المساعدة: /help",
     },
     "need_register": {
@@ -378,6 +388,76 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ja": "そのリンクからタイトルを読めませんでした。\n\n公開ポスト/ページを送ってください（YouTube、TikTok、公開Instagram、IMDb）。\n\n<i>タイトルのみ — ダウンロードなし。</i>",
         "zh": "无法从该链接读取片名。\n\n请发送公开帖子/页面（YouTube、TikTok、公开 Instagram、IMDb）。\n\n<i>仅查片名 — 不下载。</i>",
         "ar": "تعذر قراءة الاسم من هذا الرابط.\n\nأرسل منشوراً/صفحة عامة (YouTube وTikTok وInstagram العام وIMDb).\n\n<i>البحث عن الاسم فقط — بلا تنزيل.</i>",
+    },
+    "link_guide": {
+        "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n"
+              "<b>Qanday:</b>\n"
+              "1) Film sahifasining silkasini nusxa oling\n"
+              "2) Shu bot chatiga <b>oddiy xabar</b> qilib yuboring\n"
+              "3) Bot «Silka tekshirilmoqda…» deb javob beradi\n"
+              "4) Topilsa: <b>🎬 Topilgan nom</b> chiqadi\n\n"
+              "<b>Yaxshi ishlaydi:</b> YouTube, IMDb, ochiq veb-sahifalar\n"
+              "<b>Ba’zan:</b> ochiq TikTok / ochiq Instagram post\n"
+              "<b>Ishlamaydi:</b> yopiq/login postlar, to‘g‘ridan-to‘g‘ri video fayl\n\n"
+              "<i>Faqat nom — film fayli yuborilmaydi.</i>",
+        "ru": "<b>🎬 Название фильма по ссылке</b>\n\n"
+              "<b>Как:</b>\n"
+              "1) Скопируйте ссылку на страницу фильма\n"
+              "2) Отправьте её <b>обычным сообщением</b> этому боту\n"
+              "3) Бот ответит «Проверяю ссылку…»\n"
+              "4) Если найдёт — покажет <b>название</b>\n\n"
+              "<b>Хорошо:</b> YouTube, IMDb, открытые страницы\n"
+              "<b>Иногда:</b> открытый TikTok / Instagram\n"
+              "<b>Не работает:</b> закрытые/login посты, прямой файл\n\n"
+              "<i>Только название — файл не отправляется.</i>",
+        "en": "<b>🎬 Find a movie title from a link</b>\n\n"
+              "<b>How:</b>\n"
+              "1) Copy the movie page link\n"
+              "2) Send it as a <b>normal message</b> to this bot\n"
+              "3) Bot replies “Checking the link…”\n"
+              "4) If found — you get the <b>title</b>\n\n"
+              "<b>Works well:</b> YouTube, IMDb, open web pages\n"
+              "<b>Sometimes:</b> public TikTok / Instagram\n"
+              "<b>Won’t work:</b> private/login posts, direct video files\n\n"
+              "<i>Title only — no file is sent.</i>",
+        "de": "<b>🎬 Filmtitel aus Link</b>\n\n"
+              "1) Link kopieren\n"
+              "2) Als normale Nachricht senden\n"
+              "3) Bot prüft den Link\n"
+              "4) Titel wird angezeigt\n\n"
+              "Gut: YouTube/IMDb. Manchmal: öffentliches TikTok/Instagram.\n"
+              "<i>Nur Titel — keine Datei.</i>",
+        "tg": "<b>🎬 Номи филм аз пайванд</b>\n\n"
+              "1) Пайвандро нусха кунед\n"
+              "2) Ба бот фиристед\n"
+              "3) Ном нишон дода мешавад\n\n"
+              "<i>Танҳо ном — файл не.</i>",
+        "tr": "<b>🎬 Linkten film adı</b>\n\n"
+              "1) Linki kopyalayın\n"
+              "2) Bota normal mesaj olarak gönderin\n"
+              "3) Bot adı bulursa gösterir\n\n"
+              "İyi: YouTube/IMDb. Bazen: açık TikTok/Instagram.\n"
+              "<i>Sadece ad — dosya yok.</i>",
+        "ko": "<b>🎬 링크로 영화 제목</b>\n\n"
+              "1) 링크 복사\n"
+              "2) 봇에 일반 메시지로 전송\n"
+              "3) 제목을 찾아 보여줍니다\n\n"
+              "<i>제목만 — 파일 없음.</i>",
+        "ja": "<b>🎬 リンクから映画タイトル</b>\n\n"
+              "1) リンクをコピー\n"
+              "2) ボットに普通のメッセージで送信\n"
+              "3) タイトルを表示\n\n"
+              "<i>タイトルのみ — ファイルなし。</i>",
+        "zh": "<b>🎬 用链接查电影名</b>\n\n"
+              "1) 复制页面链接\n"
+              "2) 作为普通消息发给机器人\n"
+              "3) 找到则显示片名\n\n"
+              "<i>仅片名 — 不发文件。</i>",
+        "ar": "<b>🎬 اسم الفيلم من الرابط</b>\n\n"
+              "1) انسخ الرابط\n"
+              "2) أرسله كرسالة عادية للبوت\n"
+              "3) يعرض الاسم إن وُجد\n\n"
+              "<i>الاسم فقط — بلا ملف.</i>",
     },
 }
 

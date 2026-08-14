@@ -267,6 +267,7 @@ async def cmd_help(message: Message, state: FSMContext):
         reply_markup=_clear_reply_kb() if user else None,
     )
     await message.answer(t(lang, "help_commands"))
+    await message.answer(t(lang, "link_guide"))
 
 
 @router.message(Command("search"))
