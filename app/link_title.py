@@ -635,6 +635,9 @@ def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -
                 proc = subprocess.run(
                     [
                         "ffmpeg",
+                        "-hide_banner",
+                        "-loglevel",
+                        "error",
                         "-y",
                         "-ss",
                         str(ss),
@@ -644,13 +647,15 @@ def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -
                         "1",
                         "-q:v",
                         "2",
+                        "-update",
+                        "1",
                         str(out),
                     ],
                     capture_output=True,
                     timeout=25,
                     check=False,
                 )
-                if proc.returncode == 0 and out.exists() and out.stat().st_size > 500:
+                if proc.returncode == 0 and out.exists() and out.stat().st_size > 200:
                     return out.read_bytes()
             except Exception:
                 continue
