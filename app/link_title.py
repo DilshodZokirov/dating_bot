@@ -578,6 +578,18 @@ async def identify_movie_from_image_bytes(
     if not image_bytes:
         return {"ok": False, "title": "", "source": "", "error": "no_image"}
     if not _gemini_api_key():
+        # Yandex ham urinib ko‘radi (kalitsiz)
+        try:
+            async with httpx.AsyncClient(
+                timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+            ) as client:
+                hit = await yandex_reverse_image_movie(
+                    client, image_bytes=image_bytes, mime=mime
+                )
+                if hit and hit.get("ok"):
+                    return hit
+        except Exception:
+            pass
         return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
 
     ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
@@ -598,10 +610,212 @@ async def identify_movie_from_image_bytes(
     return {"ok": False, "title": "", "source": "", "error": "not_identified"}
 
 
+def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -> bytes | None:
+    """
+    Videodan bitta JPEG kadr (faqat aniqlash uchun).
+    Video saqlanmaydi/tarqatilmaydi.
+    """
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    if not video_bytes or len(video_bytes) < 1000:
+        return None
+    # Telegram Bot API getFile limiti ~20MB
+    if len(video_bytes) > 20 * 1024 * 1024:
+        return None
+
+    with tempfile.TemporaryDirectory(prefix="soyla_vid_") as tmp:
+        inp = Path(tmp) / "in.bin"
+        out = Path(tmp) / "frame.jpg"
+        inp.write_bytes(video_bytes)
+        # Avval at_seconds, bo‘lmasa 0-soniya
+        for ss in (max(0.0, at_seconds), 0.0, 2.0, 0.5):
+            try:
+                proc = subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-hide_banner",
+                        "-loglevel",
+                        "error",
+                        "-y",
+                        "-ss",
+                        str(ss),
+                        "-i",
+                        str(inp),
+                        "-frames:v",
+                        "1",
+                        "-q:v",
+                        "2",
+                        "-update",
+                        "1",
+                        str(out),
+                    ],
+                    capture_output=True,
+                    timeout=25,
+                    check=False,
+                )
+                if proc.returncode == 0 and out.exists() and out.stat().st_size > 200:
+                    return out.read_bytes()
+            except Exception:
+                continue
+    return None
+
+
+async def identify_movie_from_video_bytes(video_bytes: bytes) -> dict:
+    """Yuborilgan video fayldan kadr olib film nomini aniqlash."""
+    if not video_bytes:
+        return {"ok": False, "title": "", "source": "", "error": "no_image"}
+    if len(video_bytes) > 20 * 1024 * 1024:
+        return {"ok": False, "title": "", "source": "", "error": "video_too_large"}
+
+    frame = extract_jpeg_frame_from_video(video_bytes, at_seconds=1.0)
+    if not frame:
+        return {"ok": False, "title": "", "source": "", "error": "no_frame"}
+
+    result = await identify_movie_from_image_bytes(frame, "image/jpeg")
+    if result.get("ok") and result.get("source"):
+        result["source"] = f"{result['source']} · video kadr"
+    return result
+
+
+def _ytdlp_cookies_file() -> str:
+    import os
+    from pathlib import Path
+
+    path = (os.environ.get("YTDLP_COOKIES_FILE") or "").strip()
+    if not path:
+        try:
+            from app.config import settings
+
+            path = (getattr(settings, "ytdlp_cookies_file", "") or "").strip()
+        except Exception:
+            path = ""
+    if path and Path(path).is_file():
+        return path
+    return ""
+
+
+def yt_dlp_fetch_for_identify(url: str) -> dict:
+    """
+    Silka orqali (faqat aniqlash uchun) thumbnail yoki qisqa video olish.
+    Video foydalanuvchiga yuborilmaydi / saqlanmaydi.
+    Qaytaradi: {thumbnail_url, video_bytes, error}
+    """
+    import tempfile
+    from pathlib import Path
+
+    out: dict = {"thumbnail_url": "", "video_bytes": b"", "error": ""}
+    try:
+        import yt_dlp
+    except Exception:
+        out["error"] = "yt_dlp_missing"
+        return out
+
+    cookies = _ytdlp_cookies_file()
+    with tempfile.TemporaryDirectory(prefix="soyla_ytdlp_") as tmp:
+        tmp_path = Path(tmp)
+        outtmpl = str(tmp_path / "media.%(ext)s")
+        opts = {
+            "outtmpl": outtmpl,
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            "noprogress": True,
+            "format": "best[height<=720]/best",
+            "max_filesize": 18 * 1024 * 1024,
+            "socket_timeout": 20,
+            "retries": 1,
+        }
+        if cookies:
+            opts["cookiefile"] = cookies
+
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+            if not info:
+                out["error"] = "no_info"
+                return out
+            thumb = (info.get("thumbnail") or "").strip()
+            if not thumb:
+                thumbs = info.get("thumbnails") or []
+                if thumbs:
+                    thumb = (thumbs[-1].get("url") or "").strip()
+            out["thumbnail_url"] = thumb
+
+            # Yuklangan fayl
+            req = info.get("requested_downloads") or []
+            filepath = ""
+            if req and req[0].get("filepath"):
+                filepath = req[0]["filepath"]
+            if not filepath:
+                # fallback: tmp dagi birinchi media
+                files = list(tmp_path.glob("media.*"))
+                if files:
+                    filepath = str(files[0])
+            if filepath and Path(filepath).is_file():
+                data = Path(filepath).read_bytes()
+                if 1000 < len(data) <= 20 * 1024 * 1024:
+                    out["video_bytes"] = data
+            if not out["video_bytes"] and not out["thumbnail_url"]:
+                out["error"] = "empty"
+            return out
+        except Exception as e:
+            out["error"] = type(e).__name__
+            return out
+
+
+async def _identify_from_social_download(url: str, host: str) -> dict | None:
+    """Silka orqali video/thumb yuklab aniqlash (best-effort)."""
+    import asyncio
+
+    fetched = await asyncio.to_thread(yt_dlp_fetch_for_identify, url)
+    video_bytes = fetched.get("video_bytes") or b""
+    thumb = fetched.get("thumbnail_url") or ""
+
+    if video_bytes:
+        result = await identify_movie_from_video_bytes(video_bytes)
+        if result.get("ok"):
+            result["host"] = host
+            src = result.get("source") or "Internet"
+            result["source"] = f"{src} · auto-download"
+            return result
+
+    if thumb:
+        try:
+            async with httpx.AsyncClient(
+                timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+            ) as client:
+                img_bytes, mime = await _download_image(client, thumb)
+            if img_bytes:
+                if _gemini_api_key():
+                    ghit = await gemini_identify_movie(
+                        image_url=thumb, image_bytes=img_bytes, mime=mime
+                    )
+                    if ghit and ghit.get("ok"):
+                        ghit["host"] = host
+                        ghit["source"] = f"{ghit.get('source')} · auto-thumb"
+                        return ghit
+                async with httpx.AsyncClient(
+                    timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+                ) as client:
+                    hit = await yandex_reverse_image_movie(
+                        client, image_url=thumb, image_bytes=img_bytes, mime=mime
+                    )
+                if hit and hit.get("ok"):
+                    hit["host"] = host
+                    hit["source"] = f"{hit.get('source')} · auto-thumb"
+                    return hit
+        except Exception:
+            pass
+    return None
+
+
 async def fetch_page_title(url: str) -> dict:
     """
     Asosiy API: {ok, title, source, host, error}
     Caption emas — preview kadr + internet/AI.
+    Social silkalarda kerak bo‘lsa yt-dlp orqali avtomatik yuklab (faqat aniqlash).
     """
     url = normalize_media_url(url)
     host = _host_hint(url)
@@ -653,23 +867,7 @@ async def fetch_page_title(url: str) -> dict:
                     hit["host"] = host
                     return hit
 
-                if not _gemini_api_key():
-                    return {
-                        "ok": False,
-                        "title": "",
-                        "source": "",
-                        "host": host,
-                        "error": "need_gemini",
-                    }
-                return {
-                    "ok": False,
-                    "title": "",
-                    "source": "",
-                    "host": host,
-                    "error": "not_identified",
-                }
-
-            if thumb:
+            elif thumb:
                 hit = await yandex_reverse_image_movie(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
@@ -693,13 +891,28 @@ async def fetch_page_title(url: str) -> dict:
                         "error": "",
                     }
 
+        # Social (yoki preview yo‘q): silka orqali avtomatik yuklab aniqlash
+        if social or not thumb:
+            auto = await _identify_from_social_download(url, host)
+            if auto and auto.get("ok"):
+                return auto
+
+        if social and not _gemini_api_key():
             return {
                 "ok": False,
                 "title": "",
                 "source": "",
                 "host": host,
-                "error": "no_image" if not thumb else "not_identified",
+                "error": "need_gemini",
             }
+
+        return {
+            "ok": False,
+            "title": "",
+            "source": "",
+            "host": host,
+            "error": "no_image" if not thumb else "not_identified",
+        }
     except Exception as e:
         return {
             "ok": False,

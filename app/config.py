@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Film aniqlash (ixtiyoriy): Google Gemini Vision
     gemini_api_key: str = ""
 
+    # Ixtiyoriy: Instagram cookies.txt (yt-dlp uchun)
+    ytdlp_cookies_file: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     def admin_id_set(self) -> set[int]:
