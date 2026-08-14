@@ -488,7 +488,13 @@ async def fallback_text(message: Message, state: FSMContext):
                 )
             )
         else:
-            await message.answer(t(lang, "link_not_found"))
+            err = result.get("error") or ""
+            if err == "need_gemini":
+                await message.answer(t(lang, "link_need_gemini"))
+            elif err in ("no_image", "no_url"):
+                await message.answer(t(lang, "link_need_preview"))
+            else:
+                await message.answer(t(lang, "link_not_found"))
         return
 
     await _set_user_menu(message, lang)
