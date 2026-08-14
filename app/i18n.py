@@ -378,9 +378,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "🎬 الفيلم المعرف:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>من الإنترنت — بلا ملف.</i>",
     },
     "link_not_found": {
-        "uz": "Bu silka bo‘yicha internetdan film nomini aniqlab bo‘lmadi.\n\nSabablar: yopiq Instagram/TikTok, preview rasm yo‘q, yoki kadr bazada topilmadi.\nOchilgan post yoki YouTube/IMDb silkasini qayta yuboring.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
-        "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
-        "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
+        "uz": "Bu silka bo‘yicha film topilmadi.\n\n<b>Qanday yuborish kerak:</b>\n1) Instagram/TikTok’da postni oching\n2) <b>Ulashish → Silkani nusxalash</b>\n3) Soyla botga <b>oddiy matn</b> qilib yuboring (bitta xabar)\n\n<b>To‘g‘ri misol:</b>\n<code>https://www.instagram.com/reel/XXXX/</code>\n<code>https://www.tiktok.com/@user/video/123</code>\n<code>https://youtu.be/XXXX</code>\n\n<b>Noto‘g‘ri:</b> faqat kod (1234), forward video, yopiq akkaunt.\nIG/TT uchun .env da <b>GEMINI_API_KEY</b> bo‘lishi kerak.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "ru": "Фильм по ссылке не найден.\n\n<b>Как отправить:</b>\n1) Откройте пост Instagram/TikTok\n2) <b>Поделиться → Копировать ссылку</b>\n3) Вставьте в бот <b>обычным текстом</b>\n\n<b>Пример:</b>\n<code>https://www.instagram.com/reel/XXXX/</code>\n\nНужен <b>GEMINI_API_KEY</b> в .env.\n\n<i>Только название.</i>",
+        "en": "Couldn’t identify the movie from that link.\n\n<b>How to send:</b>\n1) Open the Instagram/TikTok post\n2) <b>Share → Copy link</b>\n3) Paste it to the bot as <b>plain text</b>\n\n<b>Example:</b>\n<code>https://www.instagram.com/reel/XXXX/</code>\n\nInstagram/TikTok needs <b>GEMINI_API_KEY</b> in .env.\n\n<i>Title only.</i>",
         "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",
         "tg": "Аз интернет ном муайян нашуд.\n\nПости кушода ё YouTube/IMDb.\n\n<i>Танҳо ном.</i>",
         "tr": "İnternetten film adı belirlenemedi.\n\nAçık gönderi veya YouTube/IMDb deneyin.\n\n<i>Sadece ad.</i>",
@@ -414,7 +414,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "لا توجد معاينة. أرسل منشوراً عاماً.",
     },
     "link_guide": {
-        "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n"
+        "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n<b>Qanday yuborish:</b>\n1) Instagram’da Reel/post → <b>Ulashish → Silkani nusxalash</b>\n2) @soylaibot chatiga <b>shu silkani yolg‘iz</b> yuboring\n3) Bot kadrni internet/AI orqali tekshiradi\n4) Topilsa film nomi chiqadi\n\n<b>Misol:</b>\n<code>https://www.instagram.com/reel/AbCdEfGh/</code>\n\n<b>Ishlamaydi:</b> yopiq akkaunt, forward qilingan video (silkasiz), faqat raqam-kod.\nIG/TT uchun .env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — film fayli yuborilmaydi.</i>"
               "<b>Qanday:</b>\n"
               "1) Instagram/TikTok/YouTube silkasini botga yuboring\n"
               "2) Bot postdagi <b>kadr/preview</b> ni oladi\n"
