@@ -578,6 +578,18 @@ async def identify_movie_from_image_bytes(
     if not image_bytes:
         return {"ok": False, "title": "", "source": "", "error": "no_image"}
     if not _gemini_api_key():
+        # Yandex ham urinib ko‘radi (kalitsiz)
+        try:
+            async with httpx.AsyncClient(
+                timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+            ) as client:
+                hit = await yandex_reverse_image_movie(
+                    client, image_bytes=image_bytes, mime=mime
+                )
+                if hit and hit.get("ok"):
+                    return hit
+        except Exception:
+            pass
         return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
 
     ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
@@ -596,6 +608,70 @@ async def identify_movie_from_image_bytes(
     except Exception:
         pass
     return {"ok": False, "title": "", "source": "", "error": "not_identified"}
+
+
+def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -> bytes | None:
+    """
+    Videodan bitta JPEG kadr (faqat aniqlash uchun).
+    Video saqlanmaydi/tarqatilmaydi.
+    """
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    if not video_bytes or len(video_bytes) < 1000:
+        return None
+    # Telegram Bot API getFile limiti ~20MB
+    if len(video_bytes) > 20 * 1024 * 1024:
+        return None
+
+    with tempfile.TemporaryDirectory(prefix="soyla_vid_") as tmp:
+        inp = Path(tmp) / "in.bin"
+        out = Path(tmp) / "frame.jpg"
+        inp.write_bytes(video_bytes)
+        # Avval at_seconds, bo‘lmasa 0-soniya
+        for ss in (max(0.0, at_seconds), 0.0, 2.0, 0.5):
+            try:
+                proc = subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-y",
+                        "-ss",
+                        str(ss),
+                        "-i",
+                        str(inp),
+                        "-frames:v",
+                        "1",
+                        "-q:v",
+                        "2",
+                        str(out),
+                    ],
+                    capture_output=True,
+                    timeout=25,
+                    check=False,
+                )
+                if proc.returncode == 0 and out.exists() and out.stat().st_size > 500:
+                    return out.read_bytes()
+            except Exception:
+                continue
+    return None
+
+
+async def identify_movie_from_video_bytes(video_bytes: bytes) -> dict:
+    """Yuborilgan video fayldan kadr olib film nomini aniqlash."""
+    if not video_bytes:
+        return {"ok": False, "title": "", "source": "", "error": "no_image"}
+    if len(video_bytes) > 20 * 1024 * 1024:
+        return {"ok": False, "title": "", "source": "", "error": "video_too_large"}
+
+    frame = extract_jpeg_frame_from_video(video_bytes, at_seconds=1.0)
+    if not frame:
+        return {"ok": False, "title": "", "source": "", "error": "no_frame"}
+
+    result = await identify_movie_from_image_bytes(frame, "image/jpeg")
+    if result.get("ok") and result.get("source"):
+        result["source"] = f"{result['source']} · video kadr"
+    return result
 
 
 async def fetch_page_title(url: str) -> dict:
