@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Admin Telegram ID lar (vergul bilan): 123,456
     admin_ids: str = ""
 
+    # Film aniqlash (ixtiyoriy): Google Gemini Vision
+    gemini_api_key: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     def admin_id_set(self) -> set[int]:

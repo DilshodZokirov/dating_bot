@@ -342,9 +342,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "رد غير صحيح لهذه الخطوة. ابدأ من /start.",
     },
     "help_commands": {
-        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/start — boshiga\n/reset — profilni o‘chirish\n\nQidiruv: <b>Menu → Qidirish</b>\n\nFilm silkasini yuboring (YouTube, ochiq TikTok/Instagram, IMDb) — nomini topib beraman (fayl emas).",
-        "ru": "Команды:\n/help — как это работает\n/start — в начало\n/reset — удалить профиль\n\nПоиск: <b>Menu → Поиск</b>\n\nПришлите ссылку на фильм (YouTube, открытый TikTok/Instagram, IMDb) — скажу название (не файл).",
-        "en": "Commands:\n/help — how it works\n/start — restart\n/reset — delete profile\n\nSearch: <b>Menu → Search</b>\n\nSend a movie link (YouTube, public TikTok/Instagram, IMDb) — I’ll find the title (not the file).",
+        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/start — boshiga\n/reset — profilni o‘chirish\n\nQidiruv: <b>Menu → Qidirish</b>\n\nFilm silkasini yuboring — kadr bo‘yicha internetdan nomini topaman (caption emas, fayl emas).",
+        "ru": "Команды:\n/help — как это работает\n/start — в начало\n/reset — удалить профиль\n\nПоиск: <b>Menu → Поиск</b>\n\nПришлите ссылку на фильм — найду название в интернете по кадру (не подпись, не файл).",
+        "en": "Commands:\n/help — how it works\n/start — restart\n/reset — delete profile\n\nSearch: <b>Menu → Search</b>\n\nSend a movie link — I’ll identify the title from the internet by the frame (not caption, not the file).",
         "de": "Befehle:\n/help — so geht’s\n/start — neu\n/reset — Profil löschen\n\nSuche: <b>Menu → Suche</b>\n\nFilm-Link senden — ich nenne den Titel (keine Datei).",
         "tg": "Фармонҳо:\n/help — чӣ гуна\n/start — аз аввал\n/reset — профил\n\nҶустуҷӯ: <b>Menu → Ҷустуҷӯ</b>\n\nПайванди филм фиристед — номро мегӯям (файл не).",
         "tr": "Komutlar:\n/help — nasıl çalışır\n/start — başa dön\n/reset — profil sil\n\nArama: <b>Menu → Ara</b>\n\nFilm linki gönderin — adını bulurum (dosya değil).",
@@ -354,111 +354,95 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "الأوامر:\n/help — كيف يعمل\n/start — من البداية\n/reset — حذف الملف\n\nالبحث: <b>Menu → بحث</b>\n\nأرسل رابط فيلم — سأجد الاسم (وليس الملف).",
     },
     "link_looking": {
-        "uz": "Silka tekshirilmoqda…",
-        "ru": "Проверяю ссылку…",
-        "en": "Checking the link…",
-        "de": "Link wird geprüft…",
-        "tg": "Пайванд санҷида мешавад…",
-        "tr": "Bağlantı kontrol ediliyor…",
-        "ko": "링크 확인 중…",
-        "ja": "リンクを確認中…",
-        "zh": "正在检查链接…",
-        "ar": "جاري فحص الرابط…",
+        "uz": "Silka kadri internetdan qidirilmoqda…",
+        "ru": "Ищу фильм по кадру в интернете…",
+        "en": "Searching the internet by the video frame…",
+        "de": "Suche im Internet anhand des Videobilds…",
+        "tg": "Интернет аз рӯи кадр ҷустуҷӯ…",
+        "tr": "Kareye göre internette aranıyor…",
+        "ko": "영상 프레임으로 인터넷 검색 중…",
+        "ja": "映像フレームでインターネット検索中…",
+        "zh": "正在按画面在互联网搜索…",
+        "ar": "جاري البحث في الإنترنت حسب الإطار…",
     },
     "link_found": {
-        "uz": "🎬 Topilgan nom:\n<b>{title}</b>\n\nManba: {source}\n\n<i>Faqat nom — film fayli yuborilmaydi.</i>",
-        "ru": "🎬 Найденное название:\n<b>{title}</b>\n\nИсточник: {source}\n\n<i>Только название — файл не отправляется.</i>",
-        "en": "🎬 Found title:\n<b>{title}</b>\n\nSource: {source}\n\n<i>Title only — no file is sent.</i>",
-        "de": "🎬 Gefundener Titel:\n<b>{title}</b>\n\nQuelle: {source}\n\n<i>Nur Titel — keine Datei.</i>",
-        "tg": "🎬 Номи ёфтшуда:\n<b>{title}</b>\n\nМанба: {source}\n\n<i>Танҳо ном — файл фиристода намешавад.</i>",
-        "tr": "🎬 Bulunan ad:\n<b>{title}</b>\n\nKaynak: {source}\n\n<i>Sadece ad — dosya gönderilmez.</i>",
-        "ko": "🎬 찾은 제목:\n<b>{title}</b>\n\n출처: {source}\n\n<i>제목만 — 파일은 보내지 않습니다.</i>",
-        "ja": "🎬 見つかったタイトル:\n<b>{title}</b>\n\n出典: {source}\n\n<i>タイトルのみ — ファイルは送りません。</i>",
-        "zh": "🎬 找到的片名：\n<b>{title}</b>\n\n来源：{source}\n\n<i>仅片名 — 不发送文件。</i>",
-        "ar": "🎬 الاسم الموجود:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>الاسم فقط — لا يُرسل الملف.</i>",
+        "uz": "🎬 Topilgan film:\n<b>{title}</b>\n\nManba: {source}\n\n<i>Internetdan aniqlangan nom — film fayli yuborilmaydi.</i>",
+        "ru": "🎬 Найденный фильм:\n<b>{title}</b>\n\nИсточник: {source}\n\n<i>Название из интернета — файл не отправляется.</i>",
+        "en": "🎬 Identified movie:\n<b>{title}</b>\n\nSource: {source}\n\n<i>Title from internet lookup — no file is sent.</i>",
+        "de": "🎬 Gefundener Film:\n<b>{title}</b>\n\nQuelle: {source}\n\n<i>Titel aus Internetsuche — keine Datei.</i>",
+        "tg": "🎬 Филми ёфтшуда:\n<b>{title}</b>\n\nМанба: {source}\n\n<i>Аз интернет — файл не.</i>",
+        "tr": "🎬 Bulunan film:\n<b>{title}</b>\n\nKaynak: {source}\n\n<i>İnternetten — dosya yok.</i>",
+        "ko": "🎬 찾은 영화:\n<b>{title}</b>\n\n출처: {source}\n\n<i>인터넷 조회 — 파일 없음.</i>",
+        "ja": "🎬 特定した映画:\n<b>{title}</b>\n\n出典: {source}\n\n<i>インターネット特定 — ファイルなし。</i>",
+        "zh": "🎬 识别到的电影：\n<b>{title}</b>\n\n来源：{source}\n\n<i>来自互联网识别 — 不发送文件。</i>",
+        "ar": "🎬 الفيلم المعرف:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>من الإنترنت — بلا ملف.</i>",
     },
     "link_not_found": {
-        "uz": "Bu silka orqali <b>film nomini</b> ajratib bo‘lmadi.\n\nInstagram/TikTokda ko‘pincha post tavsifi chiqadi — bu film nomi emas. Captionda aniq nom bo‘lsin, masalan:\n<code>Inception (2010)</code>\nyoki YouTube/IMDb silkasini yuboring.\n\n<i>Faqat nom qidiriladi — film yuklanmaydi.</i>",
-        "ru": "Не удалось выделить <b>название фильма</b> по ссылке.\n\nВ Instagram/TikTok часто приходит описание поста — это не название. Нужен явный заголовок, например:\n<code>Inception (2010)</code>\nили ссылка YouTube/IMDb.\n\n<i>Ищем только название — фильм не скачивается.</i>",
-        "en": "Couldn’t extract a <b>movie title</b> from that link.\n\nInstagram/TikTok often only expose a caption — not a film name. Use a clear title like:\n<code>Inception (2010)</code>\nor send a YouTube/IMDb link.\n\n<i>Title lookup only — no download.</i>",
-        "de": "Filmtitel aus dem Link nicht lesbar.\n\nInstagram/TikTok liefert oft nur Caption. Klarer Titel oder YouTube/IMDb.\n\n<i>Nur Titelsuche — kein Download.</i>",
-        "tg": "Номи филм ҷудо нашуд.\n\nInstagram/TikTok аксар вақт тавсиф медиҳад. Номи равшан ё YouTube/IMDb.\n\n<i>Танҳо ном — боргирӣ не.</i>",
-        "tr": "Film adı çıkarılamadı.\n\nInstagram/TikTok çoğu zaman açıklama verir. Açık ad veya YouTube/IMDb.\n\n<i>Sadece ad — indirme yok.</i>",
-        "ko": "영화 제목을 추출하지 못했습니다.\n\nInstagram/TikTok은 설명만 주는 경우가 많습니다. 명확한 제목 또는 YouTube/IMDb.\n\n<i>제목만 — 다운로드 없음.</i>",
-        "ja": "映画タイトルを抽出できませんでした。\n\nInstagram/TikTokはキャプションだけのことが多いです。明確なタイトルか YouTube/IMDb。\n\n<i>タイトルのみ — ダウンロードなし。</i>",
-        "zh": "无法从该链接提取片名。\n\nInstagram/TikTok 常只有说明文字。请用明确片名或 YouTube/IMDb。\n\n<i>仅查片名 — 不下载。</i>",
-        "ar": "تعذر استخراج <b>اسم الفيلم</b> من الرابط.\n\nInstagram/TikTok غالباً يعطي وصفاً وليس اسماً. استخدم اسماً واضحاً أو رابط YouTube/IMDb.\n\n<i>البحث عن الاسم فقط — بلا تنزيل.</i>",
+        "uz": "Bu silka bo‘yicha internetdan film nomini aniqlab bo‘lmadi.\n\nSabablar: yopiq Instagram/TikTok, preview rasm yo‘q, yoki kadr bazada topilmadi.\nOchilgan post yoki YouTube/IMDb silkasini qayta yuboring.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
+        "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
+        "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",
+        "tg": "Аз интернет ном муайян нашуд.\n\nПости кушода ё YouTube/IMDb.\n\n<i>Танҳо ном.</i>",
+        "tr": "İnternetten film adı belirlenemedi.\n\nAçık gönderi veya YouTube/IMDb deneyin.\n\n<i>Sadece ad.</i>",
+        "ko": "인터넷에서 영화 제목을 찾지 못했습니다.\n\n공개 게시물 또는 YouTube/IMDb를 시도하세요.\n\n<i>제목만.</i>",
+        "ja": "インターネットで映画を特定できませんでした。\n\n公開ポストか YouTube/IMDb を試してください。\n\n<i>タイトルのみ。</i>",
+        "zh": "无法从互联网识别该链接的电影名。\n\n请尝试公开帖子或 YouTube/IMDb。\n\n<i>仅片名。</i>",
+        "ar": "تعذر التعرف على اسم الفيلم عبر الإنترنت.\n\nجرّب منشوراً عاماً أو YouTube/IMDb.\n\n<i>الاسم فقط.</i>",
     },
     "link_guide": {
         "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n"
               "<b>Qanday:</b>\n"
-              "1) Film sahifasining silkasini nusxa oling\n"
-              "2) Shu bot chatiga <b>oddiy xabar</b> qilib yuboring\n"
-              "3) Bot «Silka tekshirilmoqda…» deb javob beradi\n"
-              "4) Topilsa: <b>🎬 Topilgan nom</b> chiqadi\n\n"
-              "<b>Yaxshi ishlaydi:</b> YouTube, IMDb, ochiq veb-sahifalar\n"
-              "<b>Ba’zan:</b> ochiq TikTok / ochiq Instagram post\n"
-              "<b>Ishlamaydi:</b> yopiq/login postlar, to‘g‘ridan-to‘g‘ri video fayl\n\n"
+              "1) Instagram/TikTok/YouTube silkasini botga yuboring\n"
+              "2) Bot postdagi <b>kadr/preview</b> ni oladi\n"
+              "3) Shu rasm bo‘yicha <b>internetdan</b> filmni qidiradi\n"
+              "4) Topilsa haqiqiy nom chiqadi\n\n"
+              "<b>Muhim:</b> post caption/tavsifi o‘qilmaydi — internet qidiruv.\n"
+              "Yopiq postlar yoki rasm chiqmasa ishlamasligi mumkin.\n\n"
               "<i>Faqat nom — film fayli yuborilmaydi.</i>",
         "ru": "<b>🎬 Название фильма по ссылке</b>\n\n"
-              "<b>Как:</b>\n"
-              "1) Скопируйте ссылку на страницу фильма\n"
-              "2) Отправьте её <b>обычным сообщением</b> этому боту\n"
-              "3) Бот ответит «Проверяю ссылку…»\n"
-              "4) Если найдёт — покажет <b>название</b>\n\n"
-              "<b>Хорошо:</b> YouTube, IMDb, открытые страницы\n"
-              "<b>Иногда:</b> открытый TikTok / Instagram\n"
-              "<b>Не работает:</b> закрытые/login посты, прямой файл\n\n"
+              "1) Пришлите ссылку Instagram/TikTok/YouTube\n"
+              "2) Бот берёт <b>кадр/превью</b>\n"
+              "3) Ищет фильм <b>в интернете</b> по изображению\n"
+              "4) Показывает настоящее название\n\n"
+              "<b>Важно:</b> подпись поста не используется.\n\n"
               "<i>Только название — файл не отправляется.</i>",
         "en": "<b>🎬 Find a movie title from a link</b>\n\n"
-              "<b>How:</b>\n"
-              "1) Copy the movie page link\n"
-              "2) Send it as a <b>normal message</b> to this bot\n"
-              "3) Bot replies “Checking the link…”\n"
-              "4) If found — you get the <b>title</b>\n\n"
-              "<b>Works well:</b> YouTube, IMDb, open web pages\n"
-              "<b>Sometimes:</b> public TikTok / Instagram\n"
-              "<b>Won’t work:</b> private/login posts, direct video files\n\n"
+              "1) Send an Instagram/TikTok/YouTube link\n"
+              "2) Bot takes the <b>preview frame</b>\n"
+              "3) Searches the <b>internet</b> by that image\n"
+              "4) Returns the real movie title\n\n"
+              "<b>Important:</b> post captions are not used as the answer.\n\n"
               "<i>Title only — no file is sent.</i>",
         "de": "<b>🎬 Filmtitel aus Link</b>\n\n"
-              "1) Link kopieren\n"
-              "2) Als normale Nachricht senden\n"
-              "3) Bot prüft den Link\n"
-              "4) Titel wird angezeigt\n\n"
-              "Gut: YouTube/IMDb. Manchmal: öffentliches TikTok/Instagram.\n"
+              "Vorschau-Bild → Internetsuche → Filmtitel.\n"
+              "Caption wird nicht als Antwort genutzt.\n\n"
               "<i>Nur Titel — keine Datei.</i>",
         "tg": "<b>🎬 Номи филм аз пайванд</b>\n\n"
-              "1) Пайвандро нусха кунед\n"
-              "2) Ба бот фиристед\n"
-              "3) Ном нишон дода мешавад\n\n"
-              "<i>Танҳо ном — файл не.</i>",
+              "Кадр → ҷустуҷӯи интернет → номи филм.\n"
+              "Тавсифи пост ҷавоб нест.\n\n"
+              "<i>Танҳо ном.</i>",
         "tr": "<b>🎬 Linkten film adı</b>\n\n"
-              "1) Linki kopyalayın\n"
-              "2) Bota normal mesaj olarak gönderin\n"
-              "3) Bot adı bulursa gösterir\n\n"
-              "İyi: YouTube/IMDb. Bazen: açık TikTok/Instagram.\n"
-              "<i>Sadece ad — dosya yok.</i>",
+              "Önizleme karesi → internet araması → film adı.\n"
+              "Caption cevap olarak kullanılmaz.\n\n"
+              "<i>Sadece ad.</i>",
         "ko": "<b>🎬 링크로 영화 제목</b>\n\n"
-              "1) 링크 복사\n"
-              "2) 봇에 일반 메시지로 전송\n"
-              "3) 제목을 찾아 보여줍니다\n\n"
-              "<i>제목만 — 파일 없음.</i>",
+              "미리보기 프레임 → 인터넷 검색 → 영화 제목.\n"
+              "캡션은 답으로 쓰지 않습니다.\n\n"
+              "<i>제목만.</i>",
         "ja": "<b>🎬 リンクから映画タイトル</b>\n\n"
-              "1) リンクをコピー\n"
-              "2) ボットに普通のメッセージで送信\n"
-              "3) タイトルを表示\n\n"
-              "<i>タイトルのみ — ファイルなし。</i>",
+              "プレビュー画像 → ネット検索 → 映画タイトル。\n"
+              "キャプションは答えに使いません。\n\n"
+              "<i>タイトルのみ。</i>",
         "zh": "<b>🎬 用链接查电影名</b>\n\n"
-              "1) 复制页面链接\n"
-              "2) 作为普通消息发给机器人\n"
-              "3) 找到则显示片名\n\n"
-              "<i>仅片名 — 不发文件。</i>",
+              "预览画面 → 互联网搜索 → 电影名。\n"
+              "不使用帖子说明作为答案。\n\n"
+              "<i>仅片名。</i>",
         "ar": "<b>🎬 اسم الفيلم من الرابط</b>\n\n"
-              "1) انسخ الرابط\n"
-              "2) أرسله كرسالة عادية للبوت\n"
-              "3) يعرض الاسم إن وُجد\n\n"
-              "<i>الاسم فقط — بلا ملف.</i>",
+              "إطار المعاينة → بحث إنترنت → اسم الفيلم.\n"
+              "لا نستخدم وصف المنشور كإجابة.\n\n"
+              "<i>الاسم فقط.</i>",
     },
+
 }
 
 

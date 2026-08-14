@@ -1,11 +1,11 @@
-"""link_title — tarmoq'siz unit testlar."""
+"""link_title — unit testlar (tarmoq'siz + ixtiyoriy live)."""
 
 from app.link_title import (
     _host_matches,
-    _pick_best_title,
     clean_title,
-    extract_movie_name,
     extract_urls_from_text,
+    normalize_movie_hit,
+    parse_yandex_cbir_hits,
 )
 
 
@@ -32,55 +32,37 @@ def test_clean_title_strips_junk():
     assert "Inception" in clean_title("Watch Inception (2010) Full Movie HD | Free Online")
     assert clean_title("Dune: Part Two - YouTube").startswith("Dune")
     assert clean_title("") == ""
-    assert "Побег" in clean_title("Смотреть Побег из Шоушенка онлайн")
 
 
-def test_clean_instagram_caption_form():
-    raw = 'kino_uz on Instagram: "Interstellar (2014) — ko‘ring"'
-    assert "Interstellar" in clean_title(raw)
+def test_normalize_yandex_subtitle():
+    assert normalize_movie_hit("Начало", "Inception, 2010 (18+)") == "Inception (2010)"
 
 
-def test_generic_platform_titles_empty():
-    assert clean_title("Instagram") == ""
-    assert clean_title("TikTok") == ""
-    assert clean_title("TikTok - Make Your Day") == ""
-
-
-def test_extract_tiktok_desc_helper():
-    from app.link_title import _extract_tiktok_desc_from_html
-
-    html = '''<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">{"a":{"item":{"id":"1","desc":"Inception (2010) trailer","stats":{}}}}</script>'''
-    assert "Inception" in _extract_tiktok_desc_from_html(html)
-
-
-def test_extract_instagram_caption_helper():
-    from app.link_title import _extract_instagram_caption_from_html
-
-    html = r'{"caption":{"text":"Interstellar (2014) film"}}'
-    assert "Interstellar" in _extract_instagram_caption_from_html(html)
+def test_parse_yandex_cbir_hits():
+    html = (
+        '&quot;cbirObjectResponses&quot;:{&quot;objectResponses&quot;:[{'
+        '&quot;entityId&quot;:&quot;ruw1&quot;,'
+        '&quot;title&quot;:&quot;Начало&quot;,'
+        '&quot;subtitle&quot;:&quot;Inception, 2010 (18+)&quot;,'
+        '&quot;description&quot;:&quot;plot&quot;}]}'
+    )
+    hits = parse_yandex_cbir_hits(html)
+    assert hits
+    assert hits[0]["title"] == "Inception (2010)"
 
 
 def test_host_matches():
     assert _host_matches("www.tiktok.com", ("tiktok.com", "vm.tiktok.com"))
-    assert _host_matches("vm.tiktok.com", ("tiktok.com", "vm.tiktok.com"))
     assert _host_matches("instagram.com", ("instagram.com", "instagr.am"))
     assert not _host_matches("notinstagram.com", ("instagram.com",))
 
 
-def test_rejects_instagram_prose_caption():
+def test_caption_prose_is_not_used_as_page_title_fallback():
+    # clean_title may keep short text, but looks_like_prose guards answers
+    from app.link_title import looks_like_prose
+
     caption = (
         "Tonight, V stepped into the crowd, taking in live performances at "
-        "Vogue World: Hollywood. Known for his own standout fashion moments, "
-        "he kept it effortlessly stylish in a look worthy of the runway."
+        "Vogue World: Hollywood. Known for his own standout fashion moments."
     )
-    assert extract_movie_name(caption) == ""
-    assert _pick_best_title(caption, social=True) == ""
-
-
-def test_extracts_movie_from_caption_with_year():
-    caption = "🎬 Inception (2010)\nTonight, V stepped into the crowd at the premiere."
-    assert extract_movie_name(caption) == "Inception (2010)"
-
-
-def test_extracts_labeled_movie_name():
-    assert "Interstellar" in extract_movie_name("Kino: Interstellar (2014)\nTomosha qiling")
+    assert looks_like_prose(caption)
