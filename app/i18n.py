@@ -332,9 +332,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "رد غير صحيح لهذه الخطوة. ابدأ من /start.",
     },
     "help_commands": {
-        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/start — boshiga\n/reset — profilni o‘chirish\n\nQidiruv: <b>Menu → Qidirish</b>\n\nFilm silkasini yuboring — nomini topib beraman (fayl emas).",
-        "ru": "Команды:\n/help — как это работает\n/start — в начало\n/reset — удалить профиль\n\nПоиск: <b>Menu → Поиск</b>\n\nПришлите ссылку на фильм — скажу название (не файл).",
-        "en": "Commands:\n/help — how it works\n/start — restart\n/reset — delete profile\n\nSearch: <b>Menu → Search</b>\n\nSend a movie link — I’ll find the title (not the file).",
+        "uz": "Buyruqlar:\n/help — qanday ishlaydi\n/start — boshiga\n/reset — profilni o‘chirish\n\nQidiruv: <b>Menu → Qidirish</b>\n\nFilm silkasini yuboring (YouTube, ochiq TikTok/Instagram, IMDb) — nomini topib beraman (fayl emas).",
+        "ru": "Команды:\n/help — как это работает\n/start — в начало\n/reset — удалить профиль\n\nПоиск: <b>Menu → Поиск</b>\n\nПришлите ссылку на фильм (YouTube, открытый TikTok/Instagram, IMDb) — скажу название (не файл).",
+        "en": "Commands:\n/help — how it works\n/start — restart\n/reset — delete profile\n\nSearch: <b>Menu → Search</b>\n\nSend a movie link (YouTube, public TikTok/Instagram, IMDb) — I’ll find the title (not the file).",
         "de": "Befehle:\n/help — so geht’s\n/start — neu\n/reset — Profil löschen\n\nSuche: <b>Menu → Suche</b>\n\nFilm-Link senden — ich nenne den Titel (keine Datei).",
         "tg": "Фармонҳо:\n/help — чӣ гуна\n/start — аз аввал\n/reset — профил\n\nҶустуҷӯ: <b>Menu → Ҷустуҷӯ</b>\n\nПайванди филм фиристед — номро мегӯям (файл не).",
         "tr": "Komutlar:\n/help — nasıl çalışır\n/start — başa dön\n/reset — profil sil\n\nArama: <b>Menu → Ara</b>\n\nFilm linki gönderin — adını bulurum (dosya değil).",
