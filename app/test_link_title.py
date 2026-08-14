@@ -73,3 +73,33 @@ def test_normalize_instagram_tracking_params():
 
     dirty = "https://www.instagram.com/reel/DbYLVjjsF2U/?igsh=MXhtN2Q4dWE4b2tj"
     assert normalize_media_url(dirty) == "https://www.instagram.com/reel/DbYLVjjsF2U/"
+
+
+def test_extract_jpeg_frame_from_video():
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    from app.link_title import extract_jpeg_frame_from_video
+
+    with tempfile.TemporaryDirectory() as tmp:
+        vid = Path(tmp) / "t.mp4"
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=red:s=160x120:d=1",
+                "-c:v",
+                "libx264",
+                "-t",
+                "1",
+                str(vid),
+            ],
+            capture_output=True,
+            check=True,
+        )
+        frame = extract_jpeg_frame_from_video(vid.read_bytes(), 0.2)
+        assert frame and frame[:2] == b"\xff\xd8"

@@ -18,6 +18,7 @@ from app.i18n import t
 from app.link_title import (
     extract_urls_from_message,
     identify_movie_from_image_bytes,
+    identify_movie_from_video_bytes,
     resolve_movie_title_from_message,
 )
 from app.matching.age_brackets import default_prefer_ages
@@ -489,6 +490,91 @@ async def identify_movie_photo(message: Message, state: FSMContext):
     await _reply_movie_result(message, lang, result)
 
 
+@router.message(F.video)
+async def identify_movie_video(message: Message, state: FSMContext):
+    """Foydalanuvchi videoni o‘zi yuborsa — kadr olib nomini aniqlaymiz (fayl saqlanmaydi)."""
+    current = await state.get_state()
+    if current:
+        return
+    lang = "uz"
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    if user:
+        lang = _ui_lang(user)
+
+    video = message.video
+    if not video:
+        return
+    # Telegram Bot API getFile ~20MB
+    if (video.file_size or 0) > 20 * 1024 * 1024:
+        await message.answer(t(lang, "link_video_too_large"))
+        return
+
+    wait = await message.answer(t(lang, "link_looking"))
+    try:
+        file = await message.bot.get_file(video.file_id)
+        buf = await message.bot.download_file(file.file_path)
+        raw = buf.read() if hasattr(buf, "read") else bytes(buf)
+        result = await identify_movie_from_video_bytes(raw)
+    except Exception as e:
+        print(f"video identify error: {e}", flush=True)
+        result = {"ok": False, "error": "not_identified"}
+    try:
+        await wait.delete()
+    except Exception:
+        pass
+    await _reply_movie_result(message, lang, result)
+
+
+@router.message(F.document)
+async def identify_movie_document(message: Message, state: FSMContext):
+    """Video/rasm document sifatida yuborilsa."""
+    current = await state.get_state()
+    if current:
+        return
+    doc = message.document
+    if not doc:
+        return
+    mime = (doc.mime_type or "").lower()
+    name = (doc.file_name or "").lower()
+    is_video = mime.startswith("video/") or name.endswith(
+        (".mp4", ".mov", ".mkv", ".webm", ".avi")
+    )
+    is_image = mime.startswith("image/") or name.endswith(
+        (".jpg", ".jpeg", ".png", ".webp")
+    )
+    if not is_video and not is_image:
+        return
+
+    lang = "uz"
+    async with async_session() as session:
+        user = await session.get(User, message.from_user.id)
+    if user:
+        lang = _ui_lang(user)
+
+    if (doc.file_size or 0) > 20 * 1024 * 1024:
+        await message.answer(t(lang, "link_video_too_large"))
+        return
+
+    wait = await message.answer(t(lang, "link_looking"))
+    try:
+        file = await message.bot.get_file(doc.file_id)
+        buf = await message.bot.download_file(file.file_path)
+        raw = buf.read() if hasattr(buf, "read") else bytes(buf)
+        if is_video:
+            result = await identify_movie_from_video_bytes(raw)
+        else:
+            result = await identify_movie_from_image_bytes(raw, mime or "image/jpeg")
+    except Exception as e:
+        print(f"document identify error: {e}", flush=True)
+        result = {"ok": False, "error": "not_identified"}
+    try:
+        await wait.delete()
+    except Exception:
+        pass
+    await _reply_movie_result(message, lang, result)
+
+
 @router.message(F.text)
 async def fallback_text(message: Message, state: FSMContext):
     """Hech qaysi handler mos kelmasa — yo'l ko'rsatamiz yoki silka nomini qidiramiz."""
@@ -532,7 +618,9 @@ async def _reply_movie_result(message: Message, lang: str, result: dict) -> None
     err = result.get("error") or ""
     if err == "need_gemini":
         await message.answer(t(lang, "link_need_gemini"))
-    elif err in ("no_image", "no_url"):
+    elif err in ("no_image", "no_url", "no_frame"):
         await message.answer(t(lang, "link_need_preview"))
+    elif err == "video_too_large":
+        await message.answer(t(lang, "link_video_too_large"))
     else:
         await message.answer(t(lang, "link_not_found"))
