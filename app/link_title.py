@@ -400,19 +400,75 @@ async def _page_preview(client: httpx.AsyncClient, url: str, host: str) -> dict:
     }
 
 
-async def yandex_reverse_image_movie(client: httpx.AsyncClient, image_url: str) -> dict | None:
-    """Rasm URL bo‘yicha Yandex Images CBIR — film nomi."""
+async def _download_image(
+    client: httpx.AsyncClient, image_url: str
+) -> tuple[bytes | None, str]:
+    """Preview rasmni o‘zimiz yuklab olamiz (Yandex IG CDN ni ocholmasligi mumkin)."""
     try:
-        resp = await client.get(
-            "https://yandex.com/images/search",
-            params={"rpt": "imageview", "url": image_url},
-        )
-        if resp.status_code != 200:
+        resp = await client.get(image_url)
+        if resp.status_code >= 400 or not resp.content:
+            return None, ""
+        ctype = (resp.headers.get("content-type") or "image/jpeg").split(";")[0].strip()
+        if not ctype.startswith("image/"):
+            if ctype not in ("application/octet-stream", ""):
+                return None, ""
+            ctype = "image/jpeg"
+        data = resp.content[:2_500_000]
+        if len(data) < 500:
+            return None, ""
+        return data, ctype or "image/jpeg"
+    except Exception:
+        return None, ""
+
+
+def _gemini_api_key() -> str:
+    import os
+
+    api_key = (os.environ.get("GEMINI_API_KEY") or "").strip()
+    if api_key:
+        return api_key
+    try:
+        from app.config import settings
+
+        return (getattr(settings, "gemini_api_key", "") or "").strip()
+    except Exception:
+        return ""
+
+
+async def yandex_reverse_image_movie(
+    client: httpx.AsyncClient,
+    *,
+    image_url: str = "",
+    image_bytes: bytes | None = None,
+    mime: str = "image/jpeg",
+) -> dict | None:
+    """
+    Yandex Images CBIR.
+    Avval fayl upload (Instagram CDN uchun), keyin URL usuli.
+    """
+    try:
+        html = ""
+        if image_bytes:
+            files = {"upfile": ("frame.jpg", image_bytes, mime or "image/jpeg")}
+            resp = await client.post(
+                "https://yandex.com/images/search",
+                params={"rpt": "imageview"},
+                files=files,
+            )
+            if resp.status_code == 200:
+                html = resp.text
+        if (not html or not parse_yandex_cbir_hits(html)) and image_url:
+            resp = await client.get(
+                "https://yandex.com/images/search",
+                params={"rpt": "imageview", "url": image_url},
+            )
+            if resp.status_code == 200:
+                html = resp.text
+        if not html:
             return None
-        hits = parse_yandex_cbir_hits(resp.text)
+        hits = parse_yandex_cbir_hits(html)
         if not hits:
             return None
-        # Yil bor bo‘lgan hitni afzal ko‘ramiz
         best = next((h for h in hits if YEAR_IN_TEXT_RE.search(h["title"])), hits[0])
         return {
             "ok": True,
@@ -424,44 +480,44 @@ async def yandex_reverse_image_movie(client: httpx.AsyncClient, image_url: str) 
         return None
 
 
-async def gemini_identify_movie(image_url: str) -> dict | None:
-    """Ixtiyoriy: GEMINI_API_KEY bo‘lsa vision bilan aniqlash."""
-    import os
+async def gemini_identify_movie(
+    *,
+    image_url: str = "",
+    image_bytes: bytes | None = None,
+    mime: str = "image/jpeg",
+) -> dict | None:
+    """GEMINI_API_KEY bo‘lsa — kadrni AI bilan tanish (Instagram/TikTok uchun asosiy)."""
+    import base64
 
-    api_key = (os.environ.get("GEMINI_API_KEY") or "").strip()
-    if not api_key:
-        try:
-            from app.config import settings
-
-            api_key = (getattr(settings, "gemini_api_key", "") or "").strip()
-        except Exception:
-            api_key = ""
+    api_key = _gemini_api_key()
     if not api_key:
         return None
+
     endpoint = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"gemini-2.0-flash:generateContent?key={api_key}"
     )
     prompt = (
-        "Identify the movie or TV show in this image/frame. "
+        "Identify the movie or TV show shown in this image/video frame. "
+        "Ignore fashion captions, watermarks, and UI chrome. "
         "Reply with ONLY the official title and year like: Inception (2010). "
-        "If unknown, reply exactly: UNKNOWN"
+        "If you cannot identify it, reply exactly: UNKNOWN"
     )
     try:
-        async with httpx.AsyncClient(timeout=20, headers=_http_headers()) as client:
-            img = await client.get(image_url)
-            if img.status_code != 200 or not img.content:
+        async with httpx.AsyncClient(timeout=25, headers=_http_headers()) as client:
+            data = image_bytes
+            ctype = mime or "image/jpeg"
+            if data is None and image_url:
+                data, ctype = await _download_image(client, image_url)
+            if not data:
                 return None
-            import base64
-
-            b64 = base64.b64encode(img.content[:2_000_000]).decode("ascii")
-            mime = (img.headers.get("content-type") or "image/jpeg").split(";")[0]
+            b64 = base64.b64encode(data[:2_000_000]).decode("ascii")
             payload = {
                 "contents": [
                     {
                         "parts": [
                             {"text": prompt},
-                            {"inline_data": {"mime_type": mime, "data": b64}},
+                            {"inline_data": {"mime_type": ctype, "data": b64}},
                         ]
                     }
                 ]
@@ -469,9 +525,9 @@ async def gemini_identify_movie(image_url: str) -> dict | None:
             resp = await client.post(endpoint, json=payload)
             if resp.status_code != 200:
                 return None
-            data = resp.json()
+            body = resp.json()
             text = (
-                data.get("candidates", [{}])[0]
+                body.get("candidates", [{}])[0]
                 .get("content", {})
                 .get("parts", [{}])[0]
                 .get("text", "")
@@ -480,9 +536,7 @@ async def gemini_identify_movie(image_url: str) -> dict | None:
             if not text or text.upper().startswith("UNKNOWN"):
                 return None
             line = text.splitlines()[0].strip().strip("`\"'")
-            movie = normalize_movie_hit(line, line)
-            if not movie:
-                movie = clean_title(line)
+            movie = normalize_movie_hit(line, line) or clean_title(line)
             if movie and not looks_like_prose(movie):
                 return {
                     "ok": True,
@@ -497,8 +551,8 @@ async def gemini_identify_movie(image_url: str) -> dict | None:
 
 async def fetch_page_title(url: str) -> dict:
     """
-    Asosiy API: {ok, title, source, host, error, url?}
-    Caption emas — internet reverse-image / vision.
+    Asosiy API: {ok, title, source, host, error}
+    Caption emas — preview kadr + internet/AI.
     """
     host = _host_hint(url)
     social = _host_matches(host, SOCIAL_HOSTS)
@@ -513,41 +567,73 @@ async def fetch_page_title(url: str) -> dict:
             page_title = ""
             site = host
 
-            # 1) Social: oEmbed thumbnail (caption e’tiborsiz)
             if social:
                 oe = await _oembed_thumbnail(client, url, host)
                 thumb = oe.get("thumbnail_url") or ""
                 if oe.get("provider"):
                     site = oe["provider"]
 
-            # 2) HTML preview rasm
             if not thumb:
                 preview = await _page_preview(client, url, host)
                 thumb = preview.get("thumbnail_url") or ""
                 page_title = preview.get("page_title") or ""
                 site = preview.get("site") or site
-            else:
-                # Page title faqat non-social fallback uchun kerak bo‘lishi mumkin
-                if not social:
-                    preview = await _page_preview(client, url, host)
-                    page_title = preview.get("page_title") or page_title
+            elif not social:
+                preview = await _page_preview(client, url, host)
+                page_title = preview.get("page_title") or page_title
 
-            # 3) Reverse image → internetdan film nomi
+            img_bytes: bytes | None = None
+            mime = "image/jpeg"
             if thumb:
-                hit = await yandex_reverse_image_movie(client, thumb)
+                img_bytes, mime = await _download_image(client, thumb)
+
+            if social and thumb:
+                if _gemini_api_key():
+                    ghit = await gemini_identify_movie(
+                        image_url=thumb, image_bytes=img_bytes, mime=mime
+                    )
+                    if ghit and ghit.get("ok"):
+                        ghit["host"] = host
+                        return ghit
+
+                hit = await yandex_reverse_image_movie(
+                    client, image_url=thumb, image_bytes=img_bytes, mime=mime
+                )
                 if hit and hit.get("ok"):
                     hit["host"] = host
                     return hit
 
-                # 4) Ixtiyoriy Gemini vision
-                ghit = await gemini_identify_movie(thumb)
+                if not _gemini_api_key():
+                    return {
+                        "ok": False,
+                        "title": "",
+                        "source": "",
+                        "host": host,
+                        "error": "need_gemini",
+                    }
+                return {
+                    "ok": False,
+                    "title": "",
+                    "source": "",
+                    "host": host,
+                    "error": "not_identified",
+                }
+
+            if thumb:
+                hit = await yandex_reverse_image_movie(
+                    client, image_url=thumb, image_bytes=img_bytes, mime=mime
+                )
+                if hit and hit.get("ok"):
+                    hit["host"] = host
+                    return hit
+                ghit = await gemini_identify_movie(
+                    image_url=thumb, image_bytes=img_bytes, mime=mime
+                )
                 if ghit and ghit.get("ok"):
                     ghit["host"] = host
                     return ghit
 
-            # 5) Non-social ochiq sahifa: YouTube/IMDb og:title (bu caption emas)
             if not social and page_title and not looks_like_prose(page_title):
-                # Faqat title-like + yil yoki qisqa nom
                 if YEAR_IN_TEXT_RE.search(page_title) or len(page_title) <= 80:
                     return {
                         "ok": True,

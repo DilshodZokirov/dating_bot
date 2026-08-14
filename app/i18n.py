@@ -389,6 +389,30 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zh": "无法从互联网识别该链接的电影名。\n\n请尝试公开帖子或 YouTube/IMDb。\n\n<i>仅片名。</i>",
         "ar": "تعذر التعرف على اسم الفيلم عبر الإنترنت.\n\nجرّب منشوراً عاماً أو YouTube/IMDb.\n\n<i>الاسم فقط.</i>",
     },
+    "link_need_gemini": {
+        "uz": "Instagram/TikTok kadrini aniqlash uchun <b>GEMINI_API_KEY</b> kerak.\n\n1) https://aistudio.google.com/apikey dan bepul kalit oling\n2) .env fayliga qo‘shing:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\nKeyin shu silkani qayta yuboring.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
+        "ru": "Чтобы распознать кадр Instagram/TikTok нужен <b>GEMINI_API_KEY</b>.\n\n1) Бесплатный ключ: https://aistudio.google.com/apikey\n2) В .env:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\n<i>Только название.</i>",
+        "en": "To identify Instagram/TikTok frames you need <b>GEMINI_API_KEY</b>.\n\n1) Free key: https://aistudio.google.com/apikey\n2) Add to .env:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\n<i>Title only.</i>",
+        "de": "Für Instagram/TikTok-Frames wird <b>GEMINI_API_KEY</b> benötigt.\n\nhttps://aistudio.google.com/apikey → .env → recreate.",
+        "tg": "Instagram/TikTok барои <b>GEMINI_API_KEY</b> лозим аст.\n\nhttps://aistudio.google.com/apikey",
+        "tr": "Instagram/TikTok için <b>GEMINI_API_KEY</b> gerekli.\n\nhttps://aistudio.google.com/apikey",
+        "ko": "Instagram/TikTok 인식에는 <b>GEMINI_API_KEY</b>가 필요합니다.\n\nhttps://aistudio.google.com/apikey",
+        "ja": "Instagram/TikTok の特定には <b>GEMINI_API_KEY</b> が必要です。\n\nhttps://aistudio.google.com/apikey",
+        "zh": "识别 Instagram/TikTok 需要 <b>GEMINI_API_KEY</b>。\n\nhttps://aistudio.google.com/apikey",
+        "ar": "للتعرّف على Instagram/TikTok يلزم <b>GEMINI_API_KEY</b>.\n\nhttps://aistudio.google.com/apikey",
+    },
+    "link_need_preview": {
+        "uz": "Bu silkadаn preview rasm olinmadi (yopiq post yoki Instagram blokladi).\n\nOchilgan post silkasini yuboring yoki ekran kadrasini rasm qilib yuboring (keyingi yangilanish).\n\n<i>Faqat nom.</i>",
+        "ru": "Не удалось получить превью по ссылке (закрытый пост).\n\nПришлите открытый пост.\n\n<i>Только название.</i>",
+        "en": "Couldn’t get a preview image from that link (private/blocked).\n\nSend a public post link.\n\n<i>Title only.</i>",
+        "de": "Kein Vorschaubild. Öffentlichen Post senden.",
+        "tg": "Превю нест. Пости кушода фиристед.",
+        "tr": "Önizleme yok. Açık gönderi gönderin.",
+        "ko": "미리보기 없음. 공개 게시물을 보내세요.",
+        "ja": "プレビューなし。公開ポストを送ってください。",
+        "zh": "无法获取预览。请发送公开帖子。",
+        "ar": "لا توجد معاينة. أرسل منشوراً عاماً.",
+    },
     "link_guide": {
         "uz": "<b>🎬 Film nomini silka orqali topish</b>\n\n"
               "<b>Qanday:</b>\n"
