@@ -1,11 +1,15 @@
 """
 Silka orqali sahifa/film nomini aniqlash (faqat metadata).
 Fayl yuklab olinmaydi va tarqatilmaydi.
+
+TikTok: oEmbed + sahifa ichidagi desc (ochiq videolar).
+Instagram: oEmbed/HTML meta/caption (ochiq postlar; login/yopiqda ishlamasligi mumkin).
 """
 
 from __future__ import annotations
 
 import html as html_lib
+import json
 import re
 from html.parser import HTMLParser
 from urllib.parse import urlparse
@@ -14,13 +18,14 @@ import httpx
 
 URL_RE = re.compile(r"https?://[^\s<>\"']+", re.I)
 
-# Juda katta HTML kerak emas — title odatda boshida
-MAX_BYTES = 200_000
-FETCH_TIMEOUT = 8.0
+# YouTube ba’zan og:title ni juda pastga qo‘yadi
+MAX_BYTES = 1_200_000
+FETCH_TIMEOUT = 12.0
+EARLY_STOP_AFTER = 80_000  # head/meta ko‘pincha shu oralig‘da
 
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; SoylaBot/1.0; +https://t.me/soylaibot) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
 JUNK_TITLE_PARTS = re.compile(
@@ -35,6 +40,26 @@ JUNK_TITLE_PARTS = re.compile(
     re.I | re.X,
 )
 
+GENERIC_TITLE_RE = re.compile(
+    r"""^(
+        instagram|
+        tiktok|
+        facebook|
+        twitter|
+        youtube|
+        telegram|
+        login\s*[•·\-]\s*instagram|
+        instagram\s*[•·\-]\s*login|
+        tiktok\s*[•·\-]\s*make\s+your\s+day|
+        make\s+your\s+day|
+        download\s+tiktok.*
+    )$""",
+    re.I | re.X,
+)
+
+TIKTOK_HOSTS = ("tiktok.com", "vm.tiktok.com", "vt.tiktok.com")
+INSTAGRAM_HOSTS = ("instagram.com", "instagr.am")
+
 
 class _MetaParser(HTMLParser):
     def __init__(self):
@@ -43,7 +68,9 @@ class _MetaParser(HTMLParser):
         self.title = ""
         self.og_title = ""
         self.og_site = ""
+        self.og_description = ""
         self.twitter_title = ""
+        self.twitter_description = ""
 
     def handle_starttag(self, tag, attrs):
         attrs_d = {k.lower(): (v or "") for k, v in attrs}
@@ -52,12 +79,18 @@ class _MetaParser(HTMLParser):
         if tag.lower() == "meta":
             prop = (attrs_d.get("property") or attrs_d.get("name") or "").lower()
             content = attrs_d.get("content") or ""
-            if prop == "og:title" and content and not self.og_title:
+            if not content:
+                return
+            if prop == "og:title" and not self.og_title:
                 self.og_title = content.strip()
-            elif prop == "twitter:title" and content and not self.twitter_title:
+            elif prop == "twitter:title" and not self.twitter_title:
                 self.twitter_title = content.strip()
-            elif prop == "og:site_name" and content and not self.og_site:
+            elif prop == "og:site_name" and not self.og_site:
                 self.og_site = content.strip()
+            elif prop in ("og:description", "description") and not self.og_description:
+                self.og_description = content.strip()
+            elif prop == "twitter:description" and not self.twitter_description:
+                self.twitter_description = content.strip()
 
     def handle_endtag(self, tag):
         if tag.lower() == "title":
@@ -104,8 +137,15 @@ def clean_title(raw: str) -> str:
         return ""
     title = html_lib.unescape(raw).strip()
     title = re.sub(r"\s+", " ", title)
+    # Instagram: "user on Instagram: \"Caption…\"" → Caption
+    m = re.match(
+        r'^[^:]+\s+on\s+Instagram:\s*[“"«]?(.*?)[”"»]?\s*$',
+        title,
+        flags=re.I | re.S,
+    )
+    if m and m.group(1).strip():
+        title = m.group(1).strip()
     title = JUNK_TITLE_PARTS.sub("", title).strip(" -–—|:")
-    # "Watch Foo Bar (2021) full movie" → "Foo Bar (2021)"
     title = re.sub(
         r"^(watch|stream|download|смотреть|онлайн)\s+",
         "",
@@ -118,6 +158,8 @@ def clean_title(raw: str) -> str:
         title,
         flags=re.I,
     ).strip(" -–—|:")
+    if not title or GENERIC_TITLE_RE.match(title):
+        return ""
     return title[:200]
 
 
@@ -129,70 +171,202 @@ def _host_hint(url: str) -> str:
         return ""
 
 
-async def fetch_page_title(url: str) -> dict:
-    """
-    Qaytaradi: {ok, title, source, host, error}
-    """
-    host = _host_hint(url)
-    # Telegram/Instagram sahifalari ko‘pincha ochilmaydi yoki login talab qiladi
-    hard = ("instagram.com", "instagr.am", "tiktok.com", "vm.tiktok.com")
-    if any(host.endswith(h) or host == h for h in hard):
-        return {
-            "ok": False,
-            "title": "",
-            "source": "",
-            "host": host,
-            "error": "blocked_host",
-        }
+def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
+    return any(host == h or host.endswith("." + h) for h in suffixes)
 
-    headers = {
+
+def _pick_best_title(*candidates: str) -> str:
+    for raw in candidates:
+        cleaned = clean_title(raw or "")
+        if cleaned:
+            return cleaned
+    return ""
+
+
+def _http_headers() -> dict[str, str]:
+    return {
         "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "uz,ru,en;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "uz,ru,en;q=0.9",
+        "Referer": "https://www.google.com/",
     }
+
+
+def _json_unescape(s: str) -> str:
     try:
-        async with httpx.AsyncClient(
-            timeout=FETCH_TIMEOUT,
-            follow_redirects=True,
-            headers=headers,
-        ) as client:
-            async with client.stream("GET", url) as resp:
-                if resp.status_code >= 400:
-                    return {
-                        "ok": False,
-                        "title": "",
-                        "source": "",
-                        "host": host,
-                        "error": f"http_{resp.status_code}",
-                    }
-                ctype = (resp.headers.get("content-type") or "").lower()
-                if "text/html" not in ctype and "application/xhtml" not in ctype and ctype:
-                    # To‘g‘ridan-to‘g‘ri video/fayl — nom yo‘q
-                    return {
-                        "ok": False,
-                        "title": "",
-                        "source": "",
-                        "host": host,
-                        "error": "not_html",
-                    }
-                chunks: list[bytes] = []
-                total = 0
-                async for chunk in resp.aiter_bytes():
-                    chunks.append(chunk)
-                    total += len(chunk)
-                    if total >= MAX_BYTES:
+        return json.loads(f'"{s}"')
+    except Exception:
+        return html_lib.unescape(s.replace(r"\n", " ").replace(r"\"", '"'))
+
+
+def _extract_tiktok_desc_from_html(html: str) -> str:
+    # 1) rehydration JSON
+    m = re.search(
+        r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>',
+        html,
+        re.S,
+    )
+    if m:
+        try:
+            data = json.loads(m.group(1))
+            found: list[str] = []
+
+            def walk(obj):
+                if isinstance(obj, dict):
+                    # video item structure
+                    if "desc" in obj and isinstance(obj["desc"], str) and obj["desc"].strip():
+                        # faqat video item atrofida bo‘lsa yaxshiroq
+                        if any(k in obj for k in ("id", "video", "author", "stats", "createTime")):
+                            found.append(obj["desc"].strip())
+                    for v in obj.values():
+                        walk(v)
+                elif isinstance(obj, list):
+                    for v in obj:
+                        walk(v)
+
+            walk(data)
+            if found:
+                return found[0]
+        except Exception:
+            pass
+
+    # 2) raw "desc":"..."
+    for m in re.finditer(r'"desc"\s*:\s*"((?:\\.|[^"\\])*)"', html):
+        val = _json_unescape(m.group(1)).strip()
+        if val and not GENERIC_TITLE_RE.match(val):
+            return val
+    return ""
+
+
+def _extract_instagram_caption_from_html(html: str) -> str:
+    # caption text fields commonly embedded in page JSON
+    for pat in (
+        r'"caption"\s*:\s*\{\s*"text"\s*:\s*"((?:\\.|[^"\\])*)"',
+        r'"edge_media_to_caption"[^]]*?\"text\"\s*:\s*"((?:\\.|[^"\\])*)"',
+        r'"accessibility_caption"\s*:\s*"((?:\\.|[^"\\])*)"',
+    ):
+        m = re.search(pat, html, re.S)
+        if m:
+            val = _json_unescape(m.group(1)).strip()
+            if val and not GENERIC_TITLE_RE.match(val):
+                return val
+    return ""
+
+
+async def _fetch_tiktok_oembed(client: httpx.AsyncClient, url: str) -> dict | None:
+    try:
+        resp = await client.get(
+            "https://www.tiktok.com/oembed",
+            params={"url": url},
+        )
+        if resp.status_code != 200:
+            return None
+        ctype = (resp.headers.get("content-type") or "").lower()
+        if "json" not in ctype:
+            return None
+        data = resp.json()
+        title = _pick_best_title(data.get("title") or "")
+        if not title:
+            return None
+        author = (data.get("author_name") or "").strip()
+        source = f"TikTok · {author}" if author else "TikTok"
+        return {"ok": True, "title": title, "source": source, "error": ""}
+    except Exception:
+        return None
+
+
+async def _fetch_instagram_oembed(client: httpx.AsyncClient, url: str) -> dict | None:
+    # Ba’zi ochiq postlarda ishlaydi; token talab qilinsa yiqiladi
+    endpoints = (
+        "https://www.instagram.com/api/v1/oembed/",
+        "https://api.instagram.com/oembed",
+    )
+    for ep in endpoints:
+        try:
+            resp = await client.get(ep, params={"url": url})
+            if resp.status_code != 200:
+                continue
+            ctype = (resp.headers.get("content-type") or "").lower()
+            if "json" not in ctype:
+                continue
+            data = resp.json()
+            title = _pick_best_title(
+                data.get("title") or "",
+                data.get("author_name") or "",
+            )
+            if title:
+                author = (data.get("author_name") or "").strip()
+                source = f"Instagram · {author}" if author else "Instagram"
+                return {"ok": True, "title": title, "source": source, "error": ""}
+        except Exception:
+            continue
+    return None
+
+
+def _meta_content(html: str, *names: str) -> str:
+    for name in names:
+        # property/name + content (ikkala tartib)
+        pats = (
+            rf'<meta[^>]+(?:property|name)=["\']{re.escape(name)}["\'][^>]+content=["\']([^"\']+)["\']',
+            rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']{re.escape(name)}["\']',
+        )
+        for pat in pats:
+            m = re.search(pat, html, re.I)
+            if m and m.group(1).strip():
+                return html_lib.unescape(m.group(1).strip())
+    return ""
+
+
+def _html_title_tag(html: str) -> str:
+    m = re.search(r"<title[^>]*>(.*?)</title>", html, re.I | re.S)
+    if not m:
+        return ""
+    return re.sub(r"\s+", " ", html_lib.unescape(m.group(1))).strip()
+
+
+async def _fetch_html_bytes(client: httpx.AsyncClient, url: str) -> tuple[bytes | None, str, str]:
+    """Qaytaradi: (raw_bytes|None, content_type, error)."""
+    try:
+        async with client.stream("GET", url) as resp:
+            if resp.status_code >= 400:
+                return None, "", f"http_{resp.status_code}"
+            ctype = (resp.headers.get("content-type") or "").lower()
+            chunks: list[bytes] = []
+            total = 0
+            async for chunk in resp.aiter_bytes():
+                chunks.append(chunk)
+                total += len(chunk)
+                if total >= MAX_BYTES:
+                    break
+                # Erta to‘xtash: og:title allaqachon kelgan bo‘lsa
+                if total >= EARLY_STOP_AFTER:
+                    probe = b"".join(chunks).decode("utf-8", errors="ignore")
+                    if 'property="og:title"' in probe or "property='og:title'" in probe:
                         break
-                raw = b"".join(chunks)
+            return b"".join(chunks), ctype, ""
     except Exception as e:
+        return None, "", type(e).__name__
+
+
+async def _fetch_html_meta(client: httpx.AsyncClient, url: str, host: str) -> dict:
+    raw, ctype, err = await _fetch_html_bytes(client, url)
+    if raw is None:
         return {
             "ok": False,
             "title": "",
             "source": "",
             "host": host,
-            "error": type(e).__name__,
+            "error": err or "fetch_failed",
+        }
+    if ctype and "text/html" not in ctype and "application/xhtml" not in ctype:
+        return {
+            "ok": False,
+            "title": "",
+            "source": "",
+            "host": host,
+            "error": "not_html",
         }
 
-    # Encoding
     text = raw.decode("utf-8", errors="ignore")
     parser = _MetaParser()
     try:
@@ -200,8 +374,28 @@ async def fetch_page_title(url: str) -> dict:
     except Exception:
         pass
 
-    raw_title = parser.og_title or parser.twitter_title or parser.title
-    title = clean_title(raw_title)
+    # Regex — HTMLParser ba’zan katta/noto‘g‘ri sahifalarda yiqiladi
+    og_title = parser.og_title or _meta_content(text, "og:title")
+    tw_title = parser.twitter_title or _meta_content(text, "twitter:title")
+    og_desc = parser.og_description or _meta_content(text, "og:description", "description")
+    tw_desc = parser.twitter_description or _meta_content(text, "twitter:description")
+    page_title = parser.title.strip() or _html_title_tag(text)
+    og_site = parser.og_site or _meta_content(text, "og:site_name")
+
+    embedded = ""
+    if _host_matches(host, TIKTOK_HOSTS):
+        embedded = _extract_tiktok_desc_from_html(text)
+    elif _host_matches(host, INSTAGRAM_HOSTS):
+        embedded = _extract_instagram_caption_from_html(text)
+
+    title = _pick_best_title(
+        embedded,
+        og_title,
+        tw_title,
+        og_desc,
+        tw_desc,
+        page_title,
+    )
     if not title:
         return {
             "ok": False,
@@ -211,7 +405,13 @@ async def fetch_page_title(url: str) -> dict:
             "error": "no_title",
         }
 
-    source = parser.og_site or host or "link"
+    if _host_matches(host, INSTAGRAM_HOSTS):
+        source = "Instagram"
+    elif _host_matches(host, TIKTOK_HOSTS):
+        source = "TikTok"
+    else:
+        source = og_site or host or "link"
+
     return {
         "ok": True,
         "title": title,
@@ -221,11 +421,50 @@ async def fetch_page_title(url: str) -> dict:
     }
 
 
+async def fetch_page_title(url: str) -> dict:
+    """
+    Qaytaradi: {ok, title, source, host, error}
+    """
+    host = _host_hint(url)
+    headers = _http_headers()
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=FETCH_TIMEOUT,
+            follow_redirects=True,
+            headers=headers,
+        ) as client:
+            if _host_matches(host, TIKTOK_HOSTS):
+                oembed = await _fetch_tiktok_oembed(client, url)
+                if oembed and oembed.get("ok"):
+                    oembed["host"] = host
+                    return oembed
+                result = await _fetch_html_meta(client, url, host)
+                return result
+
+            if _host_matches(host, INSTAGRAM_HOSTS):
+                oembed = await _fetch_instagram_oembed(client, url)
+                if oembed and oembed.get("ok"):
+                    oembed["host"] = host
+                    return oembed
+                result = await _fetch_html_meta(client, url, host)
+                return result
+
+            return await _fetch_html_meta(client, url, host)
+    except Exception as e:
+        return {
+            "ok": False,
+            "title": "",
+            "source": "",
+            "host": host,
+            "error": type(e).__name__,
+        }
+
+
 async def resolve_movie_title_from_message(message) -> dict:
     urls = extract_urls_from_message(message)
     if not urls:
         return {"ok": False, "error": "no_url", "title": "", "url": ""}
-    # Birinchi silka — odatda asosiy
     url = urls[0]
     result = await fetch_page_title(url)
     result["url"] = url
