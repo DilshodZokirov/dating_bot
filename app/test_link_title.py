@@ -103,3 +103,11 @@ def test_extract_jpeg_frame_from_video():
         )
         frame = extract_jpeg_frame_from_video(vid.read_bytes(), 0.2)
         assert frame and frame[:2] == b"\xff\xd8"
+
+
+def test_yt_dlp_fetch_returns_dict_on_failure():
+    from app.link_title import yt_dlp_fetch_for_identify
+
+    out = yt_dlp_fetch_for_identify("https://www.instagram.com/reel/NOTAREALID999/")
+    assert isinstance(out, dict)
+    assert "thumbnail_url" in out and "video_bytes" in out and "error" in out

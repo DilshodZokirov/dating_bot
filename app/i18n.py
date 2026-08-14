@@ -402,7 +402,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "للتعرّف على Instagram/TikTok يلزم <b>GEMINI_API_KEY</b>.\n\nhttps://aistudio.google.com/apikey",
     },
     "link_need_preview": {
-        "uz": "Instagram bu silkadan preview bermadi.\n\n<b>Quyidagilardan birini yuboring:</b>\n1) Videodan <b>ekran rasmi</b> (screenshot)\n2) Yoki videoning o‘zini (qisqa klip, <b>20 MB</b> gacha)\n\nBot kadrni olib film nomini topadi. Video saqlanmaydi.\n.env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom.</i>",
+        "uz": "Bot silka orqali videoni o‘zi yuklab ko‘rdi — Instagram blokladi.\n\n<b>Nima qilish mumkin:</b>\n1) Videoni o‘zingiz skachat qilib botga <b>video</b> yuboring (20 MB gacha)\n2) Yoki screenshot yuboring\n3) (Ixtiyoriy) Instagram cookies.txt → <code>YTDLP_COOKIES_FILE</code>\n\n.env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — video saqlanmaydi/tarqatilmaydi.</i>",
         "ru": "Не удалось получить превью по ссылке (закрытый пост).\n\nПришлите открытый пост.\n\n<i>Только название.</i>",
         "en": "Couldn’t get a preview image from that link (private/blocked).\n\nSend a public post link.\n\n<i>Title only.</i>",
         "de": "Kein Vorschaubild. Öffentlichen Post senden.",
