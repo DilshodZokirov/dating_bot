@@ -37,7 +37,10 @@ USER_AGENT = (
 
 TIKTOK_HOSTS = ("tiktok.com", "vm.tiktok.com", "vt.tiktok.com")
 INSTAGRAM_HOSTS = ("instagram.com", "instagr.am")
+YOUTUBE_HOSTS = ("youtube.com", "youtu.be", "m.youtube.com", "www.youtube.com")
 SOCIAL_HOSTS = TIKTOK_HOSTS + INSTAGRAM_HOSTS
+# Instagram/TikTok/YouTube — sahifa sarlavhasini film deb qabul qilmaymiz
+CLIP_HOSTS = SOCIAL_HOSTS + YOUTUBE_HOSTS
 
 JUNK_TITLE_PARTS = re.compile(
     r"""
@@ -170,19 +173,39 @@ def _host_hint(url: str) -> str:
 
 
 def normalize_media_url(url: str) -> str:
-    """Instagram/TikTok tracking parametrlarini olib tashlash."""
+    """Instagram/TikTok/YouTube tracking parametrlarini olib tashlash."""
     if not url:
         return url
     try:
         p = urlparse(url.strip())
         host = (p.netloc or "").lower()
-        if "instagram.com" in host or "instagr.am" in host or "tiktok.com" in host:
+        if any(
+            h in host
+            for h in (
+                "instagram.com",
+                "instagr.am",
+                "tiktok.com",
+                "youtube.com",
+                "youtu.be",
+            )
+        ):
             path = p.path or "/"
-            # reel/p/tv — trailing slash bir xil
-            if any(x in path for x in ("/reel/", "/p/", "/tv/")):
+            if any(x in path for x in ("/reel/", "/p/", "/tv/", "/shorts/")):
                 path = path.rstrip("/") + "/"
             netloc = host[4:] if host.startswith("www.") else host
+            # youtu.be/ID → youtube.com/shorts yoki watch saqlanadi path orqali
+            if netloc == "youtu.be":
+                vid = path.strip("/")
+                if vid:
+                    return f"https://youtube.com/watch?v={vid.split('/')[0]}"
             scheme = p.scheme or "https"
+            # YouTube watch: v= ni saqlash
+            if "youtube.com" in netloc and "v=" in (p.query or ""):
+                from urllib.parse import parse_qs
+
+                vid = (parse_qs(p.query).get("v") or [""])[0]
+                if vid:
+                    return f"{scheme}://{netloc}/watch?v={vid}"
             return f"{scheme}://{netloc}{path}"
     except Exception:
         pass
@@ -198,9 +221,9 @@ def _movie_cache_key(url: str, lang: str) -> str:
     import hashlib
 
     norm = normalize_media_url(url)
-    # v2: reverse-image first + scene-grounded candidates
+    # v3: YouTube/IG clip title parrot yo‘q; barcha platformalar
     digest = hashlib.sha256(
-        f"v2|{norm}|{(lang or 'uz').lower()}".encode()
+        f"v3|{norm}|{(lang or 'uz').lower()}".encode()
     ).hexdigest()[:40]
     return f"movie:id:{digest}"
 
@@ -364,6 +387,24 @@ def looks_like_prose(text: str) -> bool:
     if t.count(",") >= 3 and len(t) > 70:
         return True
     return False
+
+
+def is_clip_host(host: str) -> bool:
+    return _host_matches(host, CLIP_HOSTS) or _host_matches(host, YOUTUBE_HOSTS)
+
+
+def titles_roughly_equal(a: str, b: str) -> bool:
+    """Sahifa/clip nomi bilan bir xilmi (parrot tekshiruvi)."""
+    def norm(s: str) -> str:
+        s = html_lib.unescape(s or "").lower()
+        s = JUNK_TITLE_PARTS.sub("", s)
+        s = re.sub(r"[^\w\s]", " ", s, flags=re.U)
+        return re.sub(r"\s+", " ", s).strip()
+
+    na, nb = norm(a), norm(b)
+    if not na or not nb:
+        return False
+    return na == nb or na in nb or nb in na
 
 
 def _title_years(text: str) -> set[str]:
@@ -1031,6 +1072,7 @@ async def gemini_identify_movie(
     mime: str = "image/jpeg",
     lang: str = "uz",
     reverse_hints: list[str] | None = None,
+    page_title: str = "",
 ) -> dict | None:
     """GEMINI_API_KEY — rasm/kadrni tanish; reverse-image hintlar bilan aniqroq."""
     import base64
@@ -1048,44 +1090,53 @@ async def gemini_identify_movie(
             + "\n".join(f"- {h}" for h in hints)
             + "\n\n"
         )
+    clip_warn = ""
+    if page_title:
+        clip_warn = (
+            f"Platform video title (often a CLIP/episode name, NOT the real series/film): "
+            f"{page_title!r}\n"
+            "Do NOT return that string as the answer. Identify the actual movie or TV series "
+            "(example: clip 'Osman Bey ve Kıpçaklılar' → series 'Kuruluş: Osman').\n\n"
+        )
 
-    # Avval ekrandagi aniq matn — taxminiy boshqa filmga o‘tmasin
+    # Avval ekrandagi aniq matn — lekin YouTube clip title bo‘lsa rad etamiz
     plain_prompts = (
         (
-            "This is a screenshot that may include Instagram/TikTok UI and captions. "
+            "This is a screenshot that may include Instagram/TikTok/YouTube UI and captions. "
             "Read ALL visible text carefully (overlays, posters, watermarks, subtitles). "
-            "If a movie/cartoon title with year appears, "
-            "reply with ONLY that title and year EXACTLY as shown "
-            "(example: Sartarosh Billu (2009) or Billu (2009)). "
+            "If an OFFICIAL movie/series title card with year appears, "
+            "reply with ONLY that title and year EXACTLY as shown. "
+            "Ignore YouTube/Instagram video titles that describe a scene/clip "
+            "(e.g. 'Osman Bey ve Kıpçaklılar' is a clip title, not the series name). "
             "Do not translate. Do not guess another film. "
             "If none, reply exactly: UNKNOWN"
         ),
     )
     json_prompt = (
-        "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
-        "Identify the movie or animated film from the VISUAL SCENE, not from celebrity fame.\n"
+        "This is a screenshot/frame that may include Instagram/TikTok/YouTube UI.\n"
+        "Identify the movie or TV SERIES from the VISUAL SCENE, not from the platform video title.\n"
         f"App UI language for titles: {lang_name} (code: {lang}).\n\n"
+        f"{clip_warn}"
         f"{hints_block}"
-        "First (silently) note: setting/location, props, action, costumes.\n"
-        "Then name films that match THAT specific scene.\n\n"
+        "First (silently) note: setting/location, props, action, costumes, known characters.\n"
+        "Then name the actual film or series that match THAT scene.\n\n"
         "Return ONLY valid JSON (no markdown), ONE of:\n"
-        "A) Certain single film:\n"
+        "A) Certain single title:\n"
         '{"mode":"single","confidence":"high","title_raw":"...","title":"...",'
         '"summary":"..."}\n'
-        "B) Uncertain — several possible films:\n"
+        "B) Uncertain — several possible titles:\n"
         '{"mode":"candidates","candidates":["Title (Year)","..."]}\n'
         "C) Unknown: {\"found\":false}\n\n"
         "CRITICAL rules:\n"
-        "- Match the SCENE (e.g. barber shop → Billu / Sartarosh Billu), not the actor's filmography.\n"
-        "- FORBIDDEN: listing other famous films of the same star just because you recognize the actor "
-        "(wrong example: seeing Shah Rukh Khan → dumping Kabhi Alvida / Mohabbatein / Kal Ho Naa Ho / Veer-Zaara).\n"
+        "- Return the real movie/series name (e.g. Kuruluş: Osman), NEVER the YouTube Shorts/"
+        "Instagram Reel clip title if they differ.\n"
+        "- Match the SCENE, not celebrity filmography dumps.\n"
         "- If reverse-image hits are given, rank/filter those first; localize them to "
-        f"{lang_name}; only add extra titles if the frame clearly supports them.\n"
-        "- mode=single ONLY if highly sure (clear on-screen title or unmistakable scene).\n"
+        f"{lang_name}.\n"
+        "- mode=single ONLY if highly sure.\n"
         "- Otherwise mode=candidates: 4 to 6 DISTINCT titles in "
         f"{lang_name}, with year when known.\n"
-        f"- summary (single only): 2-3 short sentences in {lang_name}.\n"
-        "- Prefer on-screen title text over Instagram captions."
+        f"- summary (single only): 2-3 short sentences in {lang_name}."
     )
 
     try:
@@ -1100,6 +1151,7 @@ async def gemini_identify_movie(
             image_part = {"inline_data": {"mime_type": ctype, "data": b64}}
 
             # 1) OCR / oddiy nom — eng ishonchli (bitta aniq javob)
+            # Lekin YouTube/IG clip sarlavhasiga teng bo‘lsa — rad (serial nomi emas)
             for prompt in plain_prompts:
                 text_out, model = await _gemini_generate_text(
                     client, api_key, [{"text": prompt}, image_part]
@@ -1110,6 +1162,12 @@ async def gemini_identify_movie(
                     continue
                 from_ocr = extract_movie_from_ocr_text(text_out)
                 if from_ocr:
+                    if page_title and titles_roughly_equal(from_ocr, page_title):
+                        print(
+                            f"gemini OCR skip clip-title parrot: {from_ocr!r}",
+                            flush=True,
+                        )
+                        continue
                     return {
                         "ok": True,
                         "title": from_ocr,
@@ -1127,6 +1185,12 @@ async def gemini_identify_movie(
                     or clean_title(line)
                 )
                 if movie and not looks_like_prose(movie):
+                    if page_title and titles_roughly_equal(movie, page_title):
+                        print(
+                            f"gemini skip clip-title parrot: {movie!r}",
+                            flush=True,
+                        )
+                        continue
                     return {
                         "ok": True,
                         "title": movie,
@@ -1178,16 +1242,35 @@ async def gemini_identify_movie(
                 local = title
                 if parsed.get("title_raw") and not titles_same_movie(raw, local):
                     local = raw
-                return {
-                    "ok": True,
-                    "title": local,
-                    "title_raw": raw,
-                    "summary": parsed.get("summary") or "",
-                    "uncertain": False,
-                    "localized": bool(parsed.get("summary")),
-                    "source": f"Internet · Gemini ({model})",
-                    "error": "",
-                }
+                # YouTube clip title ni serial deb qaytarmaslik
+                if page_title and (
+                    titles_roughly_equal(local, page_title)
+                    or titles_roughly_equal(raw, page_title)
+                ):
+                    print(
+                        f"gemini reject clip-title as single: {local!r} ~= {page_title!r}",
+                        flush=True,
+                    )
+                    cands = list(parsed.get("candidates") or []) + hints
+                    if not cands:
+                        # keyingi candidates follow-up ga o‘tamiz
+                        title = ""
+                    else:
+                        return uncertain_movie_result(
+                            cands,
+                            source=f"Internet · Gemini candidates ({model})",
+                        )
+                else:
+                    return {
+                        "ok": True,
+                        "title": local,
+                        "title_raw": raw,
+                        "summary": parsed.get("summary") or "",
+                        "uncertain": False,
+                        "localized": bool(parsed.get("summary")),
+                        "source": f"Internet · Gemini ({model})",
+                        "error": "",
+                    }
 
             # 3) Explicit candidates follow-up (sahna asosida)
             cand_prompt = (
@@ -1299,6 +1382,7 @@ async def gemini_force_candidates(
     mime: str = "image/jpeg",
     lang: str = "uz",
     reverse_hints: list[str] | None = None,
+    page_title: str = "",
 ) -> dict | None:
     """
     Aniq topilmasa ham 4–6 ta yaqin taxmin majburan so‘rash.
@@ -1321,13 +1405,21 @@ async def gemini_force_candidates(
         hints_txt = "Hints from reverse-image (use if plausible):\n" + "\n".join(
             f"- {h}" for h in hints
         )
+    clip_txt = ""
+    if page_title:
+        clip_txt = (
+            f"Platform clip title (NOT the answer by itself): {page_title!r}. "
+            "Return the real series/movie name(s), e.g. Kuruluş: Osman.\n"
+        )
 
     prompt = (
-        "You could not lock one exact movie. Still help the user.\n"
-        f"Return 4 to 6 CLOSEST possible movie titles in {lang_name}.\n"
+        "You could not lock one exact movie/series. Still help the user.\n"
+        f"Return 4 to 6 CLOSEST possible movie or TV series titles in {lang_name}.\n"
+        f"{clip_txt}"
         f"{hints_txt}\n"
         "Match the visual SCENE as much as possible.\n"
         "Do NOT return found:false. Do NOT dump unrelated famous films of an actor.\n"
+        "Do NOT repeat the platform clip title unless it IS the official work title.\n"
         'ONLY JSON: {"mode":"candidates","candidates":["Title (Year)", "..."]}'
     )
     try:
@@ -1664,18 +1756,22 @@ async def fetch_page_title(
 ) -> dict:
     """
     Asosiy API: {ok, title, summary, source, host, error}
-    Caption emas — preview kadr + internet/AI.
-    Social silkalarda kerak bo‘lsa yt-dlp orqali avtomatik yuklab (faqat aniqlash).
-    Nom va mazmun app tilida (lang).
+    Caption/YouTube clip nomi emas — preview kadr + internet/AI.
+    Instagram/TikTok/YouTube uchun bir xil yo‘l.
     """
     url = normalize_media_url(url)
     host = _host_hint(url)
     social = _host_matches(host, SOCIAL_HOSTS)
+    clip = is_clip_host(host)
 
     cached = await movie_cache_get(url, lang)
     if cached:
         cached["host"] = cached.get("host") or host
-        print(f"movie cache hit: {url} lang={lang} title={cached.get('title')!r} uncertain={cached.get('uncertain')}", flush=True)
+        print(
+            f"movie cache hit: {url} lang={lang} title={cached.get('title')!r} "
+            f"uncertain={cached.get('uncertain')}",
+            flush=True,
+        )
         return cached
 
     try:
@@ -1683,12 +1779,12 @@ async def fetch_page_title(
         img_bytes: bytes | None = None
         mime = "image/jpeg"
         thumb = ""
+        page_title = ""
         async with httpx.AsyncClient(
             timeout=FETCH_TIMEOUT,
             follow_redirects=True,
             headers=_http_headers(),
         ) as client:
-            page_title = ""
             site = host
 
             if social:
@@ -1702,24 +1798,33 @@ async def fetch_page_title(
                 thumb = preview.get("thumbnail_url") or ""
                 page_title = preview.get("page_title") or ""
                 site = preview.get("site") or site
-            elif not social:
+            else:
+                # YouTube/boshqa: preview ham olib page_title (faqat hint)
                 preview = await _page_preview(client, url, host)
                 page_title = preview.get("page_title") or page_title
+                if not thumb:
+                    thumb = preview.get("thumbnail_url") or ""
+                site = preview.get("site") or site
 
             img_bytes = None
             mime = "image/jpeg"
             if thumb:
                 img_bytes, mime = await _download_image(client, thumb)
 
-            if social and thumb:
+            # Barcha clip platformalar (IG/TT/YT): kadr bo‘yicha aniqlash
+            if thumb and (clip or img_bytes):
                 reverse_titles: list[str] = []
                 await _progress(on_progress, "search")
                 reverse_titles = await yandex_reverse_titles(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
-                print(f"social yandex titles: {reverse_titles[:6]}", flush=True)
+                print(
+                    f"clip yandex titles host={host}: {reverse_titles[:6]} "
+                    f"page_title={page_title!r}",
+                    flush=True,
+                )
 
-                if _gemini_api_key():
+                if _gemini_api_key() and img_bytes:
                     await _progress(on_progress, "ai")
                     ghit = await gemini_identify_movie(
                         image_url=thumb,
@@ -1727,29 +1832,48 @@ async def fetch_page_title(
                         mime=mime,
                         lang=lang,
                         reverse_hints=reverse_titles,
+                        page_title=page_title if clip else "",
                     )
                     if ghit and ghit.get("ok"):
-                        ghit["host"] = host
-                        return await ensure_localized_result(
-                            ghit, lang, on_progress=on_progress
-                        )
+                        # Clip title parrot bo‘lsa — candidates ga o‘tkaz
+                        if (
+                            clip
+                            and page_title
+                            and ghit.get("title")
+                            and titles_roughly_equal(ghit["title"], page_title)
+                        ):
+                            print(
+                                f"reject parrot page_title result: {ghit['title']!r}",
+                                flush=True,
+                            )
+                        else:
+                            ghit["host"] = host
+                            return await ensure_localized_result(
+                                ghit, lang, on_progress=on_progress
+                            )
 
                 if reverse_titles:
+                    # Clip page_title bilan bir xil yagona hit — ishonchsiz
+                    filtered = [
+                        t
+                        for t in reverse_titles
+                        if not (page_title and titles_roughly_equal(t, page_title))
+                    ] or reverse_titles
                     if _gemini_api_key():
                         hit = await _localize_candidates_list(
-                            reverse_titles,
+                            filtered,
                             lang=lang,
                             source="Internet · Yandex + localize",
                         )
-                    elif len(reverse_titles) >= 2:
+                    elif len(filtered) >= 2:
                         hit = uncertain_movie_result(
-                            reverse_titles, source="Internet · Yandex Images"
+                            filtered, source="Internet · Yandex Images"
                         )
                     else:
                         hit = await ensure_localized_result(
                             {
                                 "ok": True,
-                                "title": reverse_titles[0],
+                                "title": filtered[0],
                                 "summary": "",
                                 "source": "Internet · Yandex Images",
                                 "error": "",
@@ -1760,53 +1884,12 @@ async def fetch_page_title(
                     hit["host"] = host
                     return hit
 
-            elif thumb:
-                await _progress(on_progress, "search")
-                reverse_titles = await yandex_reverse_titles(
-                    client, image_url=thumb, image_bytes=img_bytes, mime=mime
-                )
-                if _gemini_api_key():
-                    await _progress(on_progress, "ai")
-                    ghit = await gemini_identify_movie(
-                        image_url=thumb,
-                        image_bytes=img_bytes,
-                        mime=mime,
-                        lang=lang,
-                        reverse_hints=reverse_titles,
-                    )
-                    if ghit and ghit.get("ok"):
-                        ghit["host"] = host
-                        return await ensure_localized_result(
-                            ghit, lang, on_progress=on_progress
-                        )
-                if reverse_titles:
-                    hit = (
-                        await _localize_candidates_list(
-                            reverse_titles,
-                            lang=lang,
-                            source="Internet · Yandex + localize",
-                        )
-                        if _gemini_api_key()
-                        else uncertain_movie_result(
-                            reverse_titles, source="Internet · Yandex Images"
-                        )
-                        if len(reverse_titles) >= 2
-                        else await ensure_localized_result(
-                            {
-                                "ok": True,
-                                "title": reverse_titles[0],
-                                "summary": "",
-                                "source": "Internet · Yandex Images",
-                                "error": "",
-                            },
-                            lang,
-                            on_progress=on_progress,
-                        )
-                    )
-                    hit["host"] = host
-                    return hit
-
-            if not social and page_title and not looks_like_prose(page_title):
+            # Faqat oddiy sahifalar (IMDb va hokazo) — page_title ruxsat
+            if (
+                not clip
+                and page_title
+                and not looks_like_prose(page_title)
+            ):
                 if YEAR_IN_TEXT_RE.search(page_title) or len(page_title) <= 80:
                     return await ensure_localized_result(
                         {
@@ -1821,23 +1904,37 @@ async def fetch_page_title(
                         on_progress=on_progress,
                     )
 
-        # Social (yoki preview yo‘q): silka orqali avtomatik yuklab aniqlash
-        if social or not thumb:
+        # Preview yo‘q yoki aniqlanmadi: yt-dlp orqali (IG/TT/YT)
+        if clip or not thumb:
             auto = await _identify_from_social_download(
                 url, host, lang=lang, on_progress=on_progress
             )
             if auto and auto.get("ok"):
-                return auto
+                if not (
+                    clip
+                    and page_title
+                    and auto.get("title")
+                    and titles_roughly_equal(auto["title"], page_title)
+                ):
+                    return auto
 
-        # Aniq topilmasa ham — 4–6 ta yaqin taxmin (texnik xabar emas)
+        # Aniq topilmasa ham — 4–6 ta yaqin taxmin
         if img_bytes and _gemini_api_key():
             await _progress(on_progress, "ai")
             forced = await gemini_force_candidates(
                 image_bytes=img_bytes,
                 mime=mime,
                 lang=lang,
+                page_title=page_title if clip else "",
             )
             if forced and forced.get("ok"):
+                # Clip title ni ro‘yxatdan chiqarish
+                if clip and page_title and forced.get("candidates"):
+                    forced["candidates"] = [
+                        c
+                        for c in forced["candidates"]
+                        if not titles_roughly_equal(c, page_title)
+                    ] or forced["candidates"]
                 forced["host"] = host
                 return forced
 

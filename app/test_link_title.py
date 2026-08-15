@@ -266,3 +266,23 @@ def test_titles_same_movie_billu_local():
 
     assert titles_same_movie("Billu (2009)", "Sartarosh Billu (2009)")
     assert titles_same_movie("Billu Barber (2009)", "Sartarosh Billu (2009)")
+
+
+def test_youtube_clip_title_not_equal_series():
+    from app.link_title import is_clip_host, titles_roughly_equal
+
+    assert is_clip_host("youtube.com")
+    assert is_clip_host("www.youtube.com")
+    assert is_clip_host("youtu.be")
+    assert titles_roughly_equal(
+        "Osman Bey ve Kıpçaklılar", "Osman Bey ve Kıpçaklılar - YouTube"
+    )
+    assert not titles_roughly_equal("Osman Bey ve Kıpçaklılar", "Kuruluş: Osman")
+
+
+def test_normalize_youtube_shorts():
+    from app.link_title import normalize_media_url
+
+    u = "https://youtube.com/shorts/n__K6nu8llw?si=b6HbzbR6ESofvHcf"
+    assert "si=" not in normalize_media_url(u)
+    assert "n__K6nu8llw" in normalize_media_url(u)
