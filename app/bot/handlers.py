@@ -82,6 +82,37 @@ async def _finish_progress(wait: Message | None) -> None:
         pass
 
 
+# Bir foydalanuvchi / media group — ikki marta parallel qidiruvni to‘xtatish
+_movie_busy_users: set[int] = set()
+_movie_seen_groups: dict[str, float] = {}
+
+
+def _movie_lookup_busy(message: Message) -> bool:
+    """True bo‘lsa — bu so‘rovni o‘tkazib yuborish (dublikat)."""
+    import time
+
+    uid = message.from_user.id if message.from_user else 0
+    gid = getattr(message, "media_group_id", None)
+    now = time.time()
+    # Eski group kalitlarini tozalash
+    stale = [k for k, ts in _movie_seen_groups.items() if now - ts > 60]
+    for k in stale:
+        _movie_seen_groups.pop(k, None)
+    if gid:
+        if gid in _movie_seen_groups:
+            return True
+        _movie_seen_groups[gid] = now
+    if uid in _movie_busy_users:
+        return True
+    _movie_busy_users.add(uid)
+    return False
+
+
+def _movie_lookup_done(message: Message) -> None:
+    uid = message.from_user.id if message.from_user else 0
+    _movie_busy_users.discard(uid)
+
+
 async def _set_user_menu(message: Message, lang: str) -> None:
     """Bitta kirish nuqtasi: Telegram Menu → Mini App."""
     url = _webapp_url()
@@ -503,6 +534,8 @@ async def identify_movie_photo(message: Message, state: FSMContext):
     current = await state.get_state()
     if current:
         return
+    if _movie_lookup_busy(message):
+        return
     lang = "uz"
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
@@ -523,7 +556,10 @@ async def identify_movie_photo(message: Message, state: FSMContext):
                 on_progress=progress,
             )
             await _finish_progress(wait)
-            await _reply_movie_result(message, lang, result)
+            try:
+                await _reply_movie_result(message, lang, result)
+            finally:
+                _movie_lookup_done(message)
             return
 
     try:
@@ -541,7 +577,10 @@ async def identify_movie_photo(message: Message, state: FSMContext):
         print(f"photo identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
     await _finish_progress(wait)
-    await _reply_movie_result(message, lang, result)
+    try:
+        await _reply_movie_result(message, lang, result)
+    finally:
+        _movie_lookup_done(message)
 
 
 @router.message(F.video)
@@ -550,18 +589,20 @@ async def identify_movie_video(message: Message, state: FSMContext):
     current = await state.get_state()
     if current:
         return
+    video = message.video
+    if not video:
+        return
     lang = "uz"
     async with async_session() as session:
         user = await session.get(User, message.from_user.id)
     if user:
         lang = _ui_lang(user)
 
-    video = message.video
-    if not video:
-        return
     # Telegram Bot API getFile ~20MB
     if (video.file_size or 0) > 20 * 1024 * 1024:
         await message.answer(t(lang, "link_video_too_large"))
+        return
+    if _movie_lookup_busy(message):
         return
 
     wait = await message.answer(t(lang, "link_looking"))
@@ -578,7 +619,10 @@ async def identify_movie_video(message: Message, state: FSMContext):
         print(f"video identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
     await _finish_progress(wait)
-    await _reply_movie_result(message, lang, result)
+    try:
+        await _reply_movie_result(message, lang, result)
+    finally:
+        _movie_lookup_done(message)
 
 
 @router.message(F.document)
@@ -586,6 +630,9 @@ async def identify_movie_document(message: Message, state: FSMContext):
     """Video/rasm document sifatida yuborilsa."""
     current = await state.get_state()
     if current:
+        return
+    # Photo/video handler allaqachon ishlagan bo‘lsa — takrorlama
+    if message.photo or message.video:
         return
     doc = message.document
     if not doc:
@@ -600,6 +647,8 @@ async def identify_movie_document(message: Message, state: FSMContext):
     )
     if not is_video and not is_image:
         return
+    if _movie_lookup_busy(message):
+        return
 
     lang = "uz"
     async with async_session() as session:
@@ -609,6 +658,7 @@ async def identify_movie_document(message: Message, state: FSMContext):
 
     if (doc.file_size or 0) > 20 * 1024 * 1024:
         await message.answer(t(lang, "link_video_too_large"))
+        _movie_lookup_done(message)
         return
 
     wait = await message.answer(t(lang, "link_looking"))
@@ -630,7 +680,10 @@ async def identify_movie_document(message: Message, state: FSMContext):
         print(f"document identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
     await _finish_progress(wait)
-    await _reply_movie_result(message, lang, result)
+    try:
+        await _reply_movie_result(message, lang, result)
+    finally:
+        _movie_lookup_done(message)
 
 
 @router.message(F.text)
@@ -649,13 +702,18 @@ async def fallback_text(message: Message, state: FSMContext):
 
     # Silka bo‘lsa — sahifa/film nomini aniqlash (fayl emas)
     if extract_urls_from_message(message):
+        if _movie_lookup_busy(message):
+            return
         wait = await message.answer(t(lang, "link_looking"))
         progress = _movie_progress_cb(wait, lang)
-        result = await resolve_movie_title_from_message(
-            message, lang=lang, on_progress=progress
-        )
-        await _finish_progress(wait)
-        await _reply_movie_result(message, lang, result)
+        try:
+            result = await resolve_movie_title_from_message(
+                message, lang=lang, on_progress=progress
+            )
+            await _finish_progress(wait)
+            await _reply_movie_result(message, lang, result)
+        finally:
+            _movie_lookup_done(message)
         return
 
     await _set_user_menu(message, lang)

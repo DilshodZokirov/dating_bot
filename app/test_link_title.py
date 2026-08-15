@@ -286,3 +286,15 @@ def test_normalize_youtube_shorts():
     u = "https://youtube.com/shorts/n__K6nu8llw?si=b6HbzbR6ESofvHcf"
     assert "si=" not in normalize_media_url(u)
     assert "n__K6nu8llw" in normalize_media_url(u)
+
+
+def test_parse_clip_to_series_json():
+    from app.link_title import _parse_gemini_movie_json, titles_roughly_equal
+
+    raw = (
+        '{"mode":"single","confidence":"high",'
+        '"title":"Kuruluş: Osman","summary":"Usmon Bey haqida serial."}'
+    )
+    parsed = _parse_gemini_movie_json(raw)
+    assert parsed and parsed["title"].startswith("Kuruluş")
+    assert not titles_roughly_equal(parsed["title"], "Osman Bey ve Kıpçaklılar")

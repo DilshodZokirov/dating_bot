@@ -221,9 +221,9 @@ def _movie_cache_key(url: str, lang: str) -> str:
     import hashlib
 
     norm = normalize_media_url(url)
-    # v3: YouTube/IG clip title parrot yo‘q; barcha platformalar
+    # v4: clip→serial mapping + double-search fix
     digest = hashlib.sha256(
-        f"v3|{norm}|{(lang or 'uz').lower()}".encode()
+        f"v4|{norm}|{(lang or 'uz').lower()}".encode()
     ).hexdigest()[:40]
     return f"movie:id:{digest}"
 
@@ -1376,6 +1376,84 @@ async def yandex_reverse_titles(
     return []
 
 
+async def gemini_resolve_clip_title(
+    page_title: str,
+    lang: str = "uz",
+    *,
+    image_bytes: bytes | None = None,
+    mime: str = "image/jpeg",
+) -> dict | None:
+    """
+    YouTube/IG clip sarlavhasidan haqiqiy film/serial nomini topish.
+    Masalan: 'Osman Bey ve Kıpçaklılar' → Kuruluş: Osman
+    """
+    import base64
+
+    title = clean_title(page_title or "")
+    if not title or len(title) < 3:
+        return None
+    api_key = _gemini_api_key()
+    if not api_key:
+        return None
+
+    lang_name = _lang_label(lang)
+    prompt = (
+        f"Platform clip/video title: {title!r}\n"
+        f"App language: {lang_name} (code: {lang}).\n\n"
+        "This string is often an episode/scene label, NOT the official work title.\n"
+        "Identify the real movie or TV series.\n"
+        "Examples:\n"
+        "- 'Osman Bey ve Kıpçaklılar' → Kuruluş: Osman\n"
+        "- 'Billu barber funny scene' → Sartarosh Billu / Billu (2009)\n\n"
+        "Return ONLY JSON, one of:\n"
+        '{"mode":"single","confidence":"high","title":"...","summary":"..."}\n'
+        'or {"mode":"candidates","candidates":["Title 1","Title 2",...]} (4-6 items)\n'
+        "Rules: titles in app language when a local name exists; "
+        "do NOT echo the clip title unchanged unless it already is the official name."
+    )
+    parts: list[dict] = [{"text": prompt}]
+    if image_bytes:
+        b64 = base64.b64encode(image_bytes[:2_000_000]).decode("ascii")
+        parts.append({"inline_data": {"mime_type": mime or "image/jpeg", "data": b64}})
+
+    try:
+        async with httpx.AsyncClient(timeout=45, headers=_http_headers()) as client:
+            text_out, model = await _gemini_generate_text(client, api_key, parts)
+        parsed = _parse_gemini_movie_json(text_out)
+        if not parsed or not parsed.get("found"):
+            return None
+        if parsed.get("uncertain") and parsed.get("candidates"):
+            cands = [
+                c
+                for c in parsed["candidates"]
+                if not titles_roughly_equal(c, title)
+            ] or list(parsed["candidates"])
+            return uncertain_movie_result(
+                cands, source=f"Internet · clip→title ({model})"
+            )
+        got = parsed.get("title") or ""
+        if not got:
+            return None
+        if titles_roughly_equal(got, title):
+            # Hali clip title — candidates so‘raymiz
+            return uncertain_movie_result(
+                [got], source=f"Internet · clip→title ({model})"
+            )
+        return {
+            "ok": True,
+            "title": got,
+            "title_raw": title,
+            "summary": parsed.get("summary") or "",
+            "uncertain": False,
+            "localized": True,
+            "source": f"Internet · clip→title ({model})",
+            "error": "",
+        }
+    except Exception as e:
+        print(f"gemini_resolve_clip_title error: {e}", flush=True)
+        return None
+
+
 async def gemini_force_candidates(
     *,
     image_bytes: bytes,
@@ -1835,17 +1913,29 @@ async def fetch_page_title(
                         page_title=page_title if clip else "",
                     )
                     if ghit and ghit.get("ok"):
-                        # Clip title parrot bo‘lsa — candidates ga o‘tkaz
+                        # Clip title parrot bo‘lsa — clip→serial mapping
                         if (
                             clip
                             and page_title
                             and ghit.get("title")
+                            and not ghit.get("uncertain")
                             and titles_roughly_equal(ghit["title"], page_title)
                         ):
                             print(
                                 f"reject parrot page_title result: {ghit['title']!r}",
                                 flush=True,
                             )
+                            mapped = await gemini_resolve_clip_title(
+                                page_title,
+                                lang,
+                                image_bytes=img_bytes,
+                                mime=mime,
+                            )
+                            if mapped and mapped.get("ok"):
+                                mapped["host"] = host
+                                return await ensure_localized_result(
+                                    mapped, lang, on_progress=on_progress
+                                )
                         else:
                             ghit["host"] = host
                             return await ensure_localized_result(
@@ -1918,6 +2008,21 @@ async def fetch_page_title(
                 ):
                     return auto
 
+        # Clip sarlavhasidan serial/film (YouTube Shorts uchun muhim)
+        if clip and page_title and _gemini_api_key():
+            await _progress(on_progress, "ai")
+            mapped = await gemini_resolve_clip_title(
+                page_title,
+                lang,
+                image_bytes=img_bytes,
+                mime=mime,
+            )
+            if mapped and mapped.get("ok"):
+                mapped["host"] = host
+                return await ensure_localized_result(
+                    mapped, lang, on_progress=on_progress
+                )
+
         # Aniq topilmasa ham — 4–6 ta yaqin taxmin
         if img_bytes and _gemini_api_key():
             await _progress(on_progress, "ai")
@@ -1928,7 +2033,6 @@ async def fetch_page_title(
                 page_title=page_title if clip else "",
             )
             if forced and forced.get("ok"):
-                # Clip title ni ro‘yxatdan chiqarish
                 if clip and page_title and forced.get("candidates"):
                     forced["candidates"] = [
                         c
