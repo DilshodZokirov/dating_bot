@@ -244,3 +244,10 @@ def test_link_found_uncertain_i18n():
     assert "Kechirasiz" in msg
     assert "1) Orzular jamoasi" in msg
     assert "2) Shaharadagi" in msg
+
+
+def test_titles_same_movie_billu_local():
+    from app.link_title import titles_same_movie
+
+    assert titles_same_movie("Billu (2009)", "Sartarosh Billu (2009)")
+    assert titles_same_movie("Billu Barber (2009)", "Sartarosh Billu (2009)")
