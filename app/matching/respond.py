@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+from app.chat_service import ensure_mutual_favorites_and_thread
 from app.database import async_session
 from app.livekit_tokens import livekit_configured, livekit_join_payload
 from app.matching.queue import requeue_user, set_decision, set_result
@@ -62,6 +63,8 @@ async def respond_to_proposal(user_id: int, proposal_id: str, decision: str) -> 
             me.is_in_call = True
         if other_user:
             other_user.is_in_call = True
+        # Ikkalasi ham qabul qilganda — sevimlilar + chat ochiladi
+        await ensure_mutual_favorites_and_thread(session, user_id, other["user_id"])
         await session.commit()
 
     me_join = livekit_join_payload(identity=str(user_id), name=me.name if me else str(user_id), room_id=room_id)

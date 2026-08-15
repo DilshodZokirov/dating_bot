@@ -401,6 +401,243 @@
     margin-top: 48px;
     font-size: 0.95rem;
   }
+  .saved-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .saved-actions button.chat {
+    border: none;
+    background: #1a6b5c;
+    color: #fff;
+  }
+  .saved-actions button.fav-invite {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .invite-section {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 16px;
+  }
+  .invite-section h2 {
+    font-size: 0.92rem;
+    font-weight: 650;
+    margin: 0 0 8px;
+    color: var(--muted);
+  }
+  .invite-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .invite-item .actions { display: flex; gap: 8px; margin-left: auto; }
+  .invite-item .actions button {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .invite-item .actions button.accept {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Chat overlay */
+  .chat-view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    flex-direction: column;
+    background:
+      radial-gradient(600px 400px at 80% 0%, rgba(26,107,92,0.22), transparent 50%),
+      linear-gradient(180deg, #071411, #0d1f1b);
+  }
+  .chat-view.open { display: flex; }
+  .chat-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(12px + var(--safe-t)) 14px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .chat-head .back {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: #e8f2ef;
+    font: inherit;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  .chat-head .meta { min-width: 0; flex: 1; }
+  .chat-head .meta .name { font-weight: 700; color: #f2faf7; }
+  .chat-head .meta .sub { font-size: 0.78rem; color: rgba(232,242,239,0.65); }
+  .chat-msgs {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chat-bubble {
+    max-width: 82%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .chat-bubble.them {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.08);
+    color: #eef6f3;
+  }
+  .chat-bubble.mine {
+    align-self: flex-end;
+    background: #1f8f78;
+    color: #fff;
+  }
+  .chat-compose {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px calc(12px + var(--safe-b));
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .chat-compose input {
+    flex: 1;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+    padding: 12px 14px;
+    font: inherit;
+  }
+  .chat-compose button {
+    border: none;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    padding: 0 16px;
+    cursor: pointer;
+  }
+
+  /* Admin */
+  .admin-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 420px;
+    margin: 0 auto 18px;
+  }
+  .admin-stat {
+    padding: 14px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+  }
+  .admin-stat .n { font-size: 1.35rem; font-weight: 750; }
+  .admin-stat .l { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+  .admin-tabs {
+    display: flex;
+    gap: 8px;
+    max-width: 420px;
+    margin: 0 auto 14px;
+  }
+  .admin-tabs button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .admin-tabs button.active {
+    background: var(--accent);
+    border-color: transparent;
+    color: #fff;
+  }
+  .admin-list {
+    max-width: 420px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 24px;
+  }
+  .admin-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+  }
+  .admin-card .title { font-weight: 700; margin-bottom: 4px; }
+  .admin-card .sub { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+  .admin-card .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .admin-card .row button {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .admin-card .row button.danger {
+    border-color: #c45c4a;
+    color: #c45c4a;
+  }
+  .admin-card .row button.ok {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+  }
+  .admin-search {
+    display: flex;
+    gap: 8px;
+    max-width: 420px;
+    margin: 0 auto 12px;
+  }
+  .admin-search input {
+    flex: 1;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+  }
+  .admin-search button {
+    padding: 0 14px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #navAdminBtn { display: none; }
 
   /* Call */
   .call-view {
@@ -919,9 +1156,26 @@
     </div>
     <div class="safety-row" id="safetyRow">
       <button type="button" class="safety-btn" id="savePartnerBtn">Saqlash</button>
+      <button type="button" class="safety-btn" id="favInviteBtn">Sevimli</button>
       <button type="button" class="safety-btn" id="blockBtn">Bloklash</button>
       <button type="button" class="safety-btn danger" id="reportBtn">Shikoyat</button>
     </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-view" id="chatView">
+    <div class="chat-head">
+      <button type="button" class="back" id="chatBackBtn" aria-label="Back">←</button>
+      <div class="meta">
+        <div class="name" id="chatPartnerName">—</div>
+        <div class="sub" id="chatPartnerSub"></div>
+      </div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <form class="chat-compose" id="chatCompose">
+      <input type="text" id="chatInput" maxlength="1000" autocomplete="off" placeholder="Xabar…">
+      <button type="submit" id="chatSendBtn">Yuborish</button>
+    </form>
   </div>
 
   <div class="report-sheet" id="commsSheet" aria-hidden="true">
@@ -1081,10 +1335,33 @@
   <div class="view" id="savedView">
     <div class="page-head">
       <h1 id="savedTitle">Saqlanganlar</h1>
-      <p id="savedHint">Online bo‘lsa suhbatga chaqirishingiz mumkin.</p>
+      <p id="savedHint">Sevimli bo‘lsangiz chatlashishingiz mumkin.</p>
+    </div>
+    <div class="invite-section" id="chatInvitesBox" style="display:none">
+      <h2 id="chatInvitesTitle">Chat takliflari</h2>
+      <div id="chatInvitesList"></div>
     </div>
     <div class="saved-list" id="savedList"></div>
     <div class="empty-saved" id="savedEmpty">Hali saqlangan suhbatdosh yo‘q.</div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="view" id="adminView">
+    <div class="page-head">
+      <h1 id="adminTitle">Admin</h1>
+      <p id="adminHint">Shikoyatlar, ban va statistika</p>
+    </div>
+    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-tabs">
+      <button type="button" class="active" data-admin-tab="reports" id="adminTabReports">Shikoyatlar</button>
+      <button type="button" data-admin-tab="users" id="adminTabUsers">Foydalanuvchilar</button>
+      <button type="button" data-admin-tab="banned" id="adminTabBanned">Ban</button>
+    </div>
+    <div class="admin-search" id="adminSearchRow" style="display:none">
+      <input type="search" id="adminUserQuery" placeholder="ID yoki ism">
+      <button type="button" id="adminUserSearchBtn">Qidirish</button>
+    </div>
+    <div class="admin-list" id="adminList"></div>
   </div>
 
   <nav class="bottom-nav" id="bottomNav">
@@ -1095,6 +1372,10 @@
     <button type="button" class="nav-btn" data-view="savedView">
       <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
       <span id="navSavedLabel">Saqlangan</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="adminView" id="navAdminBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      <span id="navAdminLabel">Admin</span>
     </button>
     <button type="button" class="nav-btn" data-view="profileView">
       <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
@@ -1339,14 +1620,86 @@ const TRANSLATIONS = {
   saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved", de: "Gespeicherte", tg: "Захирашудаҳо", tr: "Kayıtlılar", ko: "저장됨", ja: "保存済み", zh: "已保存",
     ar: "المحفوظات",
   },
-  saved_hint: { uz: "Online bo‘lsa suhbatga chaqirishingiz mumkin.", ru: "Если онлайн — можно пригласить.", en: "Invite when they are online.", de: "Einladen, wenn online.", tg: "Агар онлайн бошад — даъват кунед.", tr: "Çevrimiçiyse sohbete davet edebilirsiniz.", ko: "온라인일 때 초대할 수 있습니다.", ja: "オンラインなら招待できます。", zh: "对方在线时可邀请。",
-    ar: "يمكنك الدعوة إن كان متصلًا.",
+  saved_hint: { uz: "Sevimli bo‘lsangiz chatlashishingiz mumkin.", ru: "Если вы в избранном — можно переписываться.", en: "If you’re favorites, you can chat.", de: "Als Favoriten könnt ihr chatten.", tg: "Агар дӯстдошта бошед — чат кунед.", tr: "Favoriyseniz sohbet edebilirsiniz.", ko: "즐겨찾기면 채팅할 수 있습니다.", ja: "お気に入りならチャットできます。", zh: "互为收藏后可以聊天。",
+    ar: "إذا كنتما مفضلين يمكنكما الدردشة.",
   },
   saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet.", de: "Noch keine gespeicherten Partner.", tg: "Ҳанӯз ҳамсуҳбати захирашуда нест.", tr: "Henüz kayıtlı partner yok.", ko: "아직 저장된 상대가 없습니다.", ja: "まだ保存した相手がいません。", zh: "还没有已保存的对象。",
     ar: "لا يوجد شركاء محفوظون بعد.",
   },
-  invite_btn: { uz: "Chaqirish", ru: "Пригласить", en: "Invite", de: "Einladen", tg: "Даъват", tr: "Davet et", ko: "초대", ja: "招待", zh: "邀请",
-    ar: "دعوة",
+  chat_btn: { uz: "Chat", ru: "Чат", en: "Chat", de: "Chat", tg: "Чат", tr: "Sohbet", ko: "채팅", ja: "チャット", zh: "聊天",
+    ar: "دردشة",
+  },
+  fav_invite_btn: { uz: "Sevimli", ru: "В избранное", en: "Favorite", de: "Favorit", tg: "Дӯстдошта", tr: "Favori", ko: "즐겨찾기", ja: "お気に入り", zh: "收藏",
+    ar: "مفضل",
+  },
+  fav_invite_ok: { uz: "Sevimlilar taklifi yuborildi.", ru: "Приглашение в избранное отправлено.", en: "Favorite invite sent.", de: "Favoriten-Einladung gesendet.", tg: "Таклифи дӯстдошта фиристода шуд.", tr: "Favori daveti gönderildi.", ko: "즐겨찾기 초대가 전송되었습니다.", ja: "お気に入り招待を送りました。", zh: "已发送收藏邀请。",
+    ar: "تم إرسال دعوة المفضلة.",
+  },
+  fav_invite_accepted: { uz: "Sevimlilar ochildi — endi chatlashishingiz mumkin.", ru: "Избранное открыто — можно переписываться.", en: "You’re favorites — you can chat now.", de: "Ihr seid Favoriten — chatten möglich.", tg: "Дӯстдошта кушода шуд — чат кунед.", tr: "Favoriler açıldı — sohbet edebilirsiniz.", ko: "즐겨찾기가 열렸습니다 — 채팅하세요.", ja: "お気に入りになりました。チャットできます。", zh: "已成为收藏 — 可以聊天了。",
+    ar: "أصبحتما مفضلين — يمكنكما الدردشة الآن.",
+  },
+  chat_invites_title: { uz: "Chat takliflari", ru: "Приглашения в чат", en: "Chat invites", de: "Chat-Einladungen", tg: "Таклифҳои чат", tr: "Sohbet davetleri", ko: "채팅 초대", ja: "チャット招待", zh: "聊天邀请",
+    ar: "دعوات الدردشة",
+  },
+  chat_accept: { uz: "Qabul", ru: "Принять", en: "Accept", de: "Annehmen", tg: "Қабул", tr: "Kabul", ko: "수락", ja: "承諾", zh: "接受",
+    ar: "قبول",
+  },
+  chat_decline: { uz: "Rad", ru: "Отклонить", en: "Decline", de: "Ablehnen", tg: "Рад", tr: "Reddet", ko: "거절", ja: "拒否", zh: "拒绝",
+    ar: "رفض",
+  },
+  chat_placeholder: { uz: "Xabar…", ru: "Сообщение…", en: "Message…", de: "Nachricht…", tg: "Паём…", tr: "Mesaj…", ko: "메시지…", ja: "メッセージ…", zh: "消息…",
+    ar: "رسالة…",
+  },
+  chat_send: { uz: "Yuborish", ru: "Отправить", en: "Send", de: "Senden", tg: "Фиристодан", tr: "Gönder", ko: "보내기", ja: "送信", zh: "发送",
+    ar: "إرسال",
+  },
+  nav_admin: { uz: "Admin", ru: "Админ", en: "Admin", de: "Admin", tg: "Админ", tr: "Yönetici", ko: "관리자", ja: "管理", zh: "管理",
+    ar: "المشرف",
+  },
+  admin_title: { uz: "Admin panel", ru: "Админ-панель", en: "Admin panel", de: "Admin-Panel", tg: "Панели админ", tr: "Yönetici paneli", ko: "관리자 패널", ja: "管理パネル", zh: "管理面板",
+    ar: "لوحة المشرف",
+  },
+  admin_hint: { uz: "Shikoyatlar, ban va statistika", ru: "Жалобы, бан и статистика", en: "Reports, bans and stats", de: "Meldungen, Bans und Stats", tg: "Шикоятҳо, бан ва омор", tr: "Şikayetler, ban ve istatistik", ko: "신고, 차단 및 통계", ja: "通報・BAN・統計", zh: "举报、封禁和统计",
+    ar: "البلاغات والحظر والإحصائيات",
+  },
+  admin_tab_reports: { uz: "Shikoyatlar", ru: "Жалобы", en: "Reports", de: "Meldungen", tg: "Шикоятҳо", tr: "Şikayetler", ko: "신고", ja: "通報", zh: "举报",
+    ar: "البلاغات",
+  },
+  admin_tab_users: { uz: "Foydalanuvchilar", ru: "Пользователи", en: "Users", de: "Nutzer", tg: "Корбарон", tr: "Kullanıcılar", ko: "사용자", ja: "ユーザー", zh: "用户",
+    ar: "المستخدمون",
+  },
+  admin_tab_banned: { uz: "Ban", ru: "Бан", en: "Banned", de: "Gesperrt", tg: "Бан", tr: "Ban", ko: "차단", ja: "BAN", zh: "封禁",
+    ar: "محظورون",
+  },
+  admin_resolve: { uz: "Yopish", ru: "Закрыть", en: "Resolve", de: "Erledigt", tg: "Пӯшидан", tr: "Kapat", ko: "처리", ja: "完了", zh: "处理",
+    ar: "إغلاق",
+  },
+  admin_dismiss: { uz: "Rad etish", ru: "Отклонить", en: "Dismiss", de: "Verwerfen", tg: "Рад кардан", tr: "Reddet", ko: "기각", ja: "却下", zh: "驳回",
+    ar: "رفض",
+  },
+  admin_ban: { uz: "Ban", ru: "Бан", en: "Ban", de: "Sperren", tg: "Бан", tr: "Ban", ko: "차단", ja: "BAN", zh: "封禁",
+    ar: "حظر",
+  },
+  admin_unban: { uz: "Unban", ru: "Разбан", en: "Unban", de: "Entsperren", tg: "Unban", tr: "Ban kaldır", ko: "차단 해제", ja: "解除", zh: "解封",
+    ar: "إلغاء الحظر",
+  },
+  admin_search: { uz: "Qidirish", ru: "Поиск", en: "Search", de: "Suchen", tg: "Ҷустуҷӯ", tr: "Ara", ko: "검색", ja: "検索", zh: "搜索",
+    ar: "بحث",
+  },
+  admin_stat_users: { uz: "Foydalanuvchilar", ru: "Пользователи", en: "Users", de: "Nutzer", tg: "Корбарон", tr: "Kullanıcılar", ko: "사용자", ja: "ユーザー", zh: "用户",
+    ar: "المستخدمون",
+  },
+  admin_stat_reports: { uz: "Ochiq shikoyat", ru: "Открытые жалобы", en: "Open reports", de: "Offene Meldungen", tg: "Шикоятҳои кушода", tr: "Açık şikayet", ko: "미처리 신고", ja: "未処理通報", zh: "未处理举报",
+    ar: "بلاغات مفتوحة",
+  },
+  admin_stat_banned: { uz: "Banlangan", ru: "Забанено", en: "Banned", de: "Gesperrt", tg: "Баншуда", tr: "Banlı", ko: "차단됨", ja: "BAN中", zh: "已封禁",
+    ar: "محظورون",
+  },
+  admin_stat_chats: { uz: "Chatlar", ru: "Чаты", en: "Chats", de: "Chats", tg: "Чатҳо", tr: "Sohbetler", ko: "채팅", ja: "チャット", zh: "聊天",
+    ar: "الدردشات",
+  },
+  invite_btn: { uz: "Video", ru: "Видео", en: "Video", de: "Video", tg: "Видео", tr: "Video", ko: "영상", ja: "ビデオ", zh: "视频",
+    ar: "فيديو",
   },
   remove_btn: { uz: "O‘chirish", ru: "Удалить", en: "Remove", de: "Entfernen", tg: "Нест кардан", tr: "Kaldır", ko: "삭제", ja: "削除", zh: "删除",
     ar: "إزالة",
@@ -1818,10 +2171,22 @@ function applyStaticTranslations() {
   setText("navSearchLabel", "nav_search");
   setText("navProfileLabel", "nav_profile");
   setText("navSavedLabel", "nav_saved");
+  setText("navAdminLabel", "nav_admin");
   setText("savedTitle", "saved_title");
   setText("savedHint", "saved_hint");
   setText("savedEmpty", "saved_empty");
+  setText("chatInvitesTitle", "chat_invites_title");
   setText("savePartnerBtn", "save_partner_btn");
+  setText("favInviteBtn", "fav_invite_btn");
+  setText("chatSendBtn", "chat_send");
+  setText("adminTitle", "admin_title");
+  setText("adminHint", "admin_hint");
+  setText("adminTabReports", "admin_tab_reports");
+  setText("adminTabUsers", "admin_tab_users");
+  setText("adminTabBanned", "admin_tab_banned");
+  setText("adminUserSearchBtn", "admin_search");
+  const chatInput = document.getElementById("chatInput");
+  if (chatInput) chatInput.placeholder = tr("chat_placeholder");
   setText("avatarChangeBtn", "avatar_upload");
   setText("avatarRemoveBtn", "avatar_remove");
   setText("gameOpenBtn", "game_open");
@@ -2212,6 +2577,8 @@ function setPreferAgeBounds(minV, maxV) {
 }
 
 let meLoaded = false;
+let meIsAdmin = false;
+let meUserId = null;
 
 async function loadMe() {
   meLoaded = false;
@@ -2223,6 +2590,10 @@ async function loadMe() {
     }
     const me = await api("/api/me");
     if (!me.registered) { showError(tr("not_registered")); return; }
+    meUserId = me.id;
+    meIsAdmin = !!me.is_admin;
+    const adminNav = document.getElementById("navAdminBtn");
+    if (adminNav) adminNav.style.display = meIsAdmin ? "" : "none";
     profileLanguage = me.language || "uz";
     currentLang = uiLang(me.ui_language || me.language || "uz");
     matchTopic = me.match_topic || "any";
@@ -2488,6 +2859,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.view).classList.add("active");
     if (btn.dataset.view === "savedView") loadSavedList();
+    if (btn.dataset.view === "adminView") loadAdminPanel();
   });
 });
 
@@ -2499,11 +2871,49 @@ function startPresencePing() {
   presenceTimer = setInterval(ping, 20000);
 }
 
+async function loadChatInvites() {
+  const box = document.getElementById("chatInvitesBox");
+  const list = document.getElementById("chatInvitesList");
+  if (!box || !list) return;
+  try {
+    const data = await api("/api/chat/invites");
+    const incoming = data.incoming || [];
+    if (!incoming.length) {
+      box.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+    box.style.display = "block";
+    list.innerHTML = "";
+    for (const it of incoming) {
+      const row = document.createElement("div");
+      row.className = "invite-item";
+      const thumb = it.avatar_url
+        ? `<img class="thumb" src="${it.avatar_url}" alt="">`
+        : `<div class="thumb letter">${(it.name || "?").charAt(0).toUpperCase()}</div>`;
+      row.innerHTML = `
+        ${thumb}
+        <div class="saved-meta" style="flex:1;min-width:0">
+          <div class="name">${it.name}</div>
+          <div class="sub">${it.age || ""} · ${tr("fav_invite_btn")}</div>
+        </div>
+        <div class="actions">
+          <button type="button" class="accept" data-invite-accept="${it.invite_id}">${tr("chat_accept")}</button>
+          <button type="button" data-invite-decline="${it.invite_id}">${tr("chat_decline")}</button>
+        </div>`;
+      list.appendChild(row);
+    }
+  } catch (_) {
+    box.style.display = "none";
+  }
+}
+
 async function loadSavedList() {
   const list = document.getElementById("savedList");
   const empty = document.getElementById("savedEmpty");
   if (!list) return;
   list.innerHTML = "";
+  await loadChatInvites();
   try {
     const data = await api("/api/saved");
     const items = data.items || [];
@@ -2523,17 +2933,23 @@ async function loadSavedList() {
       const thumb = it.avatar_url
         ? `<img class="thumb" src="${it.avatar_url}" alt="">`
         : `<div class="thumb letter">${(it.name || "?").charAt(0).toUpperCase()}</div>`;
+      let actions = "";
+      if (it.can_chat && it.thread_id) {
+        actions += `<button type="button" class="chat" data-chat="${it.thread_id}" data-chat-name="${(it.name || "").replace(/"/g, "&quot;")}">${tr("chat_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+      } else {
+        actions += `<button type="button" class="fav-invite" data-fav-invite="${it.partner_id}">${tr("fav_invite_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+      }
+      actions += `<button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>`;
       row.innerHTML = `
         ${thumb}
         <div class="saved-meta" style="flex:1">
           <div class="name">${it.name}</div>
           <div class="sub">${it.age} · ${tr(it.gender === "male" ? "gender_male" : "gender_female")}${city}</div>
-          <div class="sub">${status}${it.busy ? " · busy" : ""}</div>
+          <div class="sub">${status}${it.busy ? " · busy" : ""}${it.mutual ? " · ★" : ""}</div>
         </div>
-        <div class="saved-actions">
-          <button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>
-          <button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>
-        </div>`;
+        <div class="saved-actions">${actions}</div>`;
       list.appendChild(row);
     }
   } catch (e) {
@@ -2542,9 +2958,54 @@ async function loadSavedList() {
   }
 }
 
+document.getElementById("chatInvitesList")?.addEventListener("click", async (e) => {
+  const acc = e.target.closest("[data-invite-accept]");
+  const dec = e.target.closest("[data-invite-decline]");
+  if (!acc && !dec) return;
+  const id = parseInt((acc || dec).dataset.inviteAccept || (acc || dec).dataset.inviteDecline, 10);
+  try {
+    const res = await api(`/api/chat/invite/${id}/respond`, {
+      method: "POST",
+      body: JSON.stringify({ action: acc ? "accept" : "decline" }),
+    });
+    if (acc && res.thread_id) {
+      tg?.showAlert?.(tr("fav_invite_accepted"));
+      openChatThread(res.thread_id, "");
+    }
+    loadSavedList();
+  } catch (err) {
+    tg?.showAlert?.(err.message || String(err));
+  }
+});
+
 document.getElementById("savedList")?.addEventListener("click", async (e) => {
   const inviteBtn = e.target.closest("[data-invite]");
   const unsaveBtn = e.target.closest("[data-unsave]");
+  const chatBtn = e.target.closest("[data-chat]");
+  const favBtn = e.target.closest("[data-fav-invite]");
+  if (chatBtn) {
+    openChatThread(parseInt(chatBtn.dataset.chat, 10), chatBtn.dataset.chatName || "");
+    return;
+  }
+  if (favBtn) {
+    const pid = parseInt(favBtn.dataset.favInvite, 10);
+    try {
+      const res = await api("/api/chat/invite", {
+        method: "POST",
+        body: JSON.stringify({ partner_id: pid }),
+      });
+      if (res.status === "accepted" || res.status === "already_friends") {
+        tg?.showAlert?.(tr("fav_invite_accepted"));
+        if (res.thread_id) openChatThread(res.thread_id, "");
+      } else {
+        tg?.showAlert?.(tr("fav_invite_ok"));
+      }
+      loadSavedList();
+    } catch (err) {
+      tg?.showAlert?.(err.message || String(err));
+    }
+    return;
+  }
   if (inviteBtn) {
     const pid = parseInt(inviteBtn.dataset.invite, 10);
     try {
@@ -2576,6 +3037,231 @@ document.getElementById("savedList")?.addEventListener("click", async (e) => {
     } catch (err) {
       tg?.showAlert?.(err.message || String(err));
     }
+  }
+});
+
+/* ---- Chat UI ---- */
+let activeThreadId = null;
+let chatLastMsgId = 0;
+let chatPollTimer = null;
+
+function openChatThread(threadId, partnerName) {
+  activeThreadId = threadId;
+  chatLastMsgId = 0;
+  const view = document.getElementById("chatView");
+  const msgs = document.getElementById("chatMsgs");
+  if (msgs) msgs.innerHTML = "";
+  document.getElementById("chatPartnerName").textContent = partnerName || "Chat";
+  document.getElementById("chatPartnerSub").textContent = "";
+  view.classList.add("open");
+  bottomNav.style.display = "none";
+  clearInterval(chatPollTimer);
+  refreshChatMessages(true);
+  chatPollTimer = setInterval(() => refreshChatMessages(false), 2500);
+}
+
+function closeChatThread() {
+  document.getElementById("chatView")?.classList.remove("open");
+  clearInterval(chatPollTimer);
+  chatPollTimer = null;
+  activeThreadId = null;
+  bottomNav.style.display = "flex";
+  loadSavedList();
+}
+
+function appendChatBubble(m) {
+  const msgs = document.getElementById("chatMsgs");
+  if (!msgs) return;
+  const el = document.createElement("div");
+  el.className = "chat-bubble " + (m.mine ? "mine" : "them");
+  el.textContent = m.text || "";
+  msgs.appendChild(el);
+}
+
+async function refreshChatMessages(initial) {
+  if (!activeThreadId) return;
+  try {
+    const data = await api(`/api/chat/threads/${activeThreadId}/messages?after_id=${chatLastMsgId}`);
+    if (data.partner) {
+      document.getElementById("chatPartnerName").textContent = data.partner.name || "Chat";
+      const st = data.partner.online ? tr("online_label") : tr("offline_label");
+      document.getElementById("chatPartnerSub").textContent = `${data.partner.age || ""} · ${st}`;
+    }
+    const list = data.messages || [];
+    const msgs = document.getElementById("chatMsgs");
+    const nearBottom = !msgs || (msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 80);
+    for (const m of list) {
+      appendChatBubble(m);
+      if (m.id > chatLastMsgId) chatLastMsgId = m.id;
+    }
+    if ((initial || nearBottom) && msgs) msgs.scrollTop = msgs.scrollHeight;
+  } catch (_) {}
+}
+
+document.getElementById("chatBackBtn")?.addEventListener("click", closeChatThread);
+
+document.getElementById("chatCompose")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!activeThreadId) return;
+  const input = document.getElementById("chatInput");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+  input.value = "";
+  try {
+    const res = await api(`/api/chat/threads/${activeThreadId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    if (res.message) {
+      appendChatBubble(res.message);
+      if (res.message.id > chatLastMsgId) chatLastMsgId = res.message.id;
+      const msgs = document.getElementById("chatMsgs");
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }
+  } catch (err) {
+    tg?.showAlert?.(err.message || String(err));
+  }
+});
+
+/* ---- Admin panel ---- */
+let adminTab = "reports";
+
+async function loadAdminPanel() {
+  if (!meIsAdmin) return;
+  try {
+    const stats = await api("/api/admin/stats");
+    const box = document.getElementById("adminStats");
+    if (box) {
+      box.innerHTML = `
+        <div class="admin-stat"><div class="n">${stats.users ?? 0}</div><div class="l">${tr("admin_stat_users")}</div></div>
+        <div class="admin-stat"><div class="n">${stats.open_reports ?? 0}</div><div class="l">${tr("admin_stat_reports")}</div></div>
+        <div class="admin-stat"><div class="n">${stats.banned ?? 0}</div><div class="l">${tr("admin_stat_banned")}</div></div>
+        <div class="admin-stat"><div class="n">${stats.chat_threads ?? 0}</div><div class="l">${tr("admin_stat_chats")}</div></div>`;
+    }
+  } catch (_) {}
+  document.getElementById("adminSearchRow").style.display = adminTab === "users" ? "flex" : "none";
+  if (adminTab === "reports") await loadAdminReports();
+  else if (adminTab === "banned") await loadAdminBanned();
+  else await loadAdminUsers();
+}
+
+async function loadAdminReports() {
+  const list = document.getElementById("adminList");
+  if (!list) return;
+  list.innerHTML = "";
+  try {
+    const data = await api("/api/admin/reports?status=open");
+    const items = data.items || [];
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-saved" style="display:block">${tr("admin_tab_reports")}: 0</div>`;
+      return;
+    }
+    for (const r of items) {
+      const card = document.createElement("div");
+      card.className = "admin-card";
+      card.innerHTML = `
+        <div class="title">#${r.id} · ${r.reason}</div>
+        <div class="sub">${r.reporter.name} → ${r.reported.name} (id ${r.reported.id})</div>
+        <div class="sub">${r.details || "—"} · ${r.room_id || ""}</div>
+        <div class="row">
+          <button type="button" class="ok" data-admin-resolve="${r.id}">${tr("admin_resolve")}</button>
+          <button type="button" data-admin-dismiss="${r.id}">${tr("admin_dismiss")}</button>
+          <button type="button" class="danger" data-admin-ban="${r.reported.id}">${tr("admin_ban")}</button>
+        </div>`;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="empty-saved" style="display:block">${e.message}</div>`;
+  }
+}
+
+async function loadAdminUsers(q) {
+  const list = document.getElementById("adminList");
+  if (!list) return;
+  list.innerHTML = "";
+  try {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    const data = await api(`/api/admin/users${qs}`);
+    for (const u of (data.items || [])) {
+      const card = document.createElement("div");
+      card.className = "admin-card";
+      card.innerHTML = `
+        <div class="title">${u.name} · ${u.age}</div>
+        <div class="sub">id ${u.id} · ${u.city || "—"} · ${u.is_banned ? "BAN" : "ok"}</div>
+        <div class="row">
+          ${u.is_banned
+            ? `<button type="button" class="ok" data-admin-unban="${u.id}">${tr("admin_unban")}</button>`
+            : `<button type="button" class="danger" data-admin-ban="${u.id}">${tr("admin_ban")}</button>`}
+        </div>`;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="empty-saved" style="display:block">${e.message}</div>`;
+  }
+}
+
+async function loadAdminBanned() {
+  const list = document.getElementById("adminList");
+  if (!list) return;
+  list.innerHTML = "";
+  try {
+    const data = await api("/api/admin/banned");
+    for (const u of (data.items || [])) {
+      const card = document.createElement("div");
+      card.className = "admin-card";
+      card.innerHTML = `
+        <div class="title">${u.name}</div>
+        <div class="sub">id ${u.id} · ${u.city || "—"}</div>
+        <div class="row">
+          <button type="button" class="ok" data-admin-unban="${u.id}">${tr("admin_unban")}</button>
+        </div>`;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="empty-saved" style="display:block">${e.message}</div>`;
+  }
+}
+
+document.querySelectorAll("[data-admin-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-admin-tab]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    adminTab = btn.dataset.adminTab;
+    loadAdminPanel();
+  });
+});
+
+document.getElementById("adminUserSearchBtn")?.addEventListener("click", () => {
+  loadAdminUsers(document.getElementById("adminUserQuery")?.value || "");
+});
+
+document.getElementById("adminList")?.addEventListener("click", async (e) => {
+  const resolve = e.target.closest("[data-admin-resolve]");
+  const dismiss = e.target.closest("[data-admin-dismiss]");
+  const ban = e.target.closest("[data-admin-ban]");
+  const unban = e.target.closest("[data-admin-unban]");
+  try {
+    if (resolve) {
+      await api(`/api/admin/reports/${resolve.dataset.adminResolve}/resolve`, { method: "POST" });
+      loadAdminPanel();
+    } else if (dismiss) {
+      await api(`/api/admin/reports/${dismiss.dataset.adminDismiss}/dismiss`, { method: "POST" });
+      loadAdminPanel();
+    } else if (ban) {
+      await api("/api/admin/ban", {
+        method: "POST",
+        body: JSON.stringify({ user_id: parseInt(ban.dataset.adminBan, 10) }),
+      });
+      loadAdminPanel();
+    } else if (unban) {
+      await api("/api/admin/unban", {
+        method: "POST",
+        body: JSON.stringify({ user_id: parseInt(unban.dataset.adminUnban, 10) }),
+      });
+      loadAdminPanel();
+    }
+  } catch (err) {
+    tg?.showAlert?.(err.message || String(err));
   }
 });
 
@@ -3166,6 +3852,26 @@ document.getElementById("savePartnerBtn")?.addEventListener("click", async () =>
       body: JSON.stringify({ partner_id: callPartnerId }),
     });
     tg?.showAlert(tr("save_partner_ok"));
+  } catch (e) {
+    tg?.showAlert(e.message || String(e));
+  }
+});
+
+document.getElementById("favInviteBtn")?.addEventListener("click", async () => {
+  if (!callPartnerId) {
+    tg?.showAlert(tr("safety_need_partner"));
+    return;
+  }
+  try {
+    const res = await api("/api/chat/invite", {
+      method: "POST",
+      body: JSON.stringify({ partner_id: callPartnerId }),
+    });
+    if (res.status === "accepted" || res.status === "already_friends") {
+      tg?.showAlert(tr("fav_invite_accepted"));
+    } else {
+      tg?.showAlert(tr("fav_invite_ok"));
+    }
   } catch (e) {
     tg?.showAlert(e.message || String(e));
   }

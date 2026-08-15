@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, File, Header, HTTPException, UploadFile
@@ -31,21 +32,41 @@ from app.matching.queue import (
 from app.matching.respond import respond_to_proposal
 from app.matching.age_brackets import clamp_prefer, prefer_bounds_meta
 from app.livekit_tokens import livekit_configured, livekit_join_payload
+from app.chat_service import (
+    ensure_mutual_favorites_and_thread,
+    get_thread_for_pair,
+    thread_partner_id,
+    user_threads,
+)
 from app.models import (
     CallFeedback,
     CallSession,
+    ChatInvite,
+    ChatInviteStatus,
+    ChatMessage,
+    ChatThread,
     Language,
     LookingFor,
+    Report,
     ReportReason,
+    ReportStatus,
     SavedPartner,
     SearchScope,
     SessionStatus,
     User,
 )
-from app.moderation import add_block, add_report, get_banned_ids, get_blocked_ids, is_blocked_pair
+from app.moderation import (
+    add_block,
+    add_report,
+    get_banned_ids,
+    get_blocked_ids,
+    is_blocked_pair,
+    mark_report,
+    set_user_banned,
+)
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
-from app.telegram_client import notify_admins
+from app.telegram_client import notify_admins, send_message
 from app.topics import DEFAULT_TOPIC, LEGACY_TOPIC_MAP, MATCH_TOPICS, TOPIC_IDS, normalize_topic
 
 router = APIRouter(prefix="/api")
@@ -124,6 +145,7 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "prefer_age_min": user.prefer_age_min if user.prefer_age_min is not None else settings.min_age,
         "prefer_age_max": user.prefer_age_max if user.prefer_age_max is not None else 100,
         "is_banned": user.is_banned,
+        "is_admin": int(user.id) in settings.admin_id_set(),
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
         "match_topic": normalize_topic(getattr(user, "match_topic", None)),
@@ -699,12 +721,30 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
                 .order_by(SavedPartner.id.desc())
             )
         ).all()
+        partner_ids = [int(u.id) for _, u in rows]
+        threads = await user_threads(session, me_id)
+        thread_by_partner: dict[int, int] = {}
+        for th in threads:
+            pid = await thread_partner_id(th, me_id)
+            if pid is not None:
+                thread_by_partner[int(pid)] = int(th.id)
+        mutual_ids: set[int] = set()
+        if partner_ids:
+            mutual_rows = (
+                await session.execute(
+                    select(SavedPartner.user_id).where(
+                        SavedPartner.partner_id == me_id,
+                        SavedPartner.user_id.in_(partner_ids),
+                    )
+                )
+            ).scalars().all()
+            mutual_ids = {int(x) for x in mutual_rows}
 
-    partner_ids = [int(u.id) for _, u in rows]
     online = await online_map(partner_ids)
 
     items = []
     for saved, partner in rows:
+        pid = int(partner.id)
         items.append({
             "partner_id": partner.id,
             "name": partner.name,
@@ -717,6 +757,9 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
             "has_avatar": bool(getattr(partner, "has_avatar", False)),
             "avatar_url": avatar_url(partner.id, bool(getattr(partner, "has_avatar", False))),
             "saved_at": saved.created_at.isoformat() if saved.created_at else None,
+            "mutual": pid in mutual_ids or pid in thread_by_partner,
+            "can_chat": pid in thread_by_partner,
+            "thread_id": thread_by_partner.get(pid),
         })
     return {"items": items}
 
@@ -871,3 +914,597 @@ async def call_feedback(payload: FeedbackRequest, x_telegram_init_data: str | No
             )
         await session.commit()
     return {"status": "ok", "stars": payload.stars}
+
+
+# ---------------------------------------------------------------------------
+# Sevimlilar chat (taklif → rozilik → thread)
+# ---------------------------------------------------------------------------
+
+def _require_admin(user_id: int) -> None:
+    if user_id not in settings.admin_id_set():
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+
+
+def _partner_card(user: User, online: bool = False) -> dict:
+    return {
+        "partner_id": user.id,
+        "name": user.name,
+        "age": user.age,
+        "gender": user.gender.value,
+        "city": user.city,
+        "language": user.language.value,
+        "online": online,
+        "busy": bool(user.is_in_call),
+        "has_avatar": bool(getattr(user, "has_avatar", False)),
+        "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
+    }
+
+
+class ChatInviteCreate(BaseModel):
+    partner_id: int
+
+
+class ChatInviteRespond(BaseModel):
+    action: str  # accept | decline
+
+
+class ChatMessageCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+@router.post("/chat/invite")
+async def create_chat_invite(payload: ChatInviteCreate, x_telegram_init_data: str | None = Header(default=None)):
+    """Sevimlilar / chatga taklif yuborish."""
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    partner_id = int(payload.partner_id)
+    if partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizga taklif yuborib bo'lmaydi")
+    if await is_blocked_pair(me_id, partner_id):
+        raise HTTPException(status_code=403, detail="Bloklangan juftlik")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, partner_id)
+        if not me or not partner:
+            raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        if me.is_banned or partner.is_banned:
+            raise HTTPException(status_code=403, detail="Hisob cheklangan")
+
+        existing_thread = await get_thread_for_pair(session, me_id, partner_id)
+        if existing_thread:
+            return {
+                "status": "already_friends",
+                "thread_id": existing_thread.id,
+                "partner_id": partner_id,
+            }
+
+        pending = (
+            await session.execute(
+                select(ChatInvite).where(
+                    ChatInvite.from_user_id == me_id,
+                    ChatInvite.to_user_id == partner_id,
+                    ChatInvite.status == ChatInviteStatus.pending,
+                )
+            )
+        ).scalar_one_or_none()
+        if pending:
+            return {"status": "pending", "invite_id": pending.id, "partner_id": partner_id}
+
+        # Agar ular menga taklif yuborgan bo'lsa — avtomatik qabul
+        reverse = (
+            await session.execute(
+                select(ChatInvite).where(
+                    ChatInvite.from_user_id == partner_id,
+                    ChatInvite.to_user_id == me_id,
+                    ChatInvite.status == ChatInviteStatus.pending,
+                )
+            )
+        ).scalar_one_or_none()
+        if reverse:
+            reverse.status = ChatInviteStatus.accepted
+            reverse.responded_at = datetime.now(timezone.utc)
+            thread = await ensure_mutual_favorites_and_thread(session, me_id, partner_id)
+            await session.commit()
+            try:
+                await send_message(
+                    partner_id,
+                    f"✅ <b>{me.name}</b> sevimlilar taklifingizni qabul qildi. Mini App → Saqlangan → Chat.",
+                )
+            except Exception:
+                pass
+            return {
+                "status": "accepted",
+                "invite_id": reverse.id,
+                "thread_id": thread.id,
+                "partner_id": partner_id,
+            }
+
+        invite = ChatInvite(
+            from_user_id=me_id,
+            to_user_id=partner_id,
+            status=ChatInviteStatus.pending,
+        )
+        session.add(invite)
+        await session.commit()
+        await session.refresh(invite)
+
+    try:
+        await send_message(
+            partner_id,
+            f"⭐ <b>{me.name}</b> sizni sevimlilarga taklif qildi.\n"
+            f"Mini App → Saqlangan bo‘limida qabul qilishingiz mumkin.",
+        )
+    except Exception:
+        pass
+
+    return {"status": "pending", "invite_id": invite.id, "partner_id": partner_id}
+
+
+@router.get("/chat/invites")
+async def list_chat_invites(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    await touch_presence(me_id)
+
+    async with async_session() as session:
+        incoming_rows = (
+            await session.execute(
+                select(ChatInvite, User)
+                .join(User, User.id == ChatInvite.from_user_id)
+                .where(
+                    ChatInvite.to_user_id == me_id,
+                    ChatInvite.status == ChatInviteStatus.pending,
+                )
+                .order_by(ChatInvite.id.desc())
+            )
+        ).all()
+        outgoing_rows = (
+            await session.execute(
+                select(ChatInvite, User)
+                .join(User, User.id == ChatInvite.to_user_id)
+                .where(
+                    ChatInvite.from_user_id == me_id,
+                    ChatInvite.status == ChatInviteStatus.pending,
+                )
+                .order_by(ChatInvite.id.desc())
+            )
+        ).all()
+
+    incoming_ids = [int(u.id) for _, u in incoming_rows]
+    outgoing_ids = [int(u.id) for _, u in outgoing_rows]
+    online = await online_map(incoming_ids + outgoing_ids)
+
+    return {
+        "incoming": [
+            {
+                "invite_id": inv.id,
+                "from_user_id": inv.from_user_id,
+                **_partner_card(user, online.get(user.id, False)),
+                "created_at": inv.created_at.isoformat() if inv.created_at else None,
+            }
+            for inv, user in incoming_rows
+        ],
+        "outgoing": [
+            {
+                "invite_id": inv.id,
+                "to_user_id": inv.to_user_id,
+                **_partner_card(user, online.get(user.id, False)),
+                "created_at": inv.created_at.isoformat() if inv.created_at else None,
+            }
+            for inv, user in outgoing_rows
+        ],
+    }
+
+
+@router.post("/chat/invite/{invite_id}/respond")
+async def respond_chat_invite(
+    invite_id: int,
+    payload: ChatInviteRespond,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    action = (payload.action or "").strip().lower()
+    if action not in ("accept", "decline"):
+        raise HTTPException(status_code=400, detail="action: accept | decline")
+
+    async with async_session() as session:
+        invite = await session.get(ChatInvite, invite_id)
+        if not invite or invite.to_user_id != me_id:
+            raise HTTPException(status_code=404, detail="Taklif topilmadi")
+        if invite.status != ChatInviteStatus.pending:
+            raise HTTPException(status_code=409, detail="Taklif allaqachon yopilgan")
+
+        me = await session.get(User, me_id)
+        from_user = await session.get(User, invite.from_user_id)
+        if not me or not from_user:
+            raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+        invite.responded_at = datetime.now(timezone.utc)
+        if action == "decline":
+            invite.status = ChatInviteStatus.declined
+            await session.commit()
+            return {"status": "declined", "invite_id": invite_id}
+
+        invite.status = ChatInviteStatus.accepted
+        thread = await ensure_mutual_favorites_and_thread(session, me_id, invite.from_user_id)
+        await session.commit()
+        thread_id = thread.id
+        from_id = invite.from_user_id
+        me_name = me.name
+
+    try:
+        await send_message(
+            from_id,
+            f"✅ <b>{me_name}</b> sevimlilar taklifingizni qabul qildi. Mini App → Saqlangan → Chat.",
+        )
+    except Exception:
+        pass
+
+    return {
+        "status": "accepted",
+        "invite_id": invite_id,
+        "thread_id": thread_id,
+        "partner_id": from_id,
+    }
+
+
+@router.get("/chat/threads")
+async def list_chat_threads(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    await touch_presence(me_id)
+
+    async with async_session() as session:
+        threads = await user_threads(session, me_id)
+        items = []
+        partner_ids: list[int] = []
+        for th in threads:
+            pid = await thread_partner_id(th, me_id)
+            if pid is None:
+                continue
+            partner = await session.get(User, pid)
+            if not partner:
+                continue
+            last = (
+                await session.execute(
+                    select(ChatMessage)
+                    .where(ChatMessage.thread_id == th.id)
+                    .order_by(ChatMessage.id.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            partner_ids.append(pid)
+            items.append({
+                "thread_id": th.id,
+                "partner": _partner_card(partner),
+                "last_message": (
+                    {
+                        "id": last.id,
+                        "sender_id": last.sender_id,
+                        "text": last.body,
+                        "created_at": last.created_at.isoformat() if last.created_at else None,
+                        "mine": last.sender_id == me_id,
+                    }
+                    if last
+                    else None
+                ),
+                "updated_at": th.updated_at.isoformat() if th.updated_at else None,
+            })
+
+    online = await online_map(partner_ids)
+    for it in items:
+        pid = it["partner"]["partner_id"]
+        it["partner"]["online"] = online.get(pid, False)
+
+    return {"items": items}
+
+
+@router.get("/chat/threads/{thread_id}/messages")
+async def list_chat_messages(
+    thread_id: int,
+    after_id: int = 0,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    await touch_presence(me_id)
+
+    async with async_session() as session:
+        thread = await session.get(ChatThread, thread_id)
+        if not thread or me_id not in (thread.user_a_id, thread.user_b_id):
+            raise HTTPException(status_code=404, detail="Chat topilmadi")
+        q = select(ChatMessage).where(ChatMessage.thread_id == thread_id)
+        if after_id > 0:
+            q = q.where(ChatMessage.id > after_id)
+        q = q.order_by(ChatMessage.id.asc()).limit(100)
+        msgs = list((await session.execute(q)).scalars().all())
+        pid = await thread_partner_id(thread, me_id)
+        partner = await session.get(User, pid) if pid else None
+
+    return {
+        "thread_id": thread_id,
+        "partner": _partner_card(partner) if partner else None,
+        "messages": [
+            {
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "text": m.body,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "mine": m.sender_id == me_id,
+            }
+            for m in msgs
+        ],
+    }
+
+
+@router.post("/chat/threads/{thread_id}/messages")
+async def send_chat_message(
+    thread_id: int,
+    payload: ChatMessageCreate,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    text = (payload.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Xabar bo'sh")
+    if len(text) > 1000:
+        raise HTTPException(status_code=400, detail="Xabar juda uzun")
+
+    async with async_session() as session:
+        thread = await session.get(ChatThread, thread_id)
+        if not thread or me_id not in (thread.user_a_id, thread.user_b_id):
+            raise HTTPException(status_code=404, detail="Chat topilmadi")
+        me = await session.get(User, me_id)
+        if not me or me.is_banned:
+            raise HTTPException(status_code=403, detail="Hisob cheklangan")
+        pid = await thread_partner_id(thread, me_id)
+        if pid and await is_blocked_pair(me_id, pid):
+            raise HTTPException(status_code=403, detail="Bloklangan juftlik")
+
+        msg = ChatMessage(thread_id=thread_id, sender_id=me_id, body=text[:1000])
+        session.add(msg)
+        thread.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+        await session.refresh(msg)
+
+    return {
+        "status": "ok",
+        "message": {
+            "id": msg.id,
+            "sender_id": msg.sender_id,
+            "text": msg.body,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+            "mine": True,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Admin panel (Mini App)
+# ---------------------------------------------------------------------------
+
+class AdminBanRequest(BaseModel):
+    user_id: int
+    reason: str | None = Field(default=None, max_length=300)
+
+
+class AdminUserIdRequest(BaseModel):
+    user_id: int
+
+
+@router.get("/admin/stats")
+async def admin_stats(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+
+    async with async_session() as session:
+        users_count = (await session.execute(select(func.count()).select_from(User))).scalar() or 0
+        banned_count = (
+            await session.execute(select(func.count()).select_from(User).where(User.is_banned.is_(True)))
+        ).scalar() or 0
+        open_reports = (
+            await session.execute(
+                select(func.count()).select_from(Report).where(Report.status == ReportStatus.open)
+            )
+        ).scalar() or 0
+        active_calls = (
+            await session.execute(
+                select(func.count()).select_from(CallSession).where(CallSession.status == SessionStatus.active)
+            )
+        ).scalar() or 0
+        threads_count = (await session.execute(select(func.count()).select_from(ChatThread))).scalar() or 0
+
+    return {
+        "users": users_count,
+        "banned": banned_count,
+        "open_reports": open_reports,
+        "active_calls": active_calls,
+        "chat_threads": threads_count,
+    }
+
+
+@router.get("/admin/reports")
+async def admin_list_reports(
+    status: str = "open",
+    limit: int = 30,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    limit = max(1, min(limit, 100))
+
+    status_map = {
+        "open": ReportStatus.open,
+        "reviewed": ReportStatus.reviewed,
+        "dismissed": ReportStatus.dismissed,
+        "all": None,
+    }
+    if status not in status_map:
+        raise HTTPException(status_code=400, detail="status: open|reviewed|dismissed|all")
+
+    async with async_session() as session:
+        q = select(Report).order_by(Report.id.desc()).limit(limit)
+        st = status_map[status]
+        if st is not None:
+            q = q.where(Report.status == st)
+        reports = list((await session.execute(q)).scalars().all())
+        items = []
+        for r in reports:
+            reporter = await session.get(User, r.reporter_id)
+            reported = await session.get(User, r.reported_id)
+            items.append({
+                "id": r.id,
+                "reason": r.reason.value,
+                "details": r.details,
+                "status": r.status.value,
+                "room_id": r.room_id,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "reporter": {
+                    "id": r.reporter_id,
+                    "name": reporter.name if reporter else "—",
+                    "is_banned": bool(reporter.is_banned) if reporter else False,
+                },
+                "reported": {
+                    "id": r.reported_id,
+                    "name": reported.name if reported else "—",
+                    "is_banned": bool(reported.is_banned) if reported else False,
+                    "has_avatar": bool(getattr(reported, "has_avatar", False)) if reported else False,
+                    "avatar_url": avatar_url(
+                        r.reported_id, bool(getattr(reported, "has_avatar", False))
+                    )
+                    if reported
+                    else None,
+                },
+            })
+    return {"items": items}
+
+
+@router.post("/admin/reports/{report_id}/resolve")
+async def admin_resolve_report(report_id: int, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    report = await mark_report(report_id, ReportStatus.reviewed)
+    if not report:
+        raise HTTPException(status_code=404, detail="Shikoyat topilmadi")
+    return {"status": "reviewed", "report_id": report.id}
+
+
+@router.post("/admin/reports/{report_id}/dismiss")
+async def admin_dismiss_report(report_id: int, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    report = await mark_report(report_id, ReportStatus.dismissed)
+    if not report:
+        raise HTTPException(status_code=404, detail="Shikoyat topilmadi")
+    return {"status": "dismissed", "report_id": report.id}
+
+
+@router.post("/admin/ban")
+async def admin_ban(payload: AdminBanRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    admin_id = int(tg_user["id"])
+    _require_admin(admin_id)
+    if payload.user_id == admin_id:
+        raise HTTPException(status_code=400, detail="O'zingizni ban qilib bo'lmaydi")
+    user = await set_user_banned(payload.user_id, True)
+    if not user:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+    await notify_admins(
+        f"🚫 Admin <code>{admin_id}</code> ban qildi: <code>{user.id}</code> ({user.name})"
+        + (f"\nSabab: {payload.reason}" if payload.reason else "")
+    )
+    return {"status": "banned", "user_id": user.id, "name": user.name}
+
+
+@router.post("/admin/unban")
+async def admin_unban(payload: AdminUserIdRequest, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    admin_id = int(tg_user["id"])
+    _require_admin(admin_id)
+    user = await set_user_banned(payload.user_id, False)
+    if not user:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+    return {"status": "unbanned", "user_id": user.id, "name": user.name}
+
+
+@router.get("/admin/users")
+async def admin_search_users(
+    q: str = "",
+    limit: int = 20,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    limit = max(1, min(limit, 50))
+    query = (q or "").strip()
+
+    async with async_session() as session:
+        if query.isdigit():
+            user = await session.get(User, int(query))
+            users = [user] if user else []
+        elif query:
+            users = list(
+                (
+                    await session.execute(
+                        select(User)
+                        .where(User.name.ilike(f"%{query}%"))
+                        .order_by(User.id.desc())
+                        .limit(limit)
+                    )
+                ).scalars().all()
+            )
+        else:
+            users = list(
+                (
+                    await session.execute(select(User).order_by(User.id.desc()).limit(limit))
+                ).scalars().all()
+            )
+
+    return {
+        "items": [
+            {
+                "id": u.id,
+                "name": u.name,
+                "age": u.age,
+                "gender": u.gender.value,
+                "city": u.city,
+                "language": u.language.value,
+                "is_banned": bool(u.is_banned),
+                "is_in_call": bool(u.is_in_call),
+                "has_avatar": bool(getattr(u, "has_avatar", False)),
+                "avatar_url": avatar_url(u.id, bool(getattr(u, "has_avatar", False))),
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in users
+            if u
+        ]
+    }
+
+
+@router.get("/admin/banned")
+async def admin_banned_users(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    async with async_session() as session:
+        users = list(
+            (
+                await session.execute(
+                    select(User).where(User.is_banned.is_(True)).order_by(User.id.desc()).limit(100)
+                )
+            ).scalars().all()
+        )
+    return {
+        "items": [
+            {
+                "id": u.id,
+                "name": u.name,
+                "age": u.age,
+                "city": u.city,
+                "avatar_url": avatar_url(u.id, bool(getattr(u, "has_avatar", False))),
+            }
+            for u in users
+        ]
+    }
