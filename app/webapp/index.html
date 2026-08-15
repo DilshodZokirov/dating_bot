@@ -2677,6 +2677,11 @@ async function bootApp() {
   }
   window.Telegram?.WebApp?.ready?.();
   window.Telegram?.WebApp?.expand?.();
+  try {
+    const h = await fetch("/health").then((r) => r.json());
+    const badge = document.getElementById("appBuildBadge");
+    if (badge && h.build) badge.textContent = "build " + h.build;
+  } catch (_) {}
   await loadCities();
   await loadAgeRanges();
   await loadMe();
