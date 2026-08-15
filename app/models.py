@@ -160,3 +160,50 @@ class SavedPartner(Base):
     partner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+
+class ChatInviteStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    declined = "declined"
+    cancelled = "cancelled"
+
+
+class ChatInvite(Base):
+    """Sevimlilar / chatga taklif — ikkinchi tomon rozilik bersa ochiladi."""
+
+    __tablename__ = "chat_invites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    from_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    to_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    status: Mapped[ChatInviteStatus] = mapped_column(
+        Enum(ChatInviteStatus), default=ChatInviteStatus.pending, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ChatThread(Base):
+    """Ikki foydalanuvchi o‘rtasidagi matn chat (user_a_id < user_b_id)."""
+
+    __tablename__ = "chat_threads"
+    __table_args__ = (UniqueConstraint("user_a_id", "user_b_id", name="uq_chat_thread_pair"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_a_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    user_b_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    thread_id: Mapped[int] = mapped_column(Integer, ForeignKey("chat_threads.id"), index=True)
+    sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    body: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
