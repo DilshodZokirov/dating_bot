@@ -90,6 +90,8 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_banned: Mapped[bool] = mapped_column(default=False)
     is_in_call: Mapped[bool] = mapped_column(default=False)
+    # Telegram contact orqali ulashilgan telefon (ixtiyoriy)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -206,4 +208,26 @@ class ChatMessage(Base):
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
     body: Mapped[str] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PhoneShareStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    declined = "declined"
+
+
+class PhoneShareRequest(Base):
+    """Qo‘ng‘iroq davomida telefon raqam so‘rovi."""
+
+    __tablename__ = "phone_share_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    room_id: Mapped[str] = mapped_column(String(64), index=True)
+    from_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    to_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    status: Mapped[PhoneShareStatus] = mapped_column(
+        Enum(PhoneShareStatus), default=PhoneShareStatus.pending, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

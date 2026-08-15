@@ -23,7 +23,8 @@ LOCK_KEY = "matching:lock"
 LOCK_TTL_MS = 5000
 
 PROPOSAL_TTL_SECONDS = 120
-RESULT_TTL_SECONDS = 180
+RESULT_TTL_SECONDS = 600
+SAVED_INVITE_TTL_SECONDS = 600
 
 
 def _queue_key(looking_for: str) -> str:
@@ -266,12 +267,16 @@ def _side_fields(prefix: str, data: dict) -> dict:
     }
 
 
-async def create_mutual_proposal(requester: dict, candidate: dict) -> str:
+async def create_mutual_proposal(requester: dict, candidate: dict, ttl: int | None = None) -> str:
     proposal_id = uuid.uuid4().hex[:16]
     payload = {}
     payload.update(_side_fields("requester", requester))
     payload.update(_side_fields("candidate", candidate))
-    await redis_client.set(_proposal_key(proposal_id), json.dumps(payload), ex=PROPOSAL_TTL_SECONDS)
+    await redis_client.set(
+        _proposal_key(proposal_id),
+        json.dumps(payload),
+        ex=ttl or PROPOSAL_TTL_SECONDS,
+    )
     return proposal_id
 
 
