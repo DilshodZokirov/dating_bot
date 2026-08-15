@@ -170,3 +170,31 @@ def test_link_progress_i18n_steps():
         uz = t("uz", key)
         assert uz and uz != key
         assert "…" in uz or "..." in uz
+
+
+def test_titles_same_movie_rejects_different_film():
+    from app.link_title import titles_same_movie
+
+    assert titles_same_movie("Inception (2010)", "Inception (2010)")
+    assert titles_same_movie("Osmondan tushgan fil (2023)", "Osmondan tushgan fil 2023")
+    # Boshqa film — yil farq
+    assert not titles_same_movie("Inception (2010)", "Interstellar (2014)")
+    # Boshqa nom, bir xil yozuv, umumiy so‘z yo‘q
+    assert not titles_same_movie(
+        "Osmondan tushgan fil (2023)", "Frozen (2013)"
+    )
+    # Tarjima (kirill) + bir xil yil
+    assert titles_same_movie("Inception (2010)", "Начало (2010)")
+
+
+def test_parse_gemini_keeps_title_raw():
+    from app.link_title import _parse_gemini_movie_json
+
+    raw = (
+        '{"found":true,"title_raw":"Osmondan tushgan fil (2023)",'
+        '"title":"The Magician\'s Elephant (2023)",'
+        '"summary":"Fil haqida."}'
+    )
+    parsed = _parse_gemini_movie_json(raw)
+    assert parsed["title_raw"].startswith("Osmondan")
+    assert "Magician" in parsed["title"] or "Elephant" in parsed["title"]

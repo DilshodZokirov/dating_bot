@@ -275,6 +275,64 @@ def looks_like_prose(text: str) -> bool:
     return False
 
 
+def _title_years(text: str) -> set[str]:
+    return set(YEAR_IN_TEXT_RE.findall(text or ""))
+
+
+def _title_tokens(text: str) -> set[str]:
+    s = YEAR_IN_TEXT_RE.sub(" ", text or "")
+    s = re.sub(r"[^\w\s]", " ", s, flags=re.U)
+    return {t.lower() for t in s.split() if len(t) > 1}
+
+
+def _script_bucket(text: str) -> str:
+    if re.search(r"[\u0400-\u04FF]", text or ""):
+        return "cyr"
+    if re.search(r"[A-Za-z]", text or ""):
+        return "lat"
+    if re.search(r"[\u0600-\u06FF]", text or ""):
+        return "ar"
+    if re.search(r"[\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]", text or ""):
+        return "cjk"
+    return "other"
+
+
+def titles_same_movie(original: str, candidate: str) -> bool:
+    """
+    Lokalizatsiya boshqa filmga almashtirmasin.
+    Yil zid kelasa — boshqa film. Tokenlar juda farq qilsa — rad.
+    Turli yozuv (lotin/kirill) + bir xil yil — ruxsat (tarjima).
+    """
+    a = (original or "").strip()
+    b = (candidate or "").strip()
+    if not a or not b:
+        return False
+    if a.lower() == b.lower():
+        return True
+    ya, yb = _title_years(a), _title_years(b)
+    if ya and yb and ya.isdisjoint(yb):
+        return False
+    ta, tb = _title_tokens(a), _title_tokens(b)
+    if ta and tb:
+        inter = ta & tb
+        if inter:
+            ratio = len(inter) / min(len(ta), len(tb))
+            if ratio >= 0.4 or len(inter) >= 2:
+                return True
+            # Bitta uzun umumiy so‘z (masalan Inception)
+            if any(len(x) >= 5 for x in inter):
+                return True
+    # Cross-script localization with matching year (Inception ↔ Начало)
+    if ya and yb and ya == yb and _script_bucket(a) != _script_bucket(b):
+        return True
+    # Cross-script without year: faqat qisqa o‘zgarish emas — ishonchsiz
+    if not ya and not yb and _script_bucket(a) != _script_bucket(b):
+        # Length similar → ehtimol tarjima
+        if abs(len(a) - len(b)) <= max(8, len(a) // 2):
+            return True
+    return False
+
+
 def parse_yandex_cbir_hits(html: str) -> list[dict]:
     """Yandex Images reverse-search HTML dan film entitylarini ajratish."""
     if not html:
@@ -482,7 +540,7 @@ def _lang_label(lang: str) -> str:
 
 
 def _parse_gemini_movie_json(text_out: str) -> dict | None:
-    """Gemini javobidan {found, title, summary} JSON ajratish."""
+    """Gemini javobidan {found, title, summary, title_raw?} JSON ajratish."""
     if not text_out:
         return None
     raw = text_out.strip()
@@ -503,6 +561,11 @@ def _parse_gemini_movie_json(text_out: str) -> dict | None:
     if data.get("found") is False:
         return {"found": False}
     title = clean_title(str(data.get("title") or "").strip())
+    title_raw = clean_title(
+        str(data.get("title_raw") or data.get("on_screen_title") or "").strip()
+    )
+    if not title and title_raw:
+        title = title_raw
     if not title or looks_like_prose(title):
         return None
     summary = str(data.get("summary") or "").strip()
@@ -511,7 +574,10 @@ def _parse_gemini_movie_json(text_out: str) -> dict | None:
     summary = re.sub(r"\s+", " ", summary).strip()
     if len(summary) > 600:
         summary = summary[:597].rstrip() + "…"
-    return {"found": True, "title": title, "summary": summary}
+    out = {"found": True, "title": title, "summary": summary}
+    if title_raw:
+        out["title_raw"] = title_raw
+    return out
 
 
 async def _gemini_generate_text(
@@ -553,7 +619,7 @@ async def _gemini_generate_text(
 async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
     """
     Topilgan nomni app tiliga o‘girish + qisqa mazmun (spoiler-light).
-    Yandex/OCR faqat nom bersa chaqiriladi.
+    MUHIM: boshqa filmga almashtirmaydi — input title = film identifikatori.
     """
     title = (title or "").strip()
     if not title:
@@ -564,15 +630,17 @@ async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
 
     lang_name = _lang_label(lang)
     prompt = (
-        f"Movie title input: {title!r}\n"
+        f"LOCKED movie identity (do NOT change to another film): {title!r}\n"
         f"App UI language: {lang_name} (code: {lang}).\n\n"
         "Return ONLY valid JSON (no markdown):\n"
         '{"found":true,"title":"...","summary":"..."}\n'
         "Rules:\n"
-        f"- title: official/local movie name IN {lang_name}, with year if known "
-        "(e.g. Uzbek uses 'Osmondan tushgan fil (2023)' for The Magician's Elephant; "
-        "Russian uses 'Начало (2010)' for Inception).\n"
-        f"- summary: 2-3 short sentences in {lang_name} about what the film is about "
+        "- You must keep the SAME movie as the locked identity.\n"
+        f"- title: official/local name of THAT same movie in {lang_name}, "
+        "with the same year if the input has a year. "
+        "If you do not know a local title, repeat the input title EXACTLY.\n"
+        "- NEVER substitute a different / similar / more famous film.\n"
+        f"- summary: 2-3 short sentences in {lang_name} about THIS film only "
         "(spoiler-light, max ~400 chars).\n"
         "If the input is not a real movie: {\"found\":false}"
     )
@@ -583,9 +651,17 @@ async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
             )
         parsed = _parse_gemini_movie_json(text_out)
         if parsed and parsed.get("found") and parsed.get("title"):
+            new_title = parsed["title"]
+            # Boshqa filmga o‘tib ketgan bo‘lsa — asl nomni saqlaymiz
+            if not titles_same_movie(title, new_title):
+                print(
+                    f"gemini_enrich_movie reject swap: {title!r} -> {new_title!r}",
+                    flush=True,
+                )
+                new_title = title
             return {
                 "ok": True,
-                "title": parsed["title"],
+                "title": new_title,
                 "summary": parsed.get("summary") or "",
                 "source": f"Internet · Gemini enrich ({model})",
                 "error": "",
@@ -615,14 +691,30 @@ async def ensure_localized_result(
         return out
     out = dict(result)
     out.setdefault("summary", "")
-    # Vision JSON allaqachon til + mazmun bergan
+    original_title = out["title"]
+    # Vision JSON allaqachon til + mazmun bergan — lekin nomni ham tekshiramiz
     if out.get("localized") is True and out.get("summary"):
+        # title_raw saqlangan bo‘lsa — u asosiy haqiqat
+        raw = (out.get("title_raw") or "").strip()
+        if raw and not titles_same_movie(raw, out["title"]):
+            print(
+                f"ensure_localized reject vision swap: {raw!r} -> {out['title']!r}",
+                flush=True,
+            )
+            out["title"] = raw
         return out
     await _progress(on_progress, "localize")
-    enriched = await gemini_enrich_movie(out["title"], lang)
+    enriched = await gemini_enrich_movie(original_title, lang)
     if enriched and enriched.get("ok"):
-        if enriched.get("title"):
-            out["title"] = enriched["title"]
+        cand = enriched.get("title") or original_title
+        if titles_same_movie(original_title, cand):
+            out["title"] = cand
+        else:
+            out["title"] = original_title
+            print(
+                f"ensure_localized keep original: {original_title!r} (rejected {cand!r})",
+                flush=True,
+            )
         if enriched.get("summary"):
             out["summary"] = enriched["summary"]
         out["localized"] = True
@@ -746,36 +838,36 @@ async def gemini_identify_movie(
         return None
 
     lang_name = _lang_label(lang)
-    json_prompt = (
-        "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
-        "Identify the movie or animated film.\n"
-        f"App UI language for the answer: {lang_name} (code: {lang}).\n\n"
-        "Return ONLY valid JSON (no markdown):\n"
-        '{"found":true,"title":"...","summary":"...","confidence":"high|medium|low"}\n'
-        "or {\"found\":false}\n\n"
-        "Rules:\n"
-        "- Prefer reading on-screen movie title text (e.g. 'Osmondan tushgan fil 2023') "
-        "over guessing from Instagram captions.\n"
-        f"- title MUST be in {lang_name} when a local title exists "
-        "(Uzbek: Osmondan tushgan fil (2023); Russian: Начало (2010) for Inception). "
-        "Include year if known.\n"
-        f"- summary: 2-3 short sentences in {lang_name} about the plot (spoiler-light).\n"
-        "- Do NOT use social-media captions as the movie title.\n"
-        "- If unknown: {\"found\":false}"
-    )
-    # Fallback: eski oddiy format (OCR)
+    # Avval ekrandagi aniq matn — taxminiy boshqa filmga o‘tmasin
     plain_prompts = (
         (
             "This is a screenshot that may include Instagram/TikTok UI and captions. "
             "Read ALL visible text. If a movie/cartoon title with year appears, "
-            "reply with ONLY that title and year like: Osmondan tushgan fil (2023). "
-            "Prefer the on-screen title. If none, identify visually. "
-            "If unknown, reply exactly: UNKNOWN"
+            "reply with ONLY that title and year EXACTLY as shown "
+            "(example: Osmondan tushgan fil (2023)). "
+            "Do not translate. Do not guess another film. "
+            "If none, reply exactly: UNKNOWN"
         ),
         (
-            "Identify the movie or animated film in this frame. "
-            "Reply ONLY: Title (Year). If unknown: UNKNOWN"
+            "If you can visually identify the movie (no clear title text), "
+            "reply ONLY: Title (Year). Otherwise: UNKNOWN"
         ),
+    )
+    json_prompt = (
+        "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
+        "Identify the movie or animated film.\n"
+        f"App UI language: {lang_name} (code: {lang}).\n\n"
+        "Return ONLY valid JSON (no markdown):\n"
+        '{"found":true,"title_raw":"...","title":"...","summary":"...",'
+        '"confidence":"high|medium|low"}\n'
+        "or {\"found\":false}\n\n"
+        "Rules:\n"
+        "- title_raw: exact on-screen movie title if visible; else international title.\n"
+        f"- title: same movie in {lang_name} (local name). Same year. "
+        "Never a different film.\n"
+        f"- summary: 2-3 short sentences in {lang_name} about THIS film only.\n"
+        "- Prefer on-screen title over Instagram captions / guessing.\n"
+        "- If unknown: {\"found\":false}"
     )
 
     try:
@@ -789,40 +881,26 @@ async def gemini_identify_movie(
             b64 = base64.b64encode(data[:2_000_000]).decode("ascii")
             image_part = {"inline_data": {"mime_type": ctype, "data": b64}}
 
-            # 1) JSON: til + summary
-            text_out, model = await _gemini_generate_text(
-                client, api_key, [{"text": json_prompt}, image_part]
-            )
-            parsed = _parse_gemini_movie_json(text_out)
-            if parsed and parsed.get("found") and parsed.get("title"):
-                return {
-                    "ok": True,
-                    "title": parsed["title"],
-                    "summary": parsed.get("summary") or "",
-                    "localized": True,
-                    "source": f"Internet · Gemini ({model})",
-                    "error": "",
-                }
-
-            # 2) Oddiy OCR / Title (Year)
+            # 1) OCR / oddiy nom — eng ishonchli
             for prompt in plain_prompts:
                 text_out, model = await _gemini_generate_text(
                     client, api_key, [{"text": prompt}, image_part]
                 )
                 if not text_out:
                     continue
+                if text_out.upper().startswith("UNKNOWN"):
+                    continue
                 from_ocr = extract_movie_from_ocr_text(text_out)
                 if from_ocr:
                     return {
                         "ok": True,
                         "title": from_ocr,
+                        "title_raw": from_ocr,
                         "summary": "",
                         "localized": False,
                         "source": f"Internet · Gemini OCR ({model})",
                         "error": "",
                     }
-                if text_out.upper().startswith("UNKNOWN"):
-                    continue
                 line = text_out.splitlines()[0].strip().strip("`\"'")
                 movie = (
                     normalize_movie_hit(line, line)
@@ -833,11 +911,33 @@ async def gemini_identify_movie(
                     return {
                         "ok": True,
                         "title": movie,
+                        "title_raw": movie,
                         "summary": "",
                         "localized": False,
                         "source": f"Internet · Gemini ({model})",
                         "error": "",
                     }
+
+            # 2) JSON: lokal nom + mazmun
+            text_out, model = await _gemini_generate_text(
+                client, api_key, [{"text": json_prompt}, image_part]
+            )
+            parsed = _parse_gemini_movie_json(text_out)
+            if parsed and parsed.get("found") and parsed.get("title"):
+                raw = parsed.get("title_raw") or parsed["title"]
+                local = parsed["title"]
+                # Lokal nom boshqa film bo‘lsa — raw ni saqlaymiz
+                if parsed.get("title_raw") and not titles_same_movie(raw, local):
+                    local = raw
+                return {
+                    "ok": True,
+                    "title": local,
+                    "title_raw": raw,
+                    "summary": parsed.get("summary") or "",
+                    "localized": bool(parsed.get("summary")),
+                    "source": f"Internet · Gemini ({model})",
+                    "error": "",
+                }
     except Exception as e:
         print(f"gemini_identify_movie error: {type(e).__name__}: {e}", flush=True)
         return None
