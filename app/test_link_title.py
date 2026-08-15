@@ -72,7 +72,15 @@ def test_normalize_instagram_tracking_params():
     from app.link_title import normalize_media_url
 
     dirty = "https://www.instagram.com/reel/DbYLVjjsF2U/?igsh=MXhtN2Q4dWE4b2tj"
-    assert normalize_media_url(dirty) == "https://www.instagram.com/reel/DbYLVjjsF2U/"
+    assert normalize_media_url(dirty) == "https://instagram.com/reel/DbYLVjjsF2U/"
+    # Bir xil reel — tracking farq qilsa ham bir xil kalit
+    a = normalize_media_url(
+        "https://www.instagram.com/reel/Db09RZOCSG-/?igsh=aaa"
+    )
+    b = normalize_media_url(
+        "https://instagram.com/reel/Db09RZOCSG-/?igsh=bbb&igsi=ccc"
+    )
+    assert a == b == "https://instagram.com/reel/Db09RZOCSG-/"
 
 
 def test_extract_jpeg_frame_from_video():
@@ -172,7 +180,14 @@ def test_link_progress_i18n_steps():
         assert "…" in uz or "..." in uz
 
 
-def test_titles_same_movie_rejects_different_film():
+def test_movie_cache_key_stable_for_same_reel():
+    from app.link_title import _movie_cache_key, normalize_media_url
+
+    u1 = "https://www.instagram.com/reel/Db09RZOCSG-/?igsh=aaa"
+    u2 = "https://instagram.com/reel/Db09RZOCSG-/?igsh=bbb"
+    assert normalize_media_url(u1) == normalize_media_url(u2)
+    assert _movie_cache_key(u1, "uz") == _movie_cache_key(u2, "uz")
+    assert _movie_cache_key(u1, "uz") != _movie_cache_key(u1, "ru")
     from app.link_title import titles_same_movie
 
     assert titles_same_movie("Inception (2010)", "Inception (2010)")

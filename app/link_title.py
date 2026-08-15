@@ -177,11 +177,84 @@ def normalize_media_url(url: str) -> str:
         p = urlparse(url.strip())
         host = (p.netloc or "").lower()
         if "instagram.com" in host or "instagr.am" in host or "tiktok.com" in host:
-            # path ni saqlab, ?igsh=... ni olib tashlaymiz
-            return f"{p.scheme}://{p.netloc}{p.path}"
+            path = p.path or "/"
+            # reel/p/tv — trailing slash bir xil
+            if any(x in path for x in ("/reel/", "/p/", "/tv/")):
+                path = path.rstrip("/") + "/"
+            netloc = host[4:] if host.startswith("www.") else host
+            scheme = p.scheme or "https"
+            return f"{scheme}://{netloc}{path}"
     except Exception:
         pass
     return url
+
+
+# URL → bir xil javob (AI har safar boshqa film demasin)
+_MOVIE_MEM_CACHE: dict[str, tuple[float, dict]] = {}
+_MOVIE_CACHE_TTL_SEC = 7 * 24 * 3600
+
+
+def _movie_cache_key(url: str, lang: str) -> str:
+    import hashlib
+
+    norm = normalize_media_url(url)
+    digest = hashlib.sha256(f"{norm}|{(lang or 'uz').lower()}".encode()).hexdigest()[:40]
+    return f"movie:id:{digest}"
+
+
+def _cacheable_movie_result(result: dict) -> dict:
+    """Kešga yoziladigan maydonlar."""
+    return {
+        "ok": True,
+        "title": result.get("title") or "",
+        "summary": result.get("summary") or "",
+        "title_raw": result.get("title_raw") or "",
+        "source": result.get("source") or "",
+        "host": result.get("host") or "",
+        "error": "",
+        "cached": True,
+    }
+
+
+async def movie_cache_get(url: str, lang: str) -> dict | None:
+    key = _movie_cache_key(url, lang)
+    import time
+
+    hit = _MOVIE_MEM_CACHE.get(key)
+    if hit and hit[0] > time.time():
+        out = dict(hit[1])
+        out["cached"] = True
+        return out
+    try:
+        from app.matching.queue import redis_client
+
+        raw = await redis_client.get(key)
+        if raw:
+            data = json.loads(raw)
+            if data.get("ok") and data.get("title"):
+                _MOVIE_MEM_CACHE[key] = (time.time() + _MOVIE_CACHE_TTL_SEC, data)
+                data = dict(data)
+                data["cached"] = True
+                return data
+    except Exception as e:
+        print(f"movie_cache_get: {e}", flush=True)
+    return None
+
+
+async def movie_cache_set(url: str, lang: str, result: dict) -> None:
+    if not result or not result.get("ok") or not result.get("title"):
+        return
+    key = _movie_cache_key(url, lang)
+    import time
+
+    payload = _cacheable_movie_result(result)
+    _MOVIE_MEM_CACHE[key] = (time.time() + _MOVIE_CACHE_TTL_SEC, payload)
+    try:
+        from app.matching.queue import redis_client
+
+        await redis_client.set(key, json.dumps(payload, ensure_ascii=False), ex=_MOVIE_CACHE_TTL_SEC)
+    except Exception as e:
+        print(f"movie_cache_set: {e}", flush=True)
 
 
 def _host_matches(host: str, suffixes: tuple[str, ...]) -> bool:
@@ -577,6 +650,9 @@ def _parse_gemini_movie_json(text_out: str) -> dict | None:
     out = {"found": True, "title": title, "summary": summary}
     if title_raw:
         out["title_raw"] = title_raw
+    conf = str(data.get("confidence") or "").strip().lower()
+    if conf in ("high", "medium", "low"):
+        out["confidence"] = conf
     return out
 
 
@@ -588,6 +664,16 @@ async def _gemini_generate_text(
     """Birinchi ishlagan modeldan matn qaytaradi: (text, model)."""
     headers = {**_http_headers(), "x-goog-api-key": api_key}
     last_errors: list[str] = []
+    payload_base = {
+        "contents": [{"parts": parts}],
+        # Bir xil kadr → bir xil javob (taxminiy "orqaga-oldinga" kamayadi)
+        "generationConfig": {
+            "temperature": 0,
+            "topK": 1,
+            "topP": 1,
+            "candidateCount": 1,
+        },
+    }
     for model in _GEMINI_MODELS:
         endpoint = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -595,7 +681,7 @@ async def _gemini_generate_text(
         )
         resp = await client.post(
             endpoint,
-            json={"contents": [{"parts": parts}]},
+            json=payload_base,
             headers=headers,
         )
         if resp.status_code != 200:
@@ -848,10 +934,6 @@ async def gemini_identify_movie(
             "Do not translate. Do not guess another film. "
             "If none, reply exactly: UNKNOWN"
         ),
-        (
-            "If you can visually identify the movie (no clear title text), "
-            "reply ONLY: Title (Year). Otherwise: UNKNOWN"
-        ),
     )
     json_prompt = (
         "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
@@ -918,26 +1000,34 @@ async def gemini_identify_movie(
                         "error": "",
                     }
 
-            # 2) JSON: lokal nom + mazmun
+            # 2) JSON: lokal nom + mazmun (faqat high confidence — spekulyatsiya emas)
             text_out, model = await _gemini_generate_text(
                 client, api_key, [{"text": json_prompt}, image_part]
             )
             parsed = _parse_gemini_movie_json(text_out)
             if parsed and parsed.get("found") and parsed.get("title"):
-                raw = parsed.get("title_raw") or parsed["title"]
-                local = parsed["title"]
-                # Lokal nom boshqa film bo‘lsa — raw ni saqlaymiz
-                if parsed.get("title_raw") and not titles_same_movie(raw, local):
-                    local = raw
-                return {
-                    "ok": True,
-                    "title": local,
-                    "title_raw": raw,
-                    "summary": parsed.get("summary") or "",
-                    "localized": bool(parsed.get("summary")),
-                    "source": f"Internet · Gemini ({model})",
-                    "error": "",
-                }
+                conf = (parsed.get("confidence") or "").lower()
+                # Ekranda aniq nom yo‘q + past ishonch = boshqa filmga o‘tish xavfi
+                if conf and conf != "high":
+                    print(
+                        f"gemini_identify skip low confidence={conf} title={parsed.get('title')!r}",
+                        flush=True,
+                    )
+                else:
+                    raw = parsed.get("title_raw") or parsed["title"]
+                    local = parsed["title"]
+                    # Lokal nom boshqa film bo‘lsa — raw ni saqlaymiz
+                    if parsed.get("title_raw") and not titles_same_movie(raw, local):
+                        local = raw
+                    return {
+                        "ok": True,
+                        "title": local,
+                        "title_raw": raw,
+                        "summary": parsed.get("summary") or "",
+                        "localized": bool(parsed.get("summary")),
+                        "source": f"Internet · Gemini ({model})",
+                        "error": "",
+                    }
     except Exception as e:
         print(f"gemini_identify_movie error: {type(e).__name__}: {e}", flush=True)
         return None
@@ -1243,6 +1333,12 @@ async def fetch_page_title(
     host = _host_hint(url)
     social = _host_matches(host, SOCIAL_HOSTS)
 
+    cached = await movie_cache_get(url, lang)
+    if cached:
+        cached["host"] = cached.get("host") or host
+        print(f"movie cache hit: {url} lang={lang} title={cached.get('title')!r}", flush=True)
+        return cached
+
     try:
         await _progress(on_progress, "preview")
         async with httpx.AsyncClient(
@@ -1380,7 +1476,9 @@ async def resolve_movie_title_from_message(
     urls = extract_urls_from_message(message)
     if not urls:
         return {"ok": False, "error": "no_url", "title": "", "summary": "", "url": ""}
-    url = urls[0]
+    url = normalize_media_url(urls[0])
     result = await fetch_page_title(url, lang=lang, on_progress=on_progress)
     result["url"] = url
+    if result.get("ok") and result.get("title") and not result.get("cached"):
+        await movie_cache_set(url, lang, result)
     return result
