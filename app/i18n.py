@@ -354,16 +354,100 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "الأوامر:\n/help — كيف يعمل\n/start — من البداية\n/reset — حذف الملف\n\nالبحث: <b>Menu → بحث</b>\n\nأرسل رابط فيلم — سأجد الاسم (وليس الملف).",
     },
     "link_looking": {
-        "uz": "Silka kadri internetdan qidirilmoqda…",
-        "ru": "Ищу фильм по кадру в интернете…",
-        "en": "Searching the internet by the video frame…",
-        "de": "Suche im Internet anhand des Videobilds…",
-        "tg": "Интернет аз рӯи кадр ҷустуҷӯ…",
-        "tr": "Kareye göre internette aranıyor…",
-        "ko": "영상 프레임으로 인터넷 검색 중…",
-        "ja": "映像フレームでインターネット検索中…",
-        "zh": "正在按画面在互联网搜索…",
-        "ar": "جاري البحث في الإنترنت حسب الإطار…",
+        "uz": "⏳ Qidiruv boshlandi…",
+        "ru": "⏳ Поиск начался…",
+        "en": "⏳ Search started…",
+        "de": "⏳ Suche gestartet…",
+        "tg": "⏳ Ҷустуҷӯ оғоз шуд…",
+        "tr": "⏳ Arama başladı…",
+        "ko": "⏳ 검색 시작…",
+        "ja": "⏳ 検索開始…",
+        "zh": "⏳ 开始搜索…",
+        "ar": "⏳ بدأ البحث…",
+    },
+    "link_progress_download": {
+        "uz": "⏳ Fayl olinmoqda…",
+        "ru": "⏳ Получаю файл…",
+        "en": "⏳ Downloading your file…",
+        "de": "⏳ Datei wird geladen…",
+        "tg": "⏳ Файл гирифта мешавад…",
+        "tr": "⏳ Dosya alınıyor…",
+        "ko": "⏳ 파일 받는 중…",
+        "ja": "⏳ ファイル取得中…",
+        "zh": "⏳ 正在获取文件…",
+        "ar": "⏳ جاري جلب الملف…",
+    },
+    "link_progress_preview": {
+        "uz": "⏳ Silkadagi preview rasm qidirilmoqda…",
+        "ru": "⏳ Ищу превью по ссылке…",
+        "en": "⏳ Fetching preview from the link…",
+        "de": "⏳ Vorschaubild wird geladen…",
+        "tg": "⏳ Превю ҷустуҷӯ…",
+        "tr": "⏳ Önizleme aranıyor…",
+        "ko": "⏳ 미리보기 가져오는 중…",
+        "ja": "⏳ プレビュー取得中…",
+        "zh": "⏳ 正在获取预览…",
+        "ar": "⏳ جاري جلب المعاينة…",
+    },
+    "link_progress_auto_dl": {
+        "uz": "⏳ Silkadagi video yuklanmoqda (faqat aniqlash)…",
+        "ru": "⏳ Скачиваю видео по ссылке (только для распознавания)…",
+        "en": "⏳ Fetching video from the link (identify only)…",
+        "de": "⏳ Video wird geladen (nur Erkennung)…",
+        "tg": "⏳ Видео аз истинод (танҳо шинохт)…",
+        "tr": "⏳ Linkten video alınıyor (sadece tanıma)…",
+        "ko": "⏳ 링크에서 영상 가져오는 중(식별만)…",
+        "ja": "⏳ リンクから動画取得中（識別のみ）…",
+        "zh": "⏳ 正在从链接获取视频（仅识别）…",
+        "ar": "⏳ جاري جلب الفيديو من الرابط (للتعرّف فقط)…",
+    },
+    "link_progress_frame": {
+        "uz": "⏳ Videodan kadr olinmoqda…",
+        "ru": "⏳ Извлекаю кадр из видео…",
+        "en": "⏳ Extracting a frame from the video…",
+        "de": "⏳ Einzelbild wird extrahiert…",
+        "tg": "⏳ Аз видео кадр…",
+        "tr": "⏳ Videodan kare alınıyor…",
+        "ko": "⏳ 영상에서 프레임 추출 중…",
+        "ja": "⏳ 動画からフレーム抽出中…",
+        "zh": "⏳ 正在截取视频帧…",
+        "ar": "⏳ جاري استخراج إطار من الفيديو…",
+    },
+    "link_progress_ai": {
+        "uz": "⏳ AI kadrni tahlil qilmoqda…",
+        "ru": "⏳ ИИ анализирует кадр…",
+        "en": "⏳ AI is analyzing the frame…",
+        "de": "⏳ KI analysiert das Bild…",
+        "tg": "⏳ AI кадрро таҳлил…",
+        "tr": "⏳ AI kareyi analiz ediyor…",
+        "ko": "⏳ AI가 프레임 분석 중…",
+        "ja": "⏳ AIがフレームを分析中…",
+        "zh": "⏳ AI 正在分析画面…",
+        "ar": "⏳ الذكاء الاصطناعي يحلّل الإطار…",
+    },
+    "link_progress_search": {
+        "uz": "⏳ Internetdan film qidirilmoqda…",
+        "ru": "⏳ Ищу фильм в интернете…",
+        "en": "⏳ Searching the internet for the movie…",
+        "de": "⏳ Filmsuche im Internet…",
+        "tg": "⏳ Дар интернет ҷустуҷӯи филм…",
+        "tr": "⏳ İnternette film aranıyor…",
+        "ko": "⏳ 인터넷에서 영화 검색 중…",
+        "ja": "⏳ インターネットで映画検索中…",
+        "zh": "⏳ 正在互联网搜索电影…",
+        "ar": "⏳ جاري البحث عن الفيلم على الإنترنت…",
+    },
+    "link_progress_localize": {
+        "uz": "⏳ Nom va qisqa mazmun tayyorlanmoqda…",
+        "ru": "⏳ Готовлю название и краткое описание…",
+        "en": "⏳ Preparing the title and short summary…",
+        "de": "⏳ Titel und Kurzbeschreibung…",
+        "tg": "⏳ Ном ва тавсифи кӯтоҳ…",
+        "tr": "⏳ Ad ve kısa özet hazırlanıyor…",
+        "ko": "⏳ 제목과 요약 준비 중…",
+        "ja": "⏳ タイトルとあらすじを準備中…",
+        "zh": "⏳ 正在准备片名和简介…",
+        "ar": "⏳ جاري تجهيز الاسم والملخص…",
     },
     "link_found": {
         "uz": "🎬 <b>{title}</b>\n\n{summary}",
@@ -376,6 +460,38 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ja": "🎬 <b>{title}</b>\n\n{summary}",
         "zh": "🎬 <b>{title}</b>\n\n{summary}",
         "ar": "🎬 <b>{title}</b>\n\n{summary}",
+    },
+    "link_found_uncertain": {
+        "uz": "Kechirasiz — aniq <b>bitta</b> film deb ayta olmadim, kadr/silka ikkilanadi.\n\n"
+              "Taxminiy kinolar:\n{list}\n\n"
+              "Qaysi biri to‘g‘ri ekanini bilasizmi? Aniqroq screenshot yoki qisqa video yuboring.",
+        "ru": "Извините — не могу назвать <b>один</b> фильм уверенно, кадр неоднозначен.\n\n"
+              "Возможные варианты:\n{list}\n\n"
+              "Какой верный? Пришлите более чёткий кадр или короткое видео.",
+        "en": "Sorry — I can’t name <b>one</b> movie for sure; the frame is ambiguous.\n\n"
+              "Possible matches:\n{list}\n\n"
+              "Which one is right? Send a clearer screenshot or short clip.",
+        "de": "Entschuldigung — ich kann keinen <b>einzigen</b> Film sicher nennen.\n\n"
+              "Mögliche Treffer:\n{list}\n\n"
+              "Welcher stimmt? Klareren Screenshot oder kurzen Clip senden.",
+        "tg": "Бубахшед — як филмро боварӣ гуфта наметавонам.\n\n"
+              "Эҳтимолҳо:\n{list}\n\n"
+              "Кадомаш дуруст? Screenshot ё клипи кӯтоҳ.",
+        "tr": "Üzgünüm — emin olduğum <b>tek</b> film söyleyemiyorum.\n\n"
+              "Olası filmler:\n{list}\n\n"
+              "Hangisi doğru? Daha net ekran görüntüsü veya kısa klip gönderin.",
+        "ko": "죄송해요 — <b>한 편</b>을 확신할 수 없어요.\n\n"
+              "가능한 영화:\n{list}\n\n"
+              "맞는 작품이 있나요? 더 선명한 스크린샷이나 짧은 클립을 보내주세요.",
+        "ja": "すみません — <b>1本</b>に特定できませんでした。\n\n"
+              "候補:\n{list}\n\n"
+              "正しいものは？より鮮明なスクショか短い動画を送ってください。",
+        "zh": "抱歉 — 无法确定<b>唯一</b>片名，画面有歧义。\n\n"
+              "可能是：\n{list}\n\n"
+              "哪一部对？请发更清晰的截图或短视频。",
+        "ar": "عذراً — لا أستطيع تحديد فيلم <b>واحد</b> بثقة.\n\n"
+              "احتمالات:\n{list}\n\n"
+              "أيّها الصحيح؟ أرسل لقطة أوضح أو مقطعاً قصيراً.",
     },
     "link_not_found": {
         "uz": "Film topilmadi.\n\n<b>Tekshiring:</b>\n1) .env da <code>GEMINI_API_KEY</code> to‘g‘ri yozilganmi?\n2) <code>docker compose up -d --force-recreate</code> qildingizmi?\n3) Screenshotda film kadrı aniq ko‘rinsin (faqat Instagram tepasi emas)\n\nYana urinib ko‘ring: aniqroq kadr yoki qisqa video (20 MB).\n\n<i>Faqat nom — fayl saqlanmaydi.</i>",
