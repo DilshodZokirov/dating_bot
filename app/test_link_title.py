@@ -244,6 +244,21 @@ def test_link_found_uncertain_i18n():
     assert "Kechirasiz" in msg
     assert "1) Orzular jamoasi" in msg
     assert "2) Shaharadagi" in msg
+    assert "GEMINI" not in msg
+    assert "docker" not in msg.lower()
+
+
+def test_link_not_found_is_user_friendly():
+    from app.i18n import t
+
+    msg = t("uz", "link_not_found")
+    assert "Kechirasiz" in msg
+    assert "GEMINI" not in msg
+    assert ".env" not in msg
+    assert "docker" not in msg.lower()
+    soft = t("uz", "link_need_gemini")
+    assert "GEMINI" not in soft
+    assert ".env" not in soft
 
 
 def test_titles_same_movie_billu_local():
