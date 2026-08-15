@@ -1,4 +1,5 @@
 from aiogram import F, Router
+from aiogram.enums import ChatAction
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -46,6 +47,39 @@ def _ui_lang(user: User | None) -> str:
     if ui is not None:
         return ui.value if hasattr(ui, "value") else str(ui)
     return user.language.value
+
+
+def _movie_progress_cb(wait: Message, lang: str):
+    """Status xabarini bosqichma-bosqich yangilash + typing."""
+    last = {"step": ""}
+
+    async def on_progress(step: str) -> None:
+        if not step or step == last["step"]:
+            return
+        last["step"] = step
+        key = f"link_progress_{step}"
+        text = t(lang, key)
+        if text == key:
+            text = t(lang, "link_looking")
+        try:
+            await wait.bot.send_chat_action(wait.chat.id, ChatAction.TYPING)
+        except Exception:
+            pass
+        try:
+            await wait.edit_text(text)
+        except Exception:
+            pass
+
+    return on_progress
+
+
+async def _finish_progress(wait: Message | None) -> None:
+    if not wait:
+        return
+    try:
+        await wait.delete()
+    except Exception:
+        pass
 
 
 async def _set_user_menu(message: Message, lang: str) -> None:
@@ -475,33 +509,38 @@ async def identify_movie_photo(message: Message, state: FSMContext):
     if user:
         lang = _ui_lang(user)
 
+    wait = await message.answer(t(lang, "link_looking"))
+    progress = _movie_progress_cb(wait, lang)
+
     # Caption matnida nom bo‘lsa — tilga moslab + mazmun
     if message.caption:
         from_cap = extract_movie_from_ocr_text(message.caption)
         if from_cap:
+            await progress("localize")
             result = await ensure_localized_result(
                 {"ok": True, "title": from_cap, "summary": "", "source": "caption"},
                 lang,
+                on_progress=progress,
             )
+            await _finish_progress(wait)
             await _reply_movie_result(message, lang, result)
             return
 
-    wait = await message.answer(t(lang, "link_looking"))
     try:
+        await progress("download")
         photo = message.photo[-1]
         file = await message.bot.get_file(photo.file_id)
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
         print(f"photo identify: size={len(raw)} file={file.file_path}", flush=True)
-        result = await identify_movie_from_image_bytes(raw, "image/jpeg", lang=lang)
+        result = await identify_movie_from_image_bytes(
+            raw, "image/jpeg", lang=lang, on_progress=progress
+        )
         print(f"photo identify result: {result}", flush=True)
     except Exception as e:
         print(f"photo identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
-    try:
-        await wait.delete()
-    except Exception:
-        pass
+    await _finish_progress(wait)
     await _reply_movie_result(message, lang, result)
 
 
@@ -526,18 +565,19 @@ async def identify_movie_video(message: Message, state: FSMContext):
         return
 
     wait = await message.answer(t(lang, "link_looking"))
+    progress = _movie_progress_cb(wait, lang)
     try:
+        await progress("download")
         file = await message.bot.get_file(video.file_id)
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
-        result = await identify_movie_from_video_bytes(raw, lang=lang)
+        result = await identify_movie_from_video_bytes(
+            raw, lang=lang, on_progress=progress
+        )
     except Exception as e:
         print(f"video identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
-    try:
-        await wait.delete()
-    except Exception:
-        pass
+    await _finish_progress(wait)
     await _reply_movie_result(message, lang, result)
 
 
@@ -572,23 +612,24 @@ async def identify_movie_document(message: Message, state: FSMContext):
         return
 
     wait = await message.answer(t(lang, "link_looking"))
+    progress = _movie_progress_cb(wait, lang)
     try:
+        await progress("download")
         file = await message.bot.get_file(doc.file_id)
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
         if is_video:
-            result = await identify_movie_from_video_bytes(raw, lang=lang)
+            result = await identify_movie_from_video_bytes(
+                raw, lang=lang, on_progress=progress
+            )
         else:
             result = await identify_movie_from_image_bytes(
-                raw, mime or "image/jpeg", lang=lang
+                raw, mime or "image/jpeg", lang=lang, on_progress=progress
             )
     except Exception as e:
         print(f"document identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
-    try:
-        await wait.delete()
-    except Exception:
-        pass
+    await _finish_progress(wait)
     await _reply_movie_result(message, lang, result)
 
 
@@ -609,11 +650,11 @@ async def fallback_text(message: Message, state: FSMContext):
     # Silka bo‘lsa — sahifa/film nomini aniqlash (fayl emas)
     if extract_urls_from_message(message):
         wait = await message.answer(t(lang, "link_looking"))
-        result = await resolve_movie_title_from_message(message, lang=lang)
-        try:
-            await wait.delete()
-        except Exception:
-            pass
+        progress = _movie_progress_cb(wait, lang)
+        result = await resolve_movie_title_from_message(
+            message, lang=lang, on_progress=progress
+        )
+        await _finish_progress(wait)
         await _reply_movie_result(message, lang, result)
         return
 

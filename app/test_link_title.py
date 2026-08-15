@@ -151,3 +151,22 @@ def test_link_found_i18n_has_summary_not_source():
     assert "Manba" not in msg
     assert "source" not in msg.lower()
     assert "yuborilmaydi" not in msg
+
+
+def test_link_progress_i18n_steps():
+    from app.i18n import TRANSLATIONS, t
+
+    for step in (
+        "download",
+        "preview",
+        "auto_dl",
+        "frame",
+        "ai",
+        "search",
+        "localize",
+    ):
+        key = f"link_progress_{step}"
+        assert key in TRANSLATIONS
+        uz = t("uz", key)
+        assert uz and uz != key
+        assert "…" in uz or "..." in uz

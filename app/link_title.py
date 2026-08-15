@@ -15,10 +15,14 @@ from __future__ import annotations
 import html as html_lib
 import json
 import re
+from collections.abc import Awaitable, Callable
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 
 import httpx
+
+# progress step keys → i18n: link_progress_{step}
+ProgressCb = Callable[[str], Awaitable[None]]
 
 URL_RE = re.compile(r"https?://[^\s<>\"']+", re.I)
 
@@ -591,7 +595,19 @@ async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
     return {"ok": True, "title": title, "summary": "", "source": "title", "error": ""}
 
 
-async def ensure_localized_result(result: dict, lang: str = "uz") -> dict:
+async def _progress(on_progress: ProgressCb | None, step: str) -> None:
+    """Foydalanuvchiga jarayon bosqichini ko‘rsatish (best-effort)."""
+    if not on_progress:
+        return
+    try:
+        await on_progress(step)
+    except Exception:
+        pass
+
+
+async def ensure_localized_result(
+    result: dict, lang: str = "uz", on_progress: ProgressCb | None = None
+) -> dict:
     """Natijaga tilga mos nom + summary qo‘shish (yo‘q bo‘lsa Gemini)."""
     if not result or not result.get("ok") or not result.get("title"):
         out = dict(result or {})
@@ -602,6 +618,7 @@ async def ensure_localized_result(result: dict, lang: str = "uz") -> dict:
     # Vision JSON allaqachon til + mazmun bergan
     if out.get("localized") is True and out.get("summary"):
         return out
+    await _progress(on_progress, "localize")
     enriched = await gemini_enrich_movie(out["title"], lang)
     if enriched and enriched.get("ok"):
         if enriched.get("title"):
@@ -828,7 +845,10 @@ async def gemini_identify_movie(
 
 
 async def identify_movie_from_image_bytes(
-    image_bytes: bytes, mime: str = "image/jpeg", lang: str = "uz"
+    image_bytes: bytes,
+    mime: str = "image/jpeg",
+    lang: str = "uz",
+    on_progress: ProgressCb | None = None,
 ) -> dict:
     """Telegram orqali yuborilgan screenshot/rasmni aniqlash."""
     if not image_bytes:
@@ -841,14 +861,16 @@ async def identify_movie_from_image_bytes(
     )
 
     if has_key:
+        await _progress(on_progress, "ai")
         ghit = await gemini_identify_movie(
             image_bytes=image_bytes, mime=mime, lang=lang
         )
         if ghit and ghit.get("ok"):
-            return await ensure_localized_result(ghit, lang)
+            return await ensure_localized_result(ghit, lang, on_progress=on_progress)
 
     # Yandex — Gemini bo‘lmasa yoki yiqilsa
     try:
+        await _progress(on_progress, "search")
         async with httpx.AsyncClient(
             timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
         ) as client:
@@ -856,7 +878,7 @@ async def identify_movie_from_image_bytes(
                 client, image_bytes=image_bytes, mime=mime
             )
             if hit and hit.get("ok"):
-                return await ensure_localized_result(hit, lang)
+                return await ensure_localized_result(hit, lang, on_progress=on_progress)
     except Exception as e:
         print(f"yandex image identify error: {e}", flush=True)
 
@@ -929,7 +951,11 @@ def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -
     return None
 
 
-async def identify_movie_from_video_bytes(video_bytes: bytes, lang: str = "uz") -> dict:
+async def identify_movie_from_video_bytes(
+    video_bytes: bytes,
+    lang: str = "uz",
+    on_progress: ProgressCb | None = None,
+) -> dict:
     """Yuborilgan video fayldan kadr olib film nomini aniqlash."""
     if not video_bytes:
         return {"ok": False, "title": "", "summary": "", "source": "", "error": "no_image"}
@@ -942,11 +968,14 @@ async def identify_movie_from_video_bytes(video_bytes: bytes, lang: str = "uz") 
             "error": "video_too_large",
         }
 
+    await _progress(on_progress, "frame")
     frame = extract_jpeg_frame_from_video(video_bytes, at_seconds=1.0)
     if not frame:
         return {"ok": False, "title": "", "summary": "", "source": "", "error": "no_frame"}
 
-    result = await identify_movie_from_image_bytes(frame, "image/jpeg", lang=lang)
+    result = await identify_movie_from_image_bytes(
+        frame, "image/jpeg", lang=lang, on_progress=on_progress
+    )
     if result.get("ok") and result.get("source"):
         result["source"] = f"{result['source']} · video kadr"
     return result
@@ -1039,17 +1068,23 @@ def yt_dlp_fetch_for_identify(url: str) -> dict:
 
 
 async def _identify_from_social_download(
-    url: str, host: str, lang: str = "uz"
+    url: str,
+    host: str,
+    lang: str = "uz",
+    on_progress: ProgressCb | None = None,
 ) -> dict | None:
     """Silka orqali video/thumb yuklab aniqlash (best-effort)."""
     import asyncio
 
+    await _progress(on_progress, "auto_dl")
     fetched = await asyncio.to_thread(yt_dlp_fetch_for_identify, url)
     video_bytes = fetched.get("video_bytes") or b""
     thumb = fetched.get("thumbnail_url") or ""
 
     if video_bytes:
-        result = await identify_movie_from_video_bytes(video_bytes, lang=lang)
+        result = await identify_movie_from_video_bytes(
+            video_bytes, lang=lang, on_progress=on_progress
+        )
         if result.get("ok"):
             result["host"] = host
             src = result.get("source") or "Internet"
@@ -1064,6 +1099,7 @@ async def _identify_from_social_download(
                 img_bytes, mime = await _download_image(client, thumb)
             if img_bytes:
                 if _gemini_api_key():
+                    await _progress(on_progress, "ai")
                     ghit = await gemini_identify_movie(
                         image_url=thumb,
                         image_bytes=img_bytes,
@@ -1073,7 +1109,10 @@ async def _identify_from_social_download(
                     if ghit and ghit.get("ok"):
                         ghit["host"] = host
                         ghit["source"] = f"{ghit.get('source')} · auto-thumb"
-                        return await ensure_localized_result(ghit, lang)
+                        return await ensure_localized_result(
+                            ghit, lang, on_progress=on_progress
+                        )
+                await _progress(on_progress, "search")
                 async with httpx.AsyncClient(
                     timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
                 ) as client:
@@ -1083,13 +1122,17 @@ async def _identify_from_social_download(
                 if hit and hit.get("ok"):
                     hit["host"] = host
                     hit["source"] = f"{hit.get('source')} · auto-thumb"
-                    return await ensure_localized_result(hit, lang)
+                    return await ensure_localized_result(
+                        hit, lang, on_progress=on_progress
+                    )
         except Exception:
             pass
     return None
 
 
-async def fetch_page_title(url: str, lang: str = "uz") -> dict:
+async def fetch_page_title(
+    url: str, lang: str = "uz", on_progress: ProgressCb | None = None
+) -> dict:
     """
     Asosiy API: {ok, title, summary, source, host, error}
     Caption emas — preview kadr + internet/AI.
@@ -1101,6 +1144,7 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
     social = _host_matches(host, SOCIAL_HOSTS)
 
     try:
+        await _progress(on_progress, "preview")
         async with httpx.AsyncClient(
             timeout=FETCH_TIMEOUT,
             follow_redirects=True,
@@ -1132,6 +1176,7 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
 
             if social and thumb:
                 if _gemini_api_key():
+                    await _progress(on_progress, "ai")
                     ghit = await gemini_identify_movie(
                         image_url=thumb,
                         image_bytes=img_bytes,
@@ -1140,22 +1185,31 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
                     )
                     if ghit and ghit.get("ok"):
                         ghit["host"] = host
-                        return await ensure_localized_result(ghit, lang)
+                        return await ensure_localized_result(
+                            ghit, lang, on_progress=on_progress
+                        )
 
+                await _progress(on_progress, "search")
                 hit = await yandex_reverse_image_movie(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
                 if hit and hit.get("ok"):
                     hit["host"] = host
-                    return await ensure_localized_result(hit, lang)
+                    return await ensure_localized_result(
+                        hit, lang, on_progress=on_progress
+                    )
 
             elif thumb:
+                await _progress(on_progress, "search")
                 hit = await yandex_reverse_image_movie(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
                 if hit and hit.get("ok"):
                     hit["host"] = host
-                    return await ensure_localized_result(hit, lang)
+                    return await ensure_localized_result(
+                        hit, lang, on_progress=on_progress
+                    )
+                await _progress(on_progress, "ai")
                 ghit = await gemini_identify_movie(
                     image_url=thumb,
                     image_bytes=img_bytes,
@@ -1164,7 +1218,9 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
                 )
                 if ghit and ghit.get("ok"):
                     ghit["host"] = host
-                    return await ensure_localized_result(ghit, lang)
+                    return await ensure_localized_result(
+                        ghit, lang, on_progress=on_progress
+                    )
 
             if not social and page_title and not looks_like_prose(page_title):
                 if YEAR_IN_TEXT_RE.search(page_title) or len(page_title) <= 80:
@@ -1178,11 +1234,14 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
                             "error": "",
                         },
                         lang,
+                        on_progress=on_progress,
                     )
 
         # Social (yoki preview yo‘q): silka orqali avtomatik yuklab aniqlash
         if social or not thumb:
-            auto = await _identify_from_social_download(url, host, lang=lang)
+            auto = await _identify_from_social_download(
+                url, host, lang=lang, on_progress=on_progress
+            )
             if auto and auto.get("ok"):
                 return auto
 
@@ -1215,11 +1274,13 @@ async def fetch_page_title(url: str, lang: str = "uz") -> dict:
         }
 
 
-async def resolve_movie_title_from_message(message, lang: str = "uz") -> dict:
+async def resolve_movie_title_from_message(
+    message, lang: str = "uz", on_progress: ProgressCb | None = None
+) -> dict:
     urls = extract_urls_from_message(message)
     if not urls:
         return {"ok": False, "error": "no_url", "title": "", "summary": "", "url": ""}
     url = urls[0]
-    result = await fetch_page_title(url, lang=lang)
+    result = await fetch_page_title(url, lang=lang, on_progress=on_progress)
     result["url"] = url
     return result
