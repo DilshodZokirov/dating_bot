@@ -16,6 +16,7 @@ from app.config import settings
 from app.database import async_session
 from app.i18n import t
 from app.link_title import (
+    ensure_localized_result,
     extract_movie_from_ocr_text,
     extract_urls_from_message,
     identify_movie_from_image_bytes,
@@ -474,13 +475,15 @@ async def identify_movie_photo(message: Message, state: FSMContext):
     if user:
         lang = _ui_lang(user)
 
-    # Caption matnida nom bo‘lsa — darhol
+    # Caption matnida nom bo‘lsa — tilga moslab + mazmun
     if message.caption:
         from_cap = extract_movie_from_ocr_text(message.caption)
         if from_cap:
-            await message.answer(
-                t(lang, "link_found", title=from_cap, source="caption")
+            result = await ensure_localized_result(
+                {"ok": True, "title": from_cap, "summary": "", "source": "caption"},
+                lang,
             )
+            await _reply_movie_result(message, lang, result)
             return
 
     wait = await message.answer(t(lang, "link_looking"))
@@ -490,7 +493,7 @@ async def identify_movie_photo(message: Message, state: FSMContext):
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
         print(f"photo identify: size={len(raw)} file={file.file_path}", flush=True)
-        result = await identify_movie_from_image_bytes(raw, "image/jpeg")
+        result = await identify_movie_from_image_bytes(raw, "image/jpeg", lang=lang)
         print(f"photo identify result: {result}", flush=True)
     except Exception as e:
         print(f"photo identify error: {e}", flush=True)
@@ -527,7 +530,7 @@ async def identify_movie_video(message: Message, state: FSMContext):
         file = await message.bot.get_file(video.file_id)
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
-        result = await identify_movie_from_video_bytes(raw)
+        result = await identify_movie_from_video_bytes(raw, lang=lang)
     except Exception as e:
         print(f"video identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
@@ -574,9 +577,11 @@ async def identify_movie_document(message: Message, state: FSMContext):
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
         if is_video:
-            result = await identify_movie_from_video_bytes(raw)
+            result = await identify_movie_from_video_bytes(raw, lang=lang)
         else:
-            result = await identify_movie_from_image_bytes(raw, mime or "image/jpeg")
+            result = await identify_movie_from_image_bytes(
+                raw, mime or "image/jpeg", lang=lang
+            )
     except Exception as e:
         print(f"document identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
@@ -604,7 +609,7 @@ async def fallback_text(message: Message, state: FSMContext):
     # Silka bo‘lsa — sahifa/film nomini aniqlash (fayl emas)
     if extract_urls_from_message(message):
         wait = await message.answer(t(lang, "link_looking"))
-        result = await resolve_movie_title_from_message(message)
+        result = await resolve_movie_title_from_message(message, lang=lang)
         try:
             await wait.delete()
         except Exception:
@@ -618,14 +623,12 @@ async def fallback_text(message: Message, state: FSMContext):
 
 async def _reply_movie_result(message: Message, lang: str, result: dict) -> None:
     if result.get("ok") and result.get("title"):
-        await message.answer(
-            t(
-                lang,
-                "link_found",
-                title=result["title"],
-                source=result.get("source") or result.get("host") or "link",
-            )
-        )
+        import html as html_lib
+
+        title = html_lib.escape(str(result["title"]))
+        summary = html_lib.escape(str(result.get("summary") or "").strip())
+        text = t(lang, "link_found", title=title, summary=summary).rstrip()
+        await message.answer(text)
         return
     err = result.get("error") or ""
     if err == "need_gemini":

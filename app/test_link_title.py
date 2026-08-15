@@ -120,3 +120,34 @@ def test_extract_movie_from_ocr_uzbek_title():
     got = extract_movie_from_ocr_text(text)
     assert "Osmondan tushgan fil" in got
     assert "2023" in got
+
+
+def test_parse_gemini_movie_json():
+    from app.link_title import _parse_gemini_movie_json
+
+    raw = (
+        '```json\n{"found":true,"title":"Osmondan tushgan fil (2023)",'
+        '"summary":"Fil fil haqida ertak."}\n```'
+    )
+    parsed = _parse_gemini_movie_json(raw)
+    assert parsed and parsed["found"] is True
+    assert "Osmondan tushgan fil" in parsed["title"]
+    assert "ertak" in parsed["summary"]
+
+    assert _parse_gemini_movie_json('{"found":false}') == {"found": False}
+
+
+def test_link_found_i18n_has_summary_not_source():
+    from app.i18n import t
+
+    msg = t(
+        "uz",
+        "link_found",
+        title="Osmondan tushgan fil (2023)",
+        summary="Sehrgarning fili haqida multfilm.",
+    )
+    assert "Osmondan tushgan fil" in msg
+    assert "Sehrgarning" in msg
+    assert "Manba" not in msg
+    assert "source" not in msg.lower()
+    assert "yuborilmaydi" not in msg
