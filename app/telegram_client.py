@@ -14,7 +14,7 @@ TELEGRAM_API_BASE = f"https://api.telegram.org/bot{settings.bot_token}"
 def webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=onesearch2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
 
 
 async def send_message(chat_id: int, text: str, reply_markup: dict | None = None):

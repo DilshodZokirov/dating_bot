@@ -853,6 +853,23 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         raise HTTPException(status_code=400, detail="Avval suhbatdoshni saqlang")
     if me.is_banned or partner.is_banned:
         raise HTTPException(status_code=403, detail="Hisob cheklangan")
+
+    # Tiqilib qolgan is_in_call (presence yo‘q) — offline uchun tozalaymiz
+    if partner.is_in_call and not await is_online(partner.id):
+        async with async_session() as session:
+            p = await session.get(User, partner.id)
+            if p and p.is_in_call:
+                p.is_in_call = False
+                await session.commit()
+        partner.is_in_call = False
+    if me.is_in_call and not await is_online(me.id):
+        async with async_session() as session:
+            m = await session.get(User, me.id)
+            if m and m.is_in_call:
+                m.is_in_call = False
+                await session.commit()
+        me.is_in_call = False
+
     if partner.is_in_call or me.is_in_call:
         raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
 

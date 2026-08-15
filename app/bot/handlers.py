@@ -38,7 +38,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=onesearch2"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
 
 
 def _ui_lang(user: User | None) -> str:
