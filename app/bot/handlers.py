@@ -27,8 +27,10 @@ from app.link_title import (
 from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.matching.respond import respond_to_proposal
+from app.phone_share import accept_phone_share, complete_phone_await_after_contact, decline_phone_share
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
+from app.telegram_client import webapp_open_keyboard
 
 router = Router()
 
@@ -249,11 +251,77 @@ async def on_proposal_callback(callback: CallbackQuery):
 
     if outcome == "matched":
         await callback.answer()
-        await callback.message.answer(t(lang, "search_check_app"))
+        kb = webapp_open_keyboard(t(lang, "menu_btn"))
+        await callback.message.answer(t(lang, "match_started"), reply_markup=kb)
         return
 
     await callback.answer()
 
+
+@router.callback_query(F.data.startswith("ph:"))
+async def on_phone_share_callback(callback: CallbackQuery):
+    """Telefon so‘rovi: ph:a:{id} / ph:d:{id}."""
+    data = callback.data or ""
+    parts = data.split(":", 2)
+    if len(parts) != 3 or parts[0] != "ph" or parts[1] not in ("a", "d") or not parts[2].isdigit():
+        await callback.answer("Noto'g'ri tugma", show_alert=True)
+        return
+
+    user_id = callback.from_user.id
+    request_id = int(parts[2])
+    async with async_session() as session:
+        user = await session.get(User, user_id)
+    lang = _ui_lang(user)
+
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    if parts[1] == "d":
+        result = await decline_phone_share(request_id, user_id)
+        await callback.answer()
+        if result.get("status") == "declined":
+            await callback.message.answer(t(lang, "declined_self"))
+        else:
+            await callback.message.answer(t(lang, "proposal_invalid"))
+        return
+
+    result = await accept_phone_share(request_id, user_id)
+    await callback.answer()
+    if result.get("status") == "shared":
+        await callback.message.answer(t(lang, "phone_saved_thanks"))
+    elif result.get("status") == "need_contact":
+        pass  # contact keyboard allaqachon yuborilgan
+    else:
+        await callback.message.answer(t(lang, "proposal_invalid"))
+
+
+@router.message(F.contact)
+async def on_contact_shared(message: Message):
+    """Telegram contact — telefon saqlash + kutayotgan so‘rovni yakunlash."""
+    contact = message.contact
+    if not contact or not message.from_user:
+        return
+    # Faqat o‘z kontaktini qabul qilamiz
+    if contact.user_id and contact.user_id != message.from_user.id:
+        await message.answer("Iltimos, o‘zingizning telefon raqamingizni yuboring.")
+        return
+    phone = contact.phone_number or ""
+    if phone and not phone.startswith("+"):
+        phone = f"+{phone}"
+    user_id = message.from_user.id
+    async with async_session() as session:
+        user = await session.get(User, user_id)
+    lang = _ui_lang(user)
+
+    delivered = await complete_phone_await_after_contact(user_id, phone)
+    await message.answer(
+        t(lang, "phone_saved_thanks"),
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    if delivered:
+        await message.answer(t(lang, "accepted_confirmed"))
 
 
 @router.message(Registration.name)

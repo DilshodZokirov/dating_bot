@@ -28,6 +28,7 @@ from app.matching.queue import (
     pop_result,
     requeue_user,
     set_result,
+    SAVED_INVITE_TTL_SECONDS,
 )
 from app.matching.respond import respond_to_proposal
 from app.matching.age_brackets import clamp_prefer, prefer_bounds_meta
@@ -47,6 +48,8 @@ from app.models import (
     ChatThread,
     Language,
     LookingFor,
+    PhoneShareRequest,
+    PhoneShareStatus,
     Report,
     ReportReason,
     ReportStatus,
@@ -66,8 +69,15 @@ from app.moderation import (
 )
 from app.presence import is_online, online_map, touch_presence
 from app.telegram_auth import InitDataError, validate_init_data
-from app.telegram_client import notify_admins, send_message
+from app.phone_share import accept_phone_share, decline_phone_share
+from app.telegram_client import (
+    notify_admins,
+    phone_request_keyboard,
+    proposal_keyboard,
+    send_message,
+)
 from app.topics import DEFAULT_TOPIC, LEGACY_TOPIC_MAP, MATCH_TOPICS, TOPIC_IDS, normalize_topic
+from app.i18n import t, gender_label
 
 router = APIRouter(prefix="/api")
 
@@ -816,7 +826,7 @@ class InviteRequest(BaseModel):
 
 @router.post("/saved/invite")
 async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None = Header(default=None)):
-    """Saqlangan online suhbatdoshni suhbatga chaqirish (faqat Mini App)."""
+    """Saqlangan suhbatdoshni video suhbatga chaqirish — botga xabar + rozilik."""
     tg_user = _auth(x_telegram_init_data)
     me_id = int(tg_user["id"])
     await touch_presence(me_id)
@@ -843,10 +853,8 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         raise HTTPException(status_code=400, detail="Avval suhbatdoshni saqlang")
     if me.is_banned or partner.is_banned:
         raise HTTPException(status_code=403, detail="Hisob cheklangan")
-    if partner.is_in_call:
+    if partner.is_in_call or me.is_in_call:
         raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
-    if not await is_online(payload.partner_id):
-        raise HTTPException(status_code=409, detail="Suhbatdosh hozir online emas")
 
     # Navbatdan chiqarib, to'g'ridan-to'g'ri taklif
     for lf in ("male", "female", "any"):
@@ -856,12 +864,16 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
     proposal_id = await create_mutual_proposal(
         requester=_queue_payload(me),
         candidate=_queue_payload(partner),
+        ttl=SAVED_INVITE_TTL_SECONDS,
     )
+    # Chaqiruvchi avtomatik rozilik — hamroh botda qabul qiladi
+    await respond_to_proposal(me.id, proposal_id, "accepted")
+
     await set_result(
-        me.id, "proposal", proposal_id=proposal_id,
-        other_id=partner.id,
-        other_name=partner.name, other_age=partner.age, other_gender=partner.gender.value,
-        other_avatar_url=avatar_url(partner.id, bool(getattr(partner, "has_avatar", False))),
+        me.id, "invite_sent",
+        proposal_id=proposal_id,
+        partner_id=partner.id,
+        other_name=partner.name,
     )
     await set_result(
         partner.id, "proposal", proposal_id=proposal_id,
@@ -870,11 +882,45 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         other_avatar_url=avatar_url(me.id, bool(getattr(me, "has_avatar", False))),
     )
 
+    partner_lang = (
+        partner.ui_language.value
+        if getattr(partner, "ui_language", None) is not None
+        else partner.language.value
+    )
+    invite_text = t(
+        partner_lang,
+        "saved_call_invite",
+        name=me.name,
+        age=me.age,
+        gender=gender_label(partner_lang, me.gender.value),
+    )
+    try:
+        await send_message(
+            partner.id,
+            invite_text,
+            reply_markup=proposal_keyboard(
+                proposal_id,
+                t(partner_lang, "btn_accept"),
+                t(partner_lang, "btn_decline"),
+                t(partner_lang, "menu_btn"),
+            ),
+        )
+    except Exception as e:
+        print(f"saved invite notify {partner.id}: {e}", flush=True)
+
+    await notify_admins(
+        f"⭐ Saqlanganlardan chaqiruv\n"
+        f"Kim: <code>{me.id}</code> ({me.name})\n"
+        f"Kimga: <code>{partner.id}</code> ({partner.name})\n"
+        f"Taklif: <code>{proposal_id}</code>"
+    )
+
     return {
         "status": "invited",
         "proposal_id": proposal_id,
         "partner_id": partner.id,
-        "partner_online": True,
+        "partner_online": await is_online(partner.id),
+        "bot_notified": True,
     }
 
 
@@ -914,6 +960,147 @@ async def call_feedback(payload: FeedbackRequest, x_telegram_init_data: str | No
             )
         await session.commit()
     return {"status": "ok", "stars": payload.stars}
+
+
+# ---------------------------------------------------------------------------
+# Telefon raqam so‘rovi (qo‘ng‘iroq davomida)
+# ---------------------------------------------------------------------------
+
+class PhoneRequestBody(BaseModel):
+    partner_id: int
+    room_id: str
+
+
+@router.post("/call/phone-request")
+async def request_phone_share(payload: PhoneRequestBody, x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    if payload.partner_id == me_id:
+        raise HTTPException(status_code=400, detail="O'zingizdan so'rab bo'lmaydi")
+    if await is_blocked_pair(me_id, payload.partner_id):
+        raise HTTPException(status_code=403, detail="Bloklangan juftlik")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        partner = await session.get(User, payload.partner_id)
+        if not me or not partner:
+            raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        call = (
+            await session.execute(
+                select(CallSession).where(
+                    CallSession.room_id == payload.room_id,
+                    CallSession.status == SessionStatus.active,
+                )
+            )
+        ).scalar_one_or_none()
+        if not call or me_id not in (call.user1_id, call.user2_id) or payload.partner_id not in (
+            call.user1_id,
+            call.user2_id,
+        ):
+            raise HTTPException(status_code=400, detail="Faol qo'ng'iroq topilmadi")
+
+        existing = (
+            await session.execute(
+                select(PhoneShareRequest).where(
+                    PhoneShareRequest.room_id == payload.room_id,
+                    PhoneShareRequest.from_user_id == me_id,
+                    PhoneShareRequest.to_user_id == payload.partner_id,
+                    PhoneShareRequest.status == PhoneShareStatus.pending,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            return {"status": "pending", "request_id": existing.id}
+
+        req = PhoneShareRequest(
+            room_id=payload.room_id,
+            from_user_id=me_id,
+            to_user_id=payload.partner_id,
+            status=PhoneShareStatus.pending,
+        )
+        session.add(req)
+        await session.commit()
+        await session.refresh(req)
+        request_id = req.id
+        me_name = me.name
+
+    partner_lang = (
+        partner.ui_language.value
+        if getattr(partner, "ui_language", None) is not None
+        else partner.language.value
+    )
+    try:
+        await send_message(
+            payload.partner_id,
+            t(partner_lang, "phone_request_ask", name=me_name),
+            reply_markup=phone_request_keyboard(
+                request_id,
+                t(partner_lang, "btn_accept"),
+                t(partner_lang, "btn_decline"),
+            ),
+        )
+    except Exception as e:
+        print(f"phone request notify {payload.partner_id}: {e}", flush=True)
+
+    return {"status": "pending", "request_id": request_id}
+
+
+@router.get("/call/phone-incoming")
+async def list_incoming_phone_requests(x_telegram_init_data: str | None = Header(default=None)):
+    """Mini App ichida kelgan telefon so‘rovlari (ixtiyoriy UI)."""
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    async with async_session() as session:
+        rows = (
+            await session.execute(
+                select(PhoneShareRequest, User)
+                .join(User, User.id == PhoneShareRequest.from_user_id)
+                .where(
+                    PhoneShareRequest.to_user_id == me_id,
+                    PhoneShareRequest.status == PhoneShareStatus.pending,
+                )
+                .order_by(PhoneShareRequest.id.desc())
+            )
+        ).all()
+    return {
+        "items": [
+            {
+                "request_id": req.id,
+                "room_id": req.room_id,
+                "from_user_id": req.from_user_id,
+                "from_name": user.name,
+            }
+            for req, user in rows
+        ]
+    }
+
+
+class PhoneRespondBody(BaseModel):
+    action: str  # accept | decline
+
+
+@router.post("/call/phone-request/{request_id}/respond")
+async def respond_phone_share_api(
+    request_id: int,
+    payload: PhoneRespondBody,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    action = (payload.action or "").strip().lower()
+    if action not in ("accept", "decline"):
+        raise HTTPException(status_code=400, detail="action: accept | decline")
+
+    if action == "decline":
+        result = await decline_phone_share(request_id, me_id)
+    else:
+        result = await accept_phone_share(request_id, me_id)
+
+    if result.get("status") == "invalid":
+        raise HTTPException(status_code=404, detail="So'rov topilmadi")
+    if result.get("status") == "closed":
+        raise HTTPException(status_code=409, detail="So'rov yopilgan")
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -1508,3 +1695,40 @@ async def admin_banned_users(x_telegram_init_data: str | None = Header(default=N
             for u in users
         ]
     }
+
+
+@router.get("/admin/calls")
+async def admin_active_calls(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    _require_admin(int(tg_user["id"]))
+    async with async_session() as session:
+        calls = list(
+            (
+                await session.execute(
+                    select(CallSession)
+                    .where(CallSession.status == SessionStatus.active)
+                    .order_by(CallSession.id.desc())
+                    .limit(50)
+                )
+            ).scalars().all()
+        )
+        items = []
+        for c in calls:
+            u1 = await session.get(User, c.user1_id)
+            u2 = await session.get(User, c.user2_id)
+            items.append({
+                "id": c.id,
+                "room_id": c.room_id,
+                "started_at": c.started_at.isoformat() if c.started_at else None,
+                "user1": {
+                    "id": c.user1_id,
+                    "name": u1.name if u1 else "—",
+                    "phone": u1.phone if u1 else None,
+                },
+                "user2": {
+                    "id": c.user2_id,
+                    "name": u2.name if u2 else "—",
+                    "phone": u2.phone if u2 else None,
+                },
+            })
+    return {"items": items}

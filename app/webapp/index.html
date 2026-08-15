@@ -1157,6 +1157,7 @@
     <div class="safety-row" id="safetyRow">
       <button type="button" class="safety-btn" id="savePartnerBtn">Saqlash</button>
       <button type="button" class="safety-btn" id="favInviteBtn">Sevimli</button>
+      <button type="button" class="safety-btn" id="phoneRequestBtn">Telefon</button>
       <button type="button" class="safety-btn" id="blockBtn">Bloklash</button>
       <button type="button" class="safety-btn danger" id="reportBtn">Shikoyat</button>
     </div>
@@ -1354,6 +1355,7 @@
     <div class="admin-stats" id="adminStats"></div>
     <div class="admin-tabs">
       <button type="button" class="active" data-admin-tab="reports" id="adminTabReports">Shikoyatlar</button>
+      <button type="button" data-admin-tab="calls" id="adminTabCalls">Aloqalar</button>
       <button type="button" data-admin-tab="users" id="adminTabUsers">Foydalanuvchilar</button>
       <button type="button" data-admin-tab="banned" id="adminTabBanned">Ban</button>
     </div>
@@ -1704,8 +1706,20 @@ const TRANSLATIONS = {
   remove_btn: { uz: "O‘chirish", ru: "Удалить", en: "Remove", de: "Entfernen", tg: "Нест кардан", tr: "Kaldır", ko: "삭제", ja: "削除", zh: "删除",
     ar: "إزالة",
   },
-  invite_ok: { uz: "Taklif yuborildi.", ru: "Приглашение отправлено.", en: "Invite sent.", de: "Einladung gesendet.", tg: "Таклиф фиристода шуд.", tr: "Davet gönderildi.", ko: "초대가 전송되었습니다.", ja: "招待を送信しました。", zh: "邀请已发送。",
-    ar: "تم إرسال الدعوة.",
+  invite_ok: { uz: "Taklif yuborildi — hamroh botda xabar oldi.", ru: "Приглашение отправлено — собеседник получил сообщение в боте.", en: "Invite sent — they got a bot message.", de: "Einladung gesendet — Bot-Nachricht zugestellt.", tg: "Таклиф фиристода шуд — дар бот паём расид.", tr: "Davet gönderildi — bot mesajı iletildi.", ko: "초대가 전송되었습니다 — 봇 메시지를 받았습니다.", ja: "招待を送信 — ボットに通知しました。", zh: "邀请已发送 — 对方已收到机器人消息。",
+    ar: "تم إرسال الدعوة — وصلهم رسالة في البوت.",
+  },
+  invite_waiting: { uz: "Javob kutilmoqda… Hamroh botda rozilik bersa ulanamiz.", ru: "Ждём ответа… Когда примет в боте — соединим.", en: "Waiting… We’ll connect when they accept in the bot.", de: "Warten… Verbindung nach Bot-Zustimmung.", tg: "Ҷавоб… Дар бот қабул кунад — пайваст.", tr: "Bekleniyor… Bot’ta kabul ederse bağlanırız.", ko: "대기 중… 봇에서 수락하면 연결됩니다.", ja: "待機中…ボットで承諾されると接続します。", zh: "等待中…对方在机器人中接受后即可连接。",
+    ar: "بانتظار الرد… عند القبول في البوت سنتصل.",
+  },
+  phone_btn: { uz: "Telefon", ru: "Телефон", en: "Phone", de: "Telefon", tg: "Телефон", tr: "Telefon", ko: "전화", ja: "電話", zh: "电话",
+    ar: "هاتف",
+  },
+  phone_req_ok: { uz: "Telefon so‘rovi yuborildi — javob botda keladi.", ru: "Запрос номера отправлен — ответ придёт в бот.", en: "Phone request sent — reply comes in the bot.", de: "Nummernanfrage gesendet — Antwort im Bot.", tg: "Дархости телефон фиристода шуд — ҷавоб дар бот.", tr: "Telefon isteği gönderildi — yanıt bota gelir.", ko: "전화번호 요청이 전송되었습니다 — 봇으로 답변이 옵니다.", ja: "電話リクエスト送信 — ボットで返信。", zh: "已发送电话请求 — 回复会到机器人。",
+    ar: "تم إرسال طلب الهاتف — الرد يصل في البوت.",
+  },
+  admin_tab_calls: { uz: "Aloqalar", ru: "Звонки", en: "Calls", de: "Anrufe", tg: "Зангҳо", tr: "Aramalar", ko: "통화", ja: "通話", zh: "通话",
+    ar: "المكالمات",
   },
   offline_err: { uz: "Suhbatdosh hozir online emas.", ru: "Собеседник не в сети.", en: "Partner is offline.", de: "Partner ist offline.", tg: "Ҳамсуҳбат ҳозир онлайн нест.", tr: "Partner şu an çevrimdışı.", ko: "상대가 오프라인입니다.", ja: "相手はオフラインです。", zh: "对方不在线。",
     ar: "الشريك غير متصل الآن.",
@@ -2178,10 +2192,12 @@ function applyStaticTranslations() {
   setText("chatInvitesTitle", "chat_invites_title");
   setText("savePartnerBtn", "save_partner_btn");
   setText("favInviteBtn", "fav_invite_btn");
+  setText("phoneRequestBtn", "phone_btn");
   setText("chatSendBtn", "chat_send");
   setText("adminTitle", "admin_title");
   setText("adminHint", "admin_hint");
   setText("adminTabReports", "admin_tab_reports");
+  setText("adminTabCalls", "admin_tab_calls");
   setText("adminTabUsers", "admin_tab_users");
   setText("adminTabBanned", "admin_tab_banned");
   setText("adminUserSearchBtn", "admin_search");
@@ -2671,7 +2687,31 @@ async function bootApp() {
   applyStaticTranslations();
   startPresencePing();
   startPoolPolling();
-  if (meLoaded) maybeShowGuide();
+  if (meLoaded) {
+    maybeShowGuide();
+    try {
+      const result = await api("/api/search/status");
+      if (result.outcome === "matched") {
+        enterCall(result.room_id, result.partner_id, {
+          url: result.livekit_url,
+          token: result.livekit_token,
+        });
+      } else if (result.outcome === "proposal") {
+        showProposal(
+          result.proposal_id,
+          result.other_name,
+          result.other_age,
+          result.other_gender,
+          result.other_avatar_url,
+        );
+      } else if (result.outcome === "invite_sent") {
+        setSearchingUI(true);
+        if (hintText) hintText.textContent = tr("invite_waiting");
+        clearInterval(pollTimer);
+        pollTimer = setInterval(pollStatus, 2000);
+      }
+    } catch (_) {}
+  }
 }
 
 async function startSearch() {
@@ -2716,6 +2756,16 @@ async function pollStatus() {
         url: result.livekit_url,
         token: result.livekit_token,
       });
+    } else if (result.outcome === "invite_sent") {
+      searching = true;
+      mainBtn.style.display = "grid";
+      mainBtn.classList.add("searching");
+      titleText.style.display = "block";
+      titleText.textContent = tr("searching_title");
+      hintText.textContent = tr("invite_waiting");
+      hintText.style.display = "block";
+      cancelLink.style.display = "inline";
+      proposalCard.style.display = "none";
     } else if (result.outcome === "requeued") {
       proposalWaitUntil = 0;
       currentProposalId = null;
@@ -2936,10 +2986,10 @@ async function loadSavedList() {
       let actions = "";
       if (it.can_chat && it.thread_id) {
         actions += `<button type="button" class="chat" data-chat="${it.thread_id}" data-chat-name="${(it.name || "").replace(/"/g, "&quot;")}">${tr("chat_btn")}</button>`;
-        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${it.busy ? "disabled" : ""}>${tr("invite_btn")}</button>`;
       } else {
         actions += `<button type="button" class="fav-invite" data-fav-invite="${it.partner_id}">${tr("fav_invite_btn")}</button>`;
-        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${(!it.online || it.busy) ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${it.busy ? "disabled" : ""}>${tr("invite_btn")}</button>`;
       }
       actions += `<button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>`;
       row.innerHTML = `
@@ -3019,12 +3069,12 @@ document.getElementById("savedList")?.addEventListener("click", async (e) => {
       document.querySelector('.nav-btn[data-view="searchView"]')?.classList.add("active");
       searchView.classList.add("active");
       setSearchingUI(true);
+      if (hintText) hintText.textContent = tr("invite_waiting");
       clearInterval(pollTimer);
       pollTimer = setInterval(pollStatus, 2000);
     } catch (err) {
       const msg = err.message || String(err);
-      if (/online emas|offline/i.test(msg)) tg?.showAlert?.(tr("offline_err"));
-      else if (/band|busy/i.test(msg)) tg?.showAlert?.(tr("busy_err"));
+      if (/band|busy/i.test(msg)) tg?.showAlert?.(tr("busy_err"));
       else tg?.showAlert?.(msg);
       loadSavedList();
     }
@@ -3141,8 +3191,35 @@ async function loadAdminPanel() {
   } catch (_) {}
   document.getElementById("adminSearchRow").style.display = adminTab === "users" ? "flex" : "none";
   if (adminTab === "reports") await loadAdminReports();
+  else if (adminTab === "calls") await loadAdminCalls();
   else if (adminTab === "banned") await loadAdminBanned();
   else await loadAdminUsers();
+}
+
+async function loadAdminCalls() {
+  const list = document.getElementById("adminList");
+  if (!list) return;
+  list.innerHTML = "";
+  try {
+    const data = await api("/api/admin/calls");
+    const items = data.items || [];
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-saved" style="display:block">${tr("admin_tab_calls")}: 0</div>`;
+      return;
+    }
+    for (const c of items) {
+      const card = document.createElement("div");
+      card.className = "admin-card";
+      card.innerHTML = `
+        <div class="title">${c.user1.name} ↔ ${c.user2.name}</div>
+        <div class="sub">id ${c.user1.id} · ${c.user2.id}</div>
+        <div class="sub">room ${c.room_id}</div>
+        <div class="sub">${c.started_at || ""}</div>`;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="empty-saved" style="display:block">${e.message}</div>`;
+  }
 }
 
 async function loadAdminReports() {
@@ -3872,6 +3949,22 @@ document.getElementById("favInviteBtn")?.addEventListener("click", async () => {
     } else {
       tg?.showAlert(tr("fav_invite_ok"));
     }
+  } catch (e) {
+    tg?.showAlert(e.message || String(e));
+  }
+});
+
+document.getElementById("phoneRequestBtn")?.addEventListener("click", async () => {
+  if (!callPartnerId || !callRoomId) {
+    tg?.showAlert(tr("safety_need_partner"));
+    return;
+  }
+  try {
+    await api("/api/call/phone-request", {
+      method: "POST",
+      body: JSON.stringify({ partner_id: callPartnerId, room_id: callRoomId }),
+    });
+    tg?.showAlert(tr("phone_req_ok"));
   } catch (e) {
     tg?.showAlert(e.message || String(e));
   }
