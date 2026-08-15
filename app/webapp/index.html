@@ -1336,7 +1336,7 @@
   <div class="view" id="savedView">
     <div class="page-head">
       <h1 id="savedTitle">Saqlanganlar</h1>
-      <p id="savedHint">Sevimli bo‘lsangiz chatlashishingiz mumkin.</p>
+      <p id="savedHint">Video — offline bo‘lsa ham botiga taklif ketadi.</p>
     </div>
     <div class="invite-section" id="chatInvitesBox" style="display:none">
       <h2 id="chatInvitesTitle">Chat takliflari</h2>
@@ -1622,8 +1622,8 @@ const TRANSLATIONS = {
   saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved", de: "Gespeicherte", tg: "Захирашудаҳо", tr: "Kayıtlılar", ko: "저장됨", ja: "保存済み", zh: "已保存",
     ar: "المحفوظات",
   },
-  saved_hint: { uz: "Sevimli bo‘lsangiz chatlashishingiz mumkin.", ru: "Если вы в избранном — можно переписываться.", en: "If you’re favorites, you can chat.", de: "Als Favoriten könnt ihr chatten.", tg: "Агар дӯстдошта бошед — чат кунед.", tr: "Favoriyseniz sohbet edebilirsiniz.", ko: "즐겨찾기면 채팅할 수 있습니다.", ja: "お気に入りならチャットできます。", zh: "互为收藏后可以聊天。",
-    ar: "إذا كنتما مفضلين يمكنكما الدردشة.",
+  saved_hint: { uz: "Video — offline bo‘lsa ham botiga taklif ketadi.", ru: "Видео — даже офлайн уйдёт приглашение в бот.", en: "Video — invite goes to their bot even if offline.", de: "Video — Einladung geht auch offline an den Bot.", tg: "Видео — офлайн ҳам ба бот таклиф меравад.", tr: "Video — çevrimdışı olsa da bota davet gider.", ko: "영상 — 오프라인이어도 봇으로 초대가 갑니다.", ja: "ビデオ — オフラインでもボットに招待が届きます。", zh: "视频 — 即使离线也会发到对方机器人。",
+    ar: "فيديو — حتى لو غير متصل تصل الدعوة إلى البوت.",
   },
   saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet.", de: "Noch keine gespeicherten Partner.", tg: "Ҳанӯз ҳамсуҳбати захирашуда нест.", tr: "Henüz kayıtlı partner yok.", ko: "아직 저장된 상대가 없습니다.", ja: "まだ保存した相手がいません。", zh: "还没有已保存的对象。",
     ar: "لا يوجد شركاء محفوظون بعد.",
@@ -2986,10 +2986,10 @@ async function loadSavedList() {
       let actions = "";
       if (it.can_chat && it.thread_id) {
         actions += `<button type="button" class="chat" data-chat="${it.thread_id}" data-chat-name="${(it.name || "").replace(/"/g, "&quot;")}">${tr("chat_btn")}</button>`;
-        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${it.busy ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}">${tr("invite_btn")}</button>`;
       } else {
         actions += `<button type="button" class="fav-invite" data-fav-invite="${it.partner_id}">${tr("fav_invite_btn")}</button>`;
-        actions += `<button type="button" class="invite" data-invite="${it.partner_id}" ${it.busy ? "disabled" : ""}>${tr("invite_btn")}</button>`;
+        actions += `<button type="button" class="invite" data-invite="${it.partner_id}">${tr("invite_btn")}</button>`;
       }
       actions += `<button type="button" data-unsave="${it.partner_id}">${tr("remove_btn")}</button>`;
       row.innerHTML = `

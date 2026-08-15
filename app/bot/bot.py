@@ -24,7 +24,7 @@ async def main():
 
     if settings.webapp_url:
         # Global default — bitta kirish: Menu. Matn /start da foydalanuvchi tiliga moslanadi.
-        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/?v=onesearch2"
+        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
         logging.info("Setting menu button: %s", menu_url)
         try:
             await bot.set_chat_menu_button(
