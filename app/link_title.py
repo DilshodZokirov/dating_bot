@@ -198,7 +198,10 @@ def _movie_cache_key(url: str, lang: str) -> str:
     import hashlib
 
     norm = normalize_media_url(url)
-    digest = hashlib.sha256(f"{norm}|{(lang or 'uz').lower()}".encode()).hexdigest()[:40]
+    # v2: reverse-image first + scene-grounded candidates
+    digest = hashlib.sha256(
+        f"v2|{norm}|{(lang or 'uz').lower()}".encode()
+    ).hexdigest()[:40]
     return f"movie:id:{digest}"
 
 
@@ -818,6 +821,8 @@ async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
         f"- title: official/local name of THAT same movie in {lang_name}, "
         "with the same year if the input has a year. "
         "If you do not know a local title, repeat the input title EXACTLY.\n"
+        "- Examples: Billu/Billu Barber (2009) → Sartarosh Billu (2009) (Uzbek); "
+        "Inception (2010) → Начало (2010) (Russian).\n"
         "- NEVER substitute a different / similar / more famous film.\n"
         f"- summary: 2-3 short sentences in {lang_name} about THIS film only "
         "(spoiler-light, max ~400 chars).\n"
@@ -1025,8 +1030,9 @@ async def gemini_identify_movie(
     image_bytes: bytes | None = None,
     mime: str = "image/jpeg",
     lang: str = "uz",
+    reverse_hints: list[str] | None = None,
 ) -> dict | None:
-    """GEMINI_API_KEY — rasm/kadrni tanish; nom + qisqa mazmun app tilida."""
+    """GEMINI_API_KEY — rasm/kadrni tanish; reverse-image hintlar bilan aniqroq."""
     import base64
 
     api_key = _gemini_api_key()
@@ -1034,35 +1040,52 @@ async def gemini_identify_movie(
         return None
 
     lang_name = _lang_label(lang)
+    hints = _dedupe_candidates(list(reverse_hints or []), limit=8)
+    hints_block = ""
+    if hints:
+        hints_block = (
+            "Reverse-image search hits (STRONG prior — prefer these if they match the frame):\n"
+            + "\n".join(f"- {h}" for h in hints)
+            + "\n\n"
+        )
+
     # Avval ekrandagi aniq matn — taxminiy boshqa filmga o‘tmasin
     plain_prompts = (
         (
             "This is a screenshot that may include Instagram/TikTok UI and captions. "
-            "Read ALL visible text. If a movie/cartoon title with year appears, "
+            "Read ALL visible text carefully (overlays, posters, watermarks, subtitles). "
+            "If a movie/cartoon title with year appears, "
             "reply with ONLY that title and year EXACTLY as shown "
-            "(example: Osmondan tushgan fil (2023)). "
+            "(example: Sartarosh Billu (2009) or Billu (2009)). "
             "Do not translate. Do not guess another film. "
             "If none, reply exactly: UNKNOWN"
         ),
     )
     json_prompt = (
         "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
-        "Identify the movie or animated film.\n"
+        "Identify the movie or animated film from the VISUAL SCENE, not from celebrity fame.\n"
         f"App UI language for titles: {lang_name} (code: {lang}).\n\n"
+        f"{hints_block}"
+        "First (silently) note: setting/location, props, action, costumes.\n"
+        "Then name films that match THAT specific scene.\n\n"
         "Return ONLY valid JSON (no markdown), ONE of:\n"
         "A) Certain single film:\n"
         '{"mode":"single","confidence":"high","title_raw":"...","title":"...",'
         '"summary":"..."}\n'
-        "B) Uncertain — several possible films (preferred when unsure):\n"
+        "B) Uncertain — several possible films:\n"
         '{"mode":"candidates","candidates":["Title (Year)","..."]}\n'
         "C) Unknown: {\"found\":false}\n\n"
-        "Rules:\n"
-        "- mode=single ONLY if highly sure (clear on-screen title or unmistakable).\n"
-        "- Otherwise ALWAYS mode=candidates with 4 to 6 DISTINCT possible movies "
-        f"in {lang_name}, with year when known. Do NOT pick one winner.\n"
-        "- Never invent false certainty. Ambiguous Instagram comedy clips → candidates.\n"
+        "CRITICAL rules:\n"
+        "- Match the SCENE (e.g. barber shop → Billu / Sartarosh Billu), not the actor's filmography.\n"
+        "- FORBIDDEN: listing other famous films of the same star just because you recognize the actor "
+        "(wrong example: seeing Shah Rukh Khan → dumping Kabhi Alvida / Mohabbatein / Kal Ho Naa Ho / Veer-Zaara).\n"
+        "- If reverse-image hits are given, rank/filter those first; localize them to "
+        f"{lang_name}; only add extra titles if the frame clearly supports them.\n"
+        "- mode=single ONLY if highly sure (clear on-screen title or unmistakable scene).\n"
+        "- Otherwise mode=candidates: 4 to 6 DISTINCT titles in "
+        f"{lang_name}, with year when known.\n"
         f"- summary (single only): 2-3 short sentences in {lang_name}.\n"
-        "- Prefer on-screen title text over captions."
+        "- Prefer on-screen title text over Instagram captions."
     )
 
     try:
@@ -1115,17 +1138,25 @@ async def gemini_identify_movie(
                         "error": "",
                     }
 
-            # 2) JSON: aniq bitta YOKI 4–6 ta taxmin
+            # 2) JSON: aniq bitta YOKI 4–6 ta taxmin (hintlar bilan)
             text_out, model = await _gemini_generate_text(
                 client, api_key, [{"text": json_prompt}, image_part]
             )
             parsed = _parse_gemini_movie_json(text_out)
             if not parsed or not parsed.get("found"):
+                # Hintlar bo‘lsa — ularni candidates qilib qaytaramiz
+                if hints:
+                    return await _localize_candidates_list(
+                        hints, lang=lang, source="Internet · Yandex + localize"
+                    )
                 return None
 
             if parsed.get("uncertain") and parsed.get("candidates"):
+                cands = list(parsed["candidates"])
+                # Reverse hitsni oldinga qo‘shamiz
+                merged = _dedupe_candidates(hints + cands, limit=6)
                 return uncertain_movie_result(
-                    parsed["candidates"],
+                    merged,
                     source=f"Internet · Gemini candidates ({model})",
                 )
 
@@ -1136,12 +1167,12 @@ async def gemini_identify_movie(
                 cands = list(parsed.get("candidates") or [])
                 if title not in cands:
                     cands.insert(0, title)
+                cands = _dedupe_candidates(hints + cands, limit=6)
                 if len(cands) >= 2:
                     return uncertain_movie_result(
                         cands,
                         source=f"Internet · Gemini candidates ({model})",
                     )
-                # Bitta nom + past ishonch — candidates so‘raymiz (quyida)
             elif title and (not conf or conf == "high"):
                 raw = parsed.get("title_raw") or title
                 local = title
@@ -1158,12 +1189,14 @@ async def gemini_identify_movie(
                     "error": "",
                 }
 
-            # 3) Explicit candidates follow-up
+            # 3) Explicit candidates follow-up (sahna asosida)
             cand_prompt = (
-                f"List 5 or 6 possible movie/cartoon titles this frame could be, "
-                f"in {lang_name}. Return ONLY JSON: "
-                '{"mode":"candidates","candidates":["Title (Year)", "..."]}. '
-                "Distinct films only. No single winner."
+                f"Based ONLY on the visual SCENE in this frame (setting, props, action), "
+                f"list 5 or 6 possible movie titles in {lang_name}.\n"
+                f"{hints_block}"
+                "FORBIDDEN: dumping an actor's other hit films just because you recognize the face.\n"
+                "Prefer reverse-image hits when provided; localize them.\n"
+                'Return ONLY JSON: {"mode":"candidates","candidates":["Title (Year)", "..."]}.'
             )
             text_out, model = await _gemini_generate_text(
                 client, api_key, [{"text": cand_prompt}, image_part]
@@ -1173,13 +1206,91 @@ async def gemini_identify_movie(
                 cands = list(parsed2.get("candidates") or [])
                 if title:
                     cands.insert(0, title)
+                cands = _dedupe_candidates(hints + cands, limit=6)
                 return uncertain_movie_result(
                     cands, source=f"Internet · Gemini candidates ({model})"
+                )
+            if hints:
+                return await _localize_candidates_list(
+                    hints, lang=lang, source="Internet · Yandex + localize"
                 )
     except Exception as e:
         print(f"gemini_identify_movie error: {type(e).__name__}: {e}", flush=True)
         return None
     return None
+
+
+async def _localize_candidates_list(
+    titles: list[str], *, lang: str, source: str
+) -> dict:
+    """Yandex nomlarini app tiliga o‘girish (boshqa filmga almashtirmasdan)."""
+    base = _dedupe_candidates(titles, limit=6)
+    if not base:
+        return uncertain_movie_result([], source=source)
+
+    api_key = _gemini_api_key()
+    if not api_key:
+        return uncertain_movie_result(base, source=source)
+
+    lang_name = _lang_label(lang)
+    prompt = (
+        f"Localize these movie titles to {lang_name}. "
+        "Keep the SAME films (same year). Do NOT swap to other movies.\n"
+        f"Input (in order): {json.dumps(base, ensure_ascii=False)}\n"
+        "Example: Billu / Billu Barber (2009) → Sartarosh Billu (2009) in Uzbek.\n"
+        "Return ONLY JSON with the same order and length:\n"
+        '{"mode":"candidates","candidates":["..."]}'
+    )
+    try:
+        async with httpx.AsyncClient(timeout=45, headers=_http_headers()) as client:
+            text_out, _model = await _gemini_generate_text(
+                client, api_key, [{"text": prompt}]
+            )
+        parsed = _parse_gemini_movie_json(text_out)
+        cands = list((parsed or {}).get("candidates") or [])
+        out: list[str] = []
+        for i, orig in enumerate(base):
+            if i >= len(cands):
+                out.append(orig)
+                continue
+            cand = cands[i]
+            ya, yb = _title_years(orig), _title_years(cand)
+            if ya and yb and ya.isdisjoint(yb):
+                out.append(orig)
+            elif titles_same_movie(orig, cand) or _script_bucket(orig) != _script_bucket(
+                cand
+            ):
+                out.append(cand)
+            elif ya and yb and ya == yb:
+                # Bir xil yil — lokal nom bo‘lishi mumkin (Billu → Sartarosh Billu)
+                out.append(cand)
+            else:
+                out.append(orig)
+        return uncertain_movie_result(out, source=source)
+    except Exception as e:
+        print(f"_localize_candidates_list error: {e}", flush=True)
+
+    return uncertain_movie_result(base, source=source)
+
+
+async def yandex_reverse_titles(
+    client: httpx.AsyncClient,
+    *,
+    image_url: str = "",
+    image_bytes: bytes | None = None,
+    mime: str = "image/jpeg",
+) -> list[str]:
+    """Yandex CBIR dan faqat nomlar ro‘yxati."""
+    hit = await yandex_reverse_image_movie(
+        client, image_url=image_url, image_bytes=image_bytes, mime=mime
+    )
+    if not hit or not hit.get("ok"):
+        return []
+    if hit.get("uncertain") and hit.get("candidates"):
+        return list(hit["candidates"])
+    if hit.get("title"):
+        return [hit["title"]]
+    return []
 
 
 async def identify_movie_from_image_bytes(
@@ -1198,31 +1309,56 @@ async def identify_movie_from_image_bytes(
         flush=True,
     )
 
+    # 1) Avval internet reverse-image (aktyor filmografiyasi emas — o‘xshash kadr)
+    reverse_titles: list[str] = []
+    try:
+        await _progress(on_progress, "search")
+        async with httpx.AsyncClient(
+            timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
+        ) as client:
+            reverse_titles = await yandex_reverse_titles(
+                client, image_bytes=image_bytes, mime=mime
+            )
+            print(f"yandex reverse titles: {reverse_titles[:6]}", flush=True)
+    except Exception as e:
+        print(f"yandex image identify error: {e}", flush=True)
+
+    # 2) Gemini: OCR + sahna + reverse hintlar
     if has_key:
         await _progress(on_progress, "ai")
         ghit = await gemini_identify_movie(
-            image_bytes=image_bytes, mime=mime, lang=lang
+            image_bytes=image_bytes,
+            mime=mime,
+            lang=lang,
+            reverse_hints=reverse_titles,
         )
         if ghit and ghit.get("ok"):
             if ghit.get("uncertain"):
                 return ghit
             return await ensure_localized_result(ghit, lang, on_progress=on_progress)
 
-    # Yandex — Gemini bo‘lmasa yoki yiqilsa
-    try:
-        await _progress(on_progress, "search")
-        async with httpx.AsyncClient(
-            timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
-        ) as client:
-            hit = await yandex_reverse_image_movie(
-                client, image_bytes=image_bytes, mime=mime
+    # 3) Faqat Yandex
+    if reverse_titles:
+        if has_key:
+            return await _localize_candidates_list(
+                reverse_titles, lang=lang, source="Internet · Yandex + localize"
             )
-            if hit and hit.get("ok"):
-                if hit.get("uncertain"):
-                    return hit
-                return await ensure_localized_result(hit, lang, on_progress=on_progress)
-    except Exception as e:
-        print(f"yandex image identify error: {e}", flush=True)
+        if len(reverse_titles) >= 2:
+            return uncertain_movie_result(
+                reverse_titles, source="Internet · Yandex Images"
+            )
+        return await ensure_localized_result(
+            {
+                "ok": True,
+                "title": reverse_titles[0],
+                "summary": "",
+                "uncertain": False,
+                "source": "Internet · Yandex Images",
+                "error": "",
+            },
+            lang,
+            on_progress=on_progress,
+        )
 
     if not has_key:
         return {
@@ -1440,33 +1576,14 @@ async def _identify_from_social_download(
             ) as client:
                 img_bytes, mime = await _download_image(client, thumb)
             if img_bytes:
-                if _gemini_api_key():
-                    await _progress(on_progress, "ai")
-                    ghit = await gemini_identify_movie(
-                        image_url=thumb,
-                        image_bytes=img_bytes,
-                        mime=mime,
-                        lang=lang,
-                    )
-                    if ghit and ghit.get("ok"):
-                        ghit["host"] = host
-                        ghit["source"] = f"{ghit.get('source')} · auto-thumb"
-                        return await ensure_localized_result(
-                            ghit, lang, on_progress=on_progress
-                        )
-                await _progress(on_progress, "search")
-                async with httpx.AsyncClient(
-                    timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
-                ) as client:
-                    hit = await yandex_reverse_image_movie(
-                        client, image_url=thumb, image_bytes=img_bytes, mime=mime
-                    )
-                if hit and hit.get("ok"):
-                    hit["host"] = host
-                    hit["source"] = f"{hit.get('source')} · auto-thumb"
-                    return await ensure_localized_result(
-                        hit, lang, on_progress=on_progress
-                    )
+                result = await identify_movie_from_image_bytes(
+                    img_bytes, mime or "image/jpeg", lang=lang, on_progress=on_progress
+                )
+                if result.get("ok"):
+                    result["host"] = host
+                    src = result.get("source") or "Internet"
+                    result["source"] = f"{src} · auto-thumb"
+                    return result
         except Exception:
             pass
     return None
@@ -1523,6 +1640,13 @@ async def fetch_page_title(
                 img_bytes, mime = await _download_image(client, thumb)
 
             if social and thumb:
+                reverse_titles: list[str] = []
+                await _progress(on_progress, "search")
+                reverse_titles = await yandex_reverse_titles(
+                    client, image_url=thumb, image_bytes=img_bytes, mime=mime
+                )
+                print(f"social yandex titles: {reverse_titles[:6]}", flush=True)
+
                 if _gemini_api_key():
                     await _progress(on_progress, "ai")
                     ghit = await gemini_identify_movie(
@@ -1530,6 +1654,7 @@ async def fetch_page_title(
                         image_bytes=img_bytes,
                         mime=mime,
                         lang=lang,
+                        reverse_hints=reverse_titles,
                     )
                     if ghit and ghit.get("ok"):
                         ghit["host"] = host
@@ -1537,38 +1662,77 @@ async def fetch_page_title(
                             ghit, lang, on_progress=on_progress
                         )
 
-                await _progress(on_progress, "search")
-                hit = await yandex_reverse_image_movie(
-                    client, image_url=thumb, image_bytes=img_bytes, mime=mime
-                )
-                if hit and hit.get("ok"):
+                if reverse_titles:
+                    if _gemini_api_key():
+                        hit = await _localize_candidates_list(
+                            reverse_titles,
+                            lang=lang,
+                            source="Internet · Yandex + localize",
+                        )
+                    elif len(reverse_titles) >= 2:
+                        hit = uncertain_movie_result(
+                            reverse_titles, source="Internet · Yandex Images"
+                        )
+                    else:
+                        hit = await ensure_localized_result(
+                            {
+                                "ok": True,
+                                "title": reverse_titles[0],
+                                "summary": "",
+                                "source": "Internet · Yandex Images",
+                                "error": "",
+                            },
+                            lang,
+                            on_progress=on_progress,
+                        )
                     hit["host"] = host
-                    return await ensure_localized_result(
-                        hit, lang, on_progress=on_progress
-                    )
+                    return hit
 
             elif thumb:
                 await _progress(on_progress, "search")
-                hit = await yandex_reverse_image_movie(
+                reverse_titles = await yandex_reverse_titles(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
-                if hit and hit.get("ok"):
+                if _gemini_api_key():
+                    await _progress(on_progress, "ai")
+                    ghit = await gemini_identify_movie(
+                        image_url=thumb,
+                        image_bytes=img_bytes,
+                        mime=mime,
+                        lang=lang,
+                        reverse_hints=reverse_titles,
+                    )
+                    if ghit and ghit.get("ok"):
+                        ghit["host"] = host
+                        return await ensure_localized_result(
+                            ghit, lang, on_progress=on_progress
+                        )
+                if reverse_titles:
+                    hit = (
+                        await _localize_candidates_list(
+                            reverse_titles,
+                            lang=lang,
+                            source="Internet · Yandex + localize",
+                        )
+                        if _gemini_api_key()
+                        else uncertain_movie_result(
+                            reverse_titles, source="Internet · Yandex Images"
+                        )
+                        if len(reverse_titles) >= 2
+                        else await ensure_localized_result(
+                            {
+                                "ok": True,
+                                "title": reverse_titles[0],
+                                "summary": "",
+                                "source": "Internet · Yandex Images",
+                                "error": "",
+                            },
+                            lang,
+                            on_progress=on_progress,
+                        )
+                    )
                     hit["host"] = host
-                    return await ensure_localized_result(
-                        hit, lang, on_progress=on_progress
-                    )
-                await _progress(on_progress, "ai")
-                ghit = await gemini_identify_movie(
-                    image_url=thumb,
-                    image_bytes=img_bytes,
-                    mime=mime,
-                    lang=lang,
-                )
-                if ghit and ghit.get("ok"):
-                    ghit["host"] = host
-                    return await ensure_localized_result(
-                        ghit, lang, on_progress=on_progress
-                    )
+                    return hit
 
             if not social and page_title and not looks_like_prose(page_title):
                 if YEAR_IN_TEXT_RE.search(page_title) or len(page_title) <= 80:
