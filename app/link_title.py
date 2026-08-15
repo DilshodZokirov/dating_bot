@@ -1293,6 +1293,64 @@ async def yandex_reverse_titles(
     return []
 
 
+async def gemini_force_candidates(
+    *,
+    image_bytes: bytes,
+    mime: str = "image/jpeg",
+    lang: str = "uz",
+    reverse_hints: list[str] | None = None,
+) -> dict | None:
+    """
+    Aniq topilmasa ham 4–6 ta yaqin taxmin majburan so‘rash.
+    Foydalanuvchiga texnik 'Film topilmadi' o‘rniga shu qaytariladi.
+    """
+    import base64
+
+    api_key = _gemini_api_key()
+    if not api_key or not image_bytes:
+        if reverse_hints:
+            return uncertain_movie_result(
+                reverse_hints, source="Internet · closest guesses"
+            )
+        return None
+
+    lang_name = _lang_label(lang)
+    hints = _dedupe_candidates(list(reverse_hints or []), limit=8)
+    hints_txt = ""
+    if hints:
+        hints_txt = "Hints from reverse-image (use if plausible):\n" + "\n".join(
+            f"- {h}" for h in hints
+        )
+
+    prompt = (
+        "You could not lock one exact movie. Still help the user.\n"
+        f"Return 4 to 6 CLOSEST possible movie titles in {lang_name}.\n"
+        f"{hints_txt}\n"
+        "Match the visual SCENE as much as possible.\n"
+        "Do NOT return found:false. Do NOT dump unrelated famous films of an actor.\n"
+        'ONLY JSON: {"mode":"candidates","candidates":["Title (Year)", "..."]}'
+    )
+    try:
+        b64 = base64.b64encode(image_bytes[:2_000_000]).decode("ascii")
+        image_part = {"inline_data": {"mime_type": mime or "image/jpeg", "data": b64}}
+        async with httpx.AsyncClient(timeout=45, headers=_http_headers()) as client:
+            text_out, model = await _gemini_generate_text(
+                client, api_key, [{"text": prompt}, image_part]
+            )
+        parsed = _parse_gemini_movie_json(text_out)
+        cands = list((parsed or {}).get("candidates") or [])
+        merged = _dedupe_candidates(hints + cands, limit=6)
+        if merged:
+            return uncertain_movie_result(
+                merged, source=f"Internet · closest guesses ({model})"
+            )
+    except Exception as e:
+        print(f"gemini_force_candidates error: {e}", flush=True)
+    if hints:
+        return uncertain_movie_result(hints, source="Internet · closest guesses")
+    return None
+
+
 async def identify_movie_from_image_bytes(
     image_bytes: bytes,
     mime: str = "image/jpeg",
@@ -1359,6 +1417,18 @@ async def identify_movie_from_image_bytes(
             lang,
             on_progress=on_progress,
         )
+
+    # 4) Oxirgi imkon: majburan 4–6 ta yaqin taxmin (texnik "topilmadi" emas)
+    if has_key:
+        await _progress(on_progress, "ai")
+        forced = await gemini_force_candidates(
+            image_bytes=image_bytes,
+            mime=mime,
+            lang=lang,
+            reverse_hints=reverse_titles,
+        )
+        if forced and forced.get("ok"):
+            return forced
 
     if not has_key:
         return {
@@ -1610,12 +1680,14 @@ async def fetch_page_title(
 
     try:
         await _progress(on_progress, "preview")
+        img_bytes: bytes | None = None
+        mime = "image/jpeg"
+        thumb = ""
         async with httpx.AsyncClient(
             timeout=FETCH_TIMEOUT,
             follow_redirects=True,
             headers=_http_headers(),
         ) as client:
-            thumb = ""
             page_title = ""
             site = host
 
@@ -1634,7 +1706,7 @@ async def fetch_page_title(
                 preview = await _page_preview(client, url, host)
                 page_title = preview.get("page_title") or page_title
 
-            img_bytes: bytes | None = None
+            img_bytes = None
             mime = "image/jpeg"
             if thumb:
                 img_bytes, mime = await _download_image(client, thumb)
@@ -1757,14 +1829,26 @@ async def fetch_page_title(
             if auto and auto.get("ok"):
                 return auto
 
-        if social and not _gemini_api_key():
+        # Aniq topilmasa ham — 4–6 ta yaqin taxmin (texnik xabar emas)
+        if img_bytes and _gemini_api_key():
+            await _progress(on_progress, "ai")
+            forced = await gemini_force_candidates(
+                image_bytes=img_bytes,
+                mime=mime,
+                lang=lang,
+            )
+            if forced and forced.get("ok"):
+                forced["host"] = host
+                return forced
+
+        if not thumb:
             return {
                 "ok": False,
                 "title": "",
                 "summary": "",
                 "source": "",
                 "host": host,
-                "error": "need_gemini",
+                "error": "no_image",
             }
 
         return {
@@ -1773,7 +1857,7 @@ async def fetch_page_title(
             "summary": "",
             "source": "",
             "host": host,
-            "error": "no_image" if not thumb else "not_identified",
+            "error": "not_identified",
         }
     except Exception as e:
         return {

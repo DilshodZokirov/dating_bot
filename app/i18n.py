@@ -462,72 +462,90 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "🎬 <b>{title}</b>\n\n{summary}",
     },
     "link_found_uncertain": {
-        "uz": "Kechirasiz — aniq <b>bitta</b> film deb ayta olmadim, kadr/silka ikkilanadi.\n\n"
-              "Taxminiy kinolar:\n{list}\n\n"
-              "Qaysi biri to‘g‘ri ekanini bilasizmi? Aniqroq screenshot yoki qisqa video yuboring.",
-        "ru": "Извините — не могу назвать <b>один</b> фильм уверенно, кадр неоднозначен.\n\n"
-              "Возможные варианты:\n{list}\n\n"
+        "uz": "Kechirasiz — bu ma’lumot bo‘yicha aniq <b>bitta</b> filmni topa olmadim.\n\n"
+              "Yaqinroq taxminlar:\n{list}\n\n"
+              "Qaysi biri to‘g‘ri? Aniqroq screenshot yoki qisqa video yuboring.",
+        "ru": "Извините — по этим данным не нашёл <b>один</b> точный фильм.\n\n"
+              "Близкие варианты:\n{list}\n\n"
               "Какой верный? Пришлите более чёткий кадр или короткое видео.",
-        "en": "Sorry — I can’t name <b>one</b> movie for sure; the frame is ambiguous.\n\n"
-              "Possible matches:\n{list}\n\n"
-              "Which one is right? Send a clearer screenshot or short clip.",
-        "de": "Entschuldigung — ich kann keinen <b>einzigen</b> Film sicher nennen.\n\n"
-              "Mögliche Treffer:\n{list}\n\n"
+        "en": "Sorry — I couldn’t find <b>one</b> exact movie from that.\n\n"
+              "Closest guesses:\n{list}\n\n"
+              "Which is right? Send a clearer screenshot or short clip.",
+        "de": "Entschuldigung — keinen <b>einzigen</b> genauen Film gefunden.\n\n"
+              "Nächste Treffer:\n{list}\n\n"
               "Welcher stimmt? Klareren Screenshot oder kurzen Clip senden.",
-        "tg": "Бубахшед — як филмро боварӣ гуфта наметавонам.\n\n"
-              "Эҳтимолҳо:\n{list}\n\n"
-              "Кадомаш дуруст? Screenshot ё клипи кӯтоҳ.",
-        "tr": "Üzgünüm — emin olduğum <b>tek</b> film söyleyemiyorum.\n\n"
-              "Olası filmler:\n{list}\n\n"
-              "Hangisi doğru? Daha net ekran görüntüsü veya kısa klip gönderin.",
-        "ko": "죄송해요 — <b>한 편</b>을 확신할 수 없어요.\n\n"
-              "가능한 영화:\n{list}\n\n"
+        "tg": "Бубахшед — як филми аниқ ёфт нашуд.\n\n"
+              "Тахминҳо:\n{list}\n\n"
+              "Кадомаш дуруст? Screenshot ё клип.",
+        "tr": "Üzgünüm — net <b>tek</b> filmi bulamadım.\n\n"
+              "Yakın tahminler:\n{list}\n\n"
+              "Hangisi doğru? Daha net ekran görüntüsü veya kısa klip.",
+        "ko": "죄송해요 — 정확한 <b>한 편</b>을 찾지 못했어요.\n\n"
+              "가까운 추측:\n{list}\n\n"
               "맞는 작품이 있나요? 더 선명한 스크린샷이나 짧은 클립을 보내주세요.",
-        "ja": "すみません — <b>1本</b>に特定できませんでした。\n\n"
-              "候補:\n{list}\n\n"
-              "正しいものは？より鮮明なスクショか短い動画を送ってください。",
-        "zh": "抱歉 — 无法确定<b>唯一</b>片名，画面有歧义。\n\n"
-              "可能是：\n{list}\n\n"
+        "ja": "すみません — 正確な<b>1本</b>を特定できませんでした。\n\n"
+              "近い候補:\n{list}\n\n"
+              "正しいものは？より鮮明なスクショか短い動画を。",
+        "zh": "抱歉 — 无法根据这些信息找到<b>唯一</b>准确片名。\n\n"
+              "较接近的猜测：\n{list}\n\n"
               "哪一部对？请发更清晰的截图或短视频。",
-        "ar": "عذراً — لا أستطيع تحديد فيلم <b>واحد</b> بثقة.\n\n"
-              "احتمالات:\n{list}\n\n"
+        "ar": "عذراً — لم أجد فيلماً <b>واحداً</b> بدقة من هذه البيانات.\n\n"
+              "أقرب التخمينات:\n{list}\n\n"
               "أيّها الصحيح؟ أرسل لقطة أوضح أو مقطعاً قصيراً.",
     },
     "link_not_found": {
-        "uz": "Film topilmadi.\n\n<b>Tekshiring:</b>\n1) .env da <code>GEMINI_API_KEY</code> to‘g‘ri yozilganmi?\n2) <code>docker compose up -d --force-recreate</code> qildingizmi?\n3) Screenshotda film kadrı aniq ko‘rinsin (faqat Instagram tepasi emas)\n\nYana urinib ko‘ring: aniqroq kadr yoki qisqa video (20 MB).\n\n<i>Faqat nom — fayl saqlanmaydi.</i>",
-        "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
-        "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
-        "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",
-        "tg": "Аз интернет ном муайян нашуд.\n\nПости кушода ё YouTube/IMDb.\n\n<i>Танҳо ном.</i>",
-        "tr": "İnternetten film adı belirlenemedi.\n\nAçık gönderi veya YouTube/IMDb deneyin.\n\n<i>Sadece ad.</i>",
-        "ko": "인터넷에서 영화 제목을 찾지 못했습니다.\n\n공개 게시물 또는 YouTube/IMDb를 시도하세요.\n\n<i>제목만.</i>",
-        "ja": "インターネットで映画を特定できませんでした。\n\n公開ポストか YouTube/IMDb を試してください。\n\n<i>タイトルのみ。</i>",
-        "zh": "无法从互联网识别该链接的电影名。\n\n请尝试公开帖子或 YouTube/IMDb。\n\n<i>仅片名。</i>",
-        "ar": "تعذر التعرف على اسم الفيلم عبر الإنترنت.\n\nجرّب منشوراً عاماً أو YouTube/IMDb.\n\n<i>الاسم فقط.</i>",
+        "uz": "Kechirasiz — bu ma’lumot bo‘yicha aniq filmni topa olmadim.\n\n"
+              "Aniqroq <b>screenshot</b> yoki qisqa <b>video</b> (20 MB gacha) yuboring — yana qidiraman.",
+        "ru": "Извините — по этим данным точный фильм не нашёл.\n\n"
+              "Пришлите более чёткий <b>скриншот</b> или короткое <b>видео</b> (до 20 МБ).",
+        "en": "Sorry — I couldn’t find the exact movie from that.\n\n"
+              "Send a clearer <b>screenshot</b> or short <b>video</b> (up to 20 MB).",
+        "de": "Entschuldigung — den genauen Film konnte ich nicht finden.\n\n"
+              "Klareren <b>Screenshot</b> oder kurzes <b>Video</b> (max. 20 MB) senden.",
+        "tg": "Бубахшед — филми аниқ ёфт нашуд.\n\n"
+              "Screenshot ё клипи кӯтоҳ (то 20 МБ) фиристед.",
+        "tr": "Üzgünüm — net filmi bulamadım.\n\n"
+              "Daha net <b>ekran görüntüsü</b> veya kısa <b>video</b> (20 MB) gönderin.",
+        "ko": "죄송해요 — 정확한 영화를 찾지 못했어요.\n\n"
+              "더 선명한 <b>스크린샷</b>이나 짧은 <b>영상</b>(20MB)을 보내주세요.",
+        "ja": "すみません — 正確な映画を特定できませんでした。\n\n"
+              "より鮮明な<b>スクショ</b>か短い<b>動画</b>（最大20MB）を送ってください。",
+        "zh": "抱歉 — 无法根据这些信息找到准确片名。\n\n"
+              "请发送更清晰的<b>截图</b>或短<b>视频</b>（最大20MB）。",
+        "ar": "عذراً — لم أجد الفيلم بدقة من هذه البيانات.\n\n"
+              "أرسل <b>لقطة أوضح</b> أو <b>مقطعاً قصيراً</b> (حتى 20MB).",
     },
     "link_need_gemini": {
-        "uz": "Instagram/TikTok kadrini aniqlash uchun <b>GEMINI_API_KEY</b> kerak.\n\n1) https://aistudio.google.com/apikey dan bepul kalit oling\n2) .env fayliga qo‘shing:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\nKeyin shu silkani qayta yuboring.\n\n<i>Faqat nom — film yuklanmaydi.</i>",
-        "ru": "Чтобы распознать кадр Instagram/TikTok нужен <b>GEMINI_API_KEY</b>.\n\n1) Бесплатный ключ: https://aistudio.google.com/apikey\n2) В .env:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\n<i>Только название.</i>",
-        "en": "To identify Instagram/TikTok frames you need <b>GEMINI_API_KEY</b>.\n\n1) Free key: https://aistudio.google.com/apikey\n2) Add to .env:\n<code>GEMINI_API_KEY=...</code>\n3) <code>docker compose up -d --force-recreate</code>\n\n<i>Title only.</i>",
-        "de": "Für Instagram/TikTok-Frames wird <b>GEMINI_API_KEY</b> benötigt.\n\nhttps://aistudio.google.com/apikey → .env → recreate.",
-        "tg": "Instagram/TikTok барои <b>GEMINI_API_KEY</b> лозим аст.\n\nhttps://aistudio.google.com/apikey",
-        "tr": "Instagram/TikTok için <b>GEMINI_API_KEY</b> gerekli.\n\nhttps://aistudio.google.com/apikey",
-        "ko": "Instagram/TikTok 인식에는 <b>GEMINI_API_KEY</b>가 필요합니다.\n\nhttps://aistudio.google.com/apikey",
-        "ja": "Instagram/TikTok の特定には <b>GEMINI_API_KEY</b> が必要です。\n\nhttps://aistudio.google.com/apikey",
-        "zh": "识别 Instagram/TikTok 需要 <b>GEMINI_API_KEY</b>。\n\nhttps://aistudio.google.com/apikey",
-        "ar": "للتعرّف على Instagram/TikTok يلزم <b>GEMINI_API_KEY</b>.\n\nhttps://aistudio.google.com/apikey",
+        "uz": "Kechirasiz — hozircha kadrni tahlil qila olmadim.\n\n"
+              "Aniqroq screenshot yoki qisqa video yuboring.",
+        "ru": "Извините — сейчас не удалось разобрать кадр.\n\n"
+              "Пришлите более чёткий скриншот или короткое видео.",
+        "en": "Sorry — I couldn’t analyze the frame right now.\n\n"
+              "Send a clearer screenshot or short video.",
+        "de": "Entschuldigung — Bildanalyse gerade nicht möglich.\n\n"
+              "Klareren Screenshot oder kurzen Clip senden.",
+        "tg": "Бубахшед — кадрро таҳлил карда натавонистам.\n\nScreenshot ё клип.",
+        "tr": "Üzgünüm — kareyi şu an analiz edemedim.\n\nDaha net ekran görüntüsü veya kısa klip.",
+        "ko": "죄송해요 — 지금 프레임을 분석하지 못했어요.\n\n더 선명한 스크린샷이나 짧은 클립을 보내주세요.",
+        "ja": "すみません — 今フレームを分析できませんでした。\n\nより鮮明なスクショか短い動画を。",
+        "zh": "抱歉 — 暂时无法分析画面。\n\n请发送更清晰的截图或短视频。",
+        "ar": "عذراً — تعذّر تحليل الإطار الآن.\n\nأرسل لقطة أوضح أو مقطعاً قصيراً.",
     },
     "link_need_preview": {
-        "uz": "Bot silka orqali videoni o‘zi yuklab ko‘rdi — Instagram blokladi.\n\n<b>Nima qilish mumkin:</b>\n1) Videoni o‘zingiz skachat qilib botga <b>video</b> yuboring (20 MB gacha)\n2) Yoki screenshot yuboring\n3) (Ixtiyoriy) Instagram cookies.txt → <code>YTDLP_COOKIES_FILE</code>\n\n.env: <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — video saqlanmaydi/tarqatilmaydi.</i>",
-        "ru": "Не удалось получить превью по ссылке (закрытый пост).\n\nПришлите открытый пост.\n\n<i>Только название.</i>",
-        "en": "Couldn’t get a preview image from that link (private/blocked).\n\nSend a public post link.\n\n<i>Title only.</i>",
-        "de": "Kein Vorschaubild. Öffentlichen Post senden.",
-        "tg": "Превю нест. Пости кушода фиристед.",
-        "tr": "Önizleme yok. Açık gönderi gönderin.",
-        "ko": "미리보기 없음. 공개 게시물을 보내세요.",
-        "ja": "プレビューなし。公開ポストを送ってください。",
-        "zh": "无法获取预览。请发送公开帖子。",
-        "ar": "لا توجد معاينة. أرسل منشوراً عاماً.",
+        "uz": "Kechirasiz — silkadagi kadrni ochib bo‘lmadi.\n\n"
+              "Videoni o‘zingiz yuboring (20 MB gacha) yoki aniqroq <b>screenshot</b> tashlang.",
+        "ru": "Извините — не удалось открыть кадр по ссылке.\n\n"
+              "Пришлите само видео (до 20 МБ) или более чёткий <b>скриншот</b>.",
+        "en": "Sorry — couldn’t open a frame from that link.\n\n"
+              "Send the video yourself (up to 20 MB) or a clearer <b>screenshot</b>.",
+        "de": "Entschuldigung — kein Bild aus dem Link.\n\n"
+              "Video selbst senden (max. 20 MB) oder klareren Screenshot.",
+        "tg": "Бубахшед — аз истинод кадр кушода нашуд.\n\nВидео ё screenshot.",
+        "tr": "Üzgünüm — linkten kare açılamadı.\n\nVideoyu kendiniz (20 MB) veya net ekran görüntüsü gönderin.",
+        "ko": "죄송해요 — 링크에서 프레임을 열 수 없어요.\n\n영상(20MB)이나 더 선명한 스크린샷을 보내주세요.",
+        "ja": "すみません — リンクからフレームを取得できませんでした。\n\n動画（最大20MB）か鮮明なスクショを。",
+        "zh": "抱歉 — 无法从链接打开画面。\n\n请直接发送视频（最大20MB）或更清晰的截图。",
+        "ar": "عذراً — تعذّر فتح إطار من الرابط.\n\nأرسل الفيديو بنفسك (حتى 20MB) أو لقطة أوضح.",
     },
     "link_video_too_large": {
         "uz": "Video juda katta (maks. ~20 MB). Qisqaroq klip yoki screenshot yuboring.\n\n<i>Faqat nom — video saqlanmaydi.</i>",
