@@ -213,3 +213,34 @@ def test_parse_gemini_keeps_title_raw():
     parsed = _parse_gemini_movie_json(raw)
     assert parsed["title_raw"].startswith("Osmondan")
     assert "Magician" in parsed["title"] or "Elephant" in parsed["title"]
+
+
+def test_parse_gemini_candidates_mode():
+    from app.link_title import _parse_gemini_movie_json, uncertain_movie_result
+
+    raw = (
+        '{"mode":"candidates","candidates":['
+        '"Orzular jamoasi (2012)","Shaharadagi badaviy (2011)",'
+        '"Halal polisi (2011)","Les Seigneurs (2012)","Intouchables (2011)"]}'
+    )
+    parsed = _parse_gemini_movie_json(raw)
+    assert parsed and parsed.get("uncertain") is True
+    assert len(parsed["candidates"]) >= 4
+
+    result = uncertain_movie_result(parsed["candidates"])
+    assert result["ok"] and result["uncertain"]
+    assert not result["title"]
+    assert 2 <= len(result["candidates"]) <= 6
+
+
+def test_link_found_uncertain_i18n():
+    from app.i18n import t
+    from app.link_title import format_candidates_list
+
+    listing = format_candidates_list(
+        ["Orzular jamoasi (2012)", "Shaharadagi badaviy (2011)"]
+    )
+    msg = t("uz", "link_found_uncertain", list=listing)
+    assert "Kechirasiz" in msg
+    assert "1) Orzular jamoasi" in msg
+    assert "2) Shaharadagi" in msg

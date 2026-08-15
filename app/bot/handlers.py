@@ -663,6 +663,16 @@ async def fallback_text(message: Message, state: FSMContext):
 
 
 async def _reply_movie_result(message: Message, lang: str, result: dict) -> None:
+    if result.get("ok") and result.get("uncertain") and result.get("candidates"):
+        from app.link_title import format_candidates_list
+
+        text = t(
+            lang,
+            "link_found_uncertain",
+            list=format_candidates_list(result["candidates"]),
+        )
+        await message.answer(text)
+        return
     if result.get("ok") and result.get("title"):
         import html as html_lib
 

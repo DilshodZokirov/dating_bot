@@ -461,6 +461,38 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "zh": "🎬 <b>{title}</b>\n\n{summary}",
         "ar": "🎬 <b>{title}</b>\n\n{summary}",
     },
+    "link_found_uncertain": {
+        "uz": "Kechirasiz — aniq <b>bitta</b> film deb ayta olmadim, kadr/silka ikkilanadi.\n\n"
+              "Taxminiy kinolar:\n{list}\n\n"
+              "Qaysi biri to‘g‘ri ekanini bilasizmi? Aniqroq screenshot yoki qisqa video yuboring.",
+        "ru": "Извините — не могу назвать <b>один</b> фильм уверенно, кадр неоднозначен.\n\n"
+              "Возможные варианты:\n{list}\n\n"
+              "Какой верный? Пришлите более чёткий кадр или короткое видео.",
+        "en": "Sorry — I can’t name <b>one</b> movie for sure; the frame is ambiguous.\n\n"
+              "Possible matches:\n{list}\n\n"
+              "Which one is right? Send a clearer screenshot or short clip.",
+        "de": "Entschuldigung — ich kann keinen <b>einzigen</b> Film sicher nennen.\n\n"
+              "Mögliche Treffer:\n{list}\n\n"
+              "Welcher stimmt? Klareren Screenshot oder kurzen Clip senden.",
+        "tg": "Бубахшед — як филмро боварӣ гуфта наметавонам.\n\n"
+              "Эҳтимолҳо:\n{list}\n\n"
+              "Кадомаш дуруст? Screenshot ё клипи кӯтоҳ.",
+        "tr": "Üzgünüm — emin olduğum <b>tek</b> film söyleyemiyorum.\n\n"
+              "Olası filmler:\n{list}\n\n"
+              "Hangisi doğru? Daha net ekran görüntüsü veya kısa klip gönderin.",
+        "ko": "죄송해요 — <b>한 편</b>을 확신할 수 없어요.\n\n"
+              "가능한 영화:\n{list}\n\n"
+              "맞는 작품이 있나요? 더 선명한 스크린샷이나 짧은 클립을 보내주세요.",
+        "ja": "すみません — <b>1本</b>に特定できませんでした。\n\n"
+              "候補:\n{list}\n\n"
+              "正しいものは？より鮮明なスクショか短い動画を送ってください。",
+        "zh": "抱歉 — 无法确定<b>唯一</b>片名，画面有歧义。\n\n"
+              "可能是：\n{list}\n\n"
+              "哪一部对？请发更清晰的截图或短视频。",
+        "ar": "عذراً — لا أستطيع تحديد فيلم <b>واحد</b> بثقة.\n\n"
+              "احتمالات:\n{list}\n\n"
+              "أيّها الصحيح؟ أرسل لقطة أوضح أو مقطعاً قصيراً.",
+    },
     "link_not_found": {
         "uz": "Film topilmadi.\n\n<b>Tekshiring:</b>\n1) .env da <code>GEMINI_API_KEY</code> to‘g‘ri yozilganmi?\n2) <code>docker compose up -d --force-recreate</code> qildingizmi?\n3) Screenshotda film kadrı aniq ko‘rinsin (faqat Instagram tepasi emas)\n\nYana urinib ko‘ring: aniqroq kadr yoki qisqa video (20 MB).\n\n<i>Faqat nom — fayl saqlanmaydi.</i>",
         "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
