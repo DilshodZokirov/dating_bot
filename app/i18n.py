@@ -378,7 +378,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "🎬 الفيلم المعرف:\n<b>{title}</b>\n\nالمصدر: {source}\n\n<i>من الإنترنت — بلا ملف.</i>",
     },
     "link_not_found": {
-        "uz": "Film topilmadi.\n\n<b>Yuboring:</b> screenshot yoki qisqa <b>video</b> (20 MB gacha).\nYoki YouTube/IMDb silka.\nIG/TT: .env da <b>GEMINI_API_KEY</b>\n\n<i>Faqat nom — video/fayl saqlanmaydi.</i>",
+        "uz": "Film topilmadi.\n\n<b>Tekshiring:</b>\n1) .env da <code>GEMINI_API_KEY</code> to‘g‘ri yozilganmi?\n2) <code>docker compose up -d --force-recreate</code> qildingizmi?\n3) Screenshotda film kadrı aniq ko‘rinsin (faqat Instagram tepasi emas)\n\nYana urinib ko‘ring: aniqroq kadr yoki qisqa video (20 MB).\n\n<i>Faqat nom — fayl saqlanmaydi.</i>",
         "ru": "Не удалось определить название фильма в интернете по этой ссылке.\n\nВозможные причины: закрытый Instagram/TikTok, нет превью, кадр не найден.\nПопробуйте открытый пост или YouTube/IMDb.\n\n<i>Только название — фильм не скачивается.</i>",
         "en": "Couldn’t identify the movie on the internet from that link.\n\nPossible reasons: private Instagram/TikTok, no preview image, or frame not found.\nTry a public post or YouTube/IMDb.\n\n<i>Title only — no download.</i>",
         "de": "Filmtitel im Internet nicht erkannt.\n\nPrivat/kein Vorschaubild/kein Treffer. Öffentlichen Post oder YouTube/IMDb versuchen.\n\n<i>Nur Titel — kein Download.</i>",

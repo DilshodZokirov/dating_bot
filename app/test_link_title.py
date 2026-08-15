@@ -111,3 +111,12 @@ def test_yt_dlp_fetch_returns_dict_on_failure():
     out = yt_dlp_fetch_for_identify("https://www.instagram.com/reel/NOTAREALID999/")
     assert isinstance(out, dict)
     assert "thumbnail_url" in out and "video_bytes" in out and "error" in out
+
+
+def test_extract_movie_from_ocr_uzbek_title():
+    from app.link_title import extract_movie_from_ocr_text
+
+    text = "Osmondan tushgan fil 2023 — o'zbekcha nom. Multfilm kodi: 833"
+    got = extract_movie_from_ocr_text(text)
+    assert "Osmondan tushgan fil" in got
+    assert "2023" in got

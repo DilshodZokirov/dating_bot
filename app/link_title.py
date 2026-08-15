@@ -495,33 +495,106 @@ async def yandex_reverse_image_movie(
         return None
 
 
+def extract_movie_from_ocr_text(text: str) -> str:
+    """
+    Screenshot/caption matnidan film nomini ajratish.
+    Masalan: "Osmondan tushgan fil 2023 — o'zbekcha nom"
+    """
+    if not text:
+        return ""
+    raw = html_lib.unescape(text)
+    raw = raw.replace("\u2014", "-").replace("\u2013", "-")
+
+    # 1) Aniq: Title (2010) yoki Title 2010
+    patterns = [
+        re.compile(
+            r"(?P<title>[A-Za-zА-Яа-яЁёЎўҚқҒғҲҳІіЇїЄєĞğÜüŞşÖöÇç0-9][^.\n|]{1,80}?)"
+            r"\s*[\(\[]?(?P<year>(?:19|20)\d{2})[\)\]]?",
+            re.U,
+        ),
+    ]
+    for pat in patterns:
+        for m in pat.finditer(raw):
+            title = clean_title(m.group("title"))
+            year = m.group("year")
+            if not title or looks_like_prose(title):
+                continue
+            # Spam/kod satrlarini rad et
+            low = title.lower()
+            if any(
+                x in low
+                for x in (
+                    "multfilm kodi",
+                    "kod:",
+                    "instagram",
+                    "reels",
+                    "friends",
+                    "subscribe",
+                    "obuna",
+                )
+            ):
+                continue
+            if len(title) < 3 or len(title) > 80:
+                continue
+            if title.count(",") >= 2:
+                continue
+            return f"{title} ({year})"
+
+    # 2) "Kino: ..." / "Film: ..."
+    for m in re.finditer(
+        r"(?im)^\s*(?:film|movie|kino|multfilm|название|nom)\s*[:\-]\s*(.+?)\s*$",
+        raw,
+    ):
+        cand = clean_title(m.group(1))
+        if cand and not looks_like_prose(cand) and len(cand) <= 80:
+            return cand
+
+    return ""
+
+
 async def gemini_identify_movie(
     *,
     image_url: str = "",
     image_bytes: bytes | None = None,
     mime: str = "image/jpeg",
 ) -> dict | None:
-    """GEMINI_API_KEY bo‘lsa — kadrni AI bilan tanish (Instagram/TikTok uchun asosiy)."""
+    """GEMINI_API_KEY — rasm/kadrni tanish + ekrandagi yozuvdan nom o‘qish."""
     import base64
 
     api_key = _gemini_api_key()
     if not api_key:
         return None
 
-    prompt = (
-        "Identify the movie or TV show shown in this image/video frame. "
-        "Ignore fashion captions, watermarks, usernames, and UI chrome. "
-        "Reply with ONLY the official title and year like: Inception (2010). "
-        "If you cannot identify it, reply exactly: UNKNOWN"
+    prompts = (
+        # Avval ekrandagi matn (Instagram caption/overlay)
+        (
+            "This is a screenshot that may include Instagram/TikTok UI and captions. "
+            "Read ALL visible text. If a movie/cartoon title with year appears "
+            "(e.g. 'Osmondan tushgan fil 2023' or 'Inception (2010)'), "
+            "reply with ONLY that title and year like: Osmondan tushgan fil (2023). "
+            "Prefer the on-screen title over guessing. "
+            "If none, identify the film visually. "
+            "If unknown, reply exactly: UNKNOWN"
+        ),
+        (
+            "Identify the movie or animated film in this frame. "
+            "Reply ONLY: Title (Year). If unknown: UNKNOWN"
+        ),
     )
     models = (
         "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
         "gemini-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
     )
+    last_errors: list[str] = []
     try:
-        async with httpx.AsyncClient(timeout=30, headers=_http_headers()) as client:
+        headers = {
+            **_http_headers(),
+            "x-goog-api-key": api_key,
+        }
+        async with httpx.AsyncClient(timeout=45, headers=headers) as client:
             data = image_bytes
             ctype = mime or "image/jpeg"
             if data is None and image_url:
@@ -529,45 +602,66 @@ async def gemini_identify_movie(
             if not data:
                 return None
             b64 = base64.b64encode(data[:2_000_000]).decode("ascii")
-            payload = {
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt},
-                            {"inline_data": {"mime_type": ctype, "data": b64}},
+
+            for prompt in prompts:
+                for model in models:
+                    endpoint = (
+                        "https://generativelanguage.googleapis.com/v1beta/models/"
+                        f"{model}:generateContent?key={api_key}"
+                    )
+                    payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": prompt},
+                                    {"inline_data": {"mime_type": ctype, "data": b64}},
+                                ]
+                            }
                         ]
                     }
-                ]
-            }
-            for model in models:
-                endpoint = (
-                    "https://generativelanguage.googleapis.com/v1beta/models/"
-                    f"{model}:generateContent?key={api_key}"
-                )
-                resp = await client.post(endpoint, json=payload)
-                if resp.status_code != 200:
-                    continue
-                body = resp.json()
-                text_out = (
-                    body.get("candidates", [{}])[0]
-                    .get("content", {})
-                    .get("parts", [{}])[0]
-                    .get("text", "")
-                    .strip()
-                )
-                if not text_out or text_out.upper().startswith("UNKNOWN"):
-                    continue
-                line = text_out.splitlines()[0].strip().strip("`\"'")
-                movie = normalize_movie_hit(line, line) or clean_title(line)
-                if movie and not looks_like_prose(movie):
-                    return {
-                        "ok": True,
-                        "title": movie,
-                        "source": f"Internet · Gemini ({model})",
-                        "error": "",
-                    }
-    except Exception:
+                    resp = await client.post(endpoint, json=payload)
+                    if resp.status_code != 200:
+                        last_errors.append(f"{model}:{resp.status_code}")
+                        continue
+                    body = resp.json()
+                    text_out = (
+                        body.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                        .strip()
+                    )
+                    if not text_out:
+                        continue
+                    # OCR matndan ajratib ko‘rish
+                    from_ocr = extract_movie_from_ocr_text(text_out)
+                    if from_ocr:
+                        return {
+                            "ok": True,
+                            "title": from_ocr,
+                            "source": f"Internet · Gemini OCR ({model})",
+                            "error": "",
+                        }
+                    if text_out.upper().startswith("UNKNOWN"):
+                        continue
+                    line = text_out.splitlines()[0].strip().strip("`\"'")
+                    movie = (
+                        normalize_movie_hit(line, line)
+                        or extract_movie_from_ocr_text(line)
+                        or clean_title(line)
+                    )
+                    if movie and not looks_like_prose(movie):
+                        return {
+                            "ok": True,
+                            "title": movie,
+                            "source": f"Internet · Gemini ({model})",
+                            "error": "",
+                        }
+    except Exception as e:
+        print(f"gemini_identify_movie error: {type(e).__name__}: {e}", flush=True)
         return None
+    if last_errors:
+        print(f"gemini_identify_movie failed: {last_errors[:8]}", flush=True)
     return None
 
 
@@ -577,25 +671,19 @@ async def identify_movie_from_image_bytes(
     """Telegram orqali yuborilgan screenshot/rasmni aniqlash."""
     if not image_bytes:
         return {"ok": False, "title": "", "source": "", "error": "no_image"}
-    if not _gemini_api_key():
-        # Yandex ham urinib ko‘radi (kalitsiz)
-        try:
-            async with httpx.AsyncClient(
-                timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
-            ) as client:
-                hit = await yandex_reverse_image_movie(
-                    client, image_bytes=image_bytes, mime=mime
-                )
-                if hit and hit.get("ok"):
-                    return hit
-        except Exception:
-            pass
-        return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
 
-    ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
-    if ghit and ghit.get("ok"):
-        return ghit
+    has_key = bool(_gemini_api_key())
+    print(
+        f"identify_image: bytes={len(image_bytes)} mime={mime} gemini={has_key}",
+        flush=True,
+    )
 
+    if has_key:
+        ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
+        if ghit and ghit.get("ok"):
+            return ghit
+
+    # Yandex — Gemini bo‘lmasa yoki yiqilsa
     try:
         async with httpx.AsyncClient(
             timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
@@ -605,8 +693,11 @@ async def identify_movie_from_image_bytes(
             )
             if hit and hit.get("ok"):
                 return hit
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"yandex image identify error: {e}", flush=True)
+
+    if not has_key:
+        return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
     return {"ok": False, "title": "", "source": "", "error": "not_identified"}
 
 

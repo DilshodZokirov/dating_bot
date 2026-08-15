@@ -16,6 +16,7 @@ from app.config import settings
 from app.database import async_session
 from app.i18n import t
 from app.link_title import (
+    extract_movie_from_ocr_text,
     extract_urls_from_message,
     identify_movie_from_image_bytes,
     identify_movie_from_video_bytes,
@@ -473,13 +474,24 @@ async def identify_movie_photo(message: Message, state: FSMContext):
     if user:
         lang = _ui_lang(user)
 
+    # Caption matnida nom bo‘lsa — darhol
+    if message.caption:
+        from_cap = extract_movie_from_ocr_text(message.caption)
+        if from_cap:
+            await message.answer(
+                t(lang, "link_found", title=from_cap, source="caption")
+            )
+            return
+
     wait = await message.answer(t(lang, "link_looking"))
     try:
         photo = message.photo[-1]
         file = await message.bot.get_file(photo.file_id)
         buf = await message.bot.download_file(file.file_path)
         raw = buf.read() if hasattr(buf, "read") else bytes(buf)
+        print(f"photo identify: size={len(raw)} file={file.file_path}", flush=True)
         result = await identify_movie_from_image_bytes(raw, "image/jpeg")
+        print(f"photo identify result: {result}", flush=True)
     except Exception as e:
         print(f"photo identify error: {e}", flush=True)
         result = {"ok": False, "error": "not_identified"}
