@@ -3,8 +3,8 @@ Silka orqali film nomini internetdan aniqlash.
 
 Yo‘l:
 1) Silkadagi post/sahifadan preview rasm (thumbnail / og:image) olinadi
-2) Rasm bo‘yicha internet reverse-image qidiruv (Yandex CBIR)
-3) Natijadan film nomi ajratiladi
+2) Rasm bo‘yicha internet reverse-image qidiruv (Yandex CBIR) yoki Gemini
+3) Nom app UI tiliga moslab chiqariladi + qisqa mazmun
 
 Caption matni JAVOB sifatida qaytarilmaydi.
 Video/fayl yuklab olinmaydi va foydalanuvchiga yuborilmaydi.
@@ -450,6 +450,168 @@ def _gemini_api_key() -> str:
         return ""
 
 
+# App UI language → human label for Gemini prompts
+LANG_LABELS: dict[str, str] = {
+    "uz": "Uzbek (Latin script, o'zbekcha)",
+    "ru": "Russian",
+    "en": "English",
+    "de": "German",
+    "tg": "Tajik",
+    "tr": "Turkish",
+    "ko": "Korean",
+    "ja": "Japanese",
+    "zh": "Chinese (Simplified)",
+    "ar": "Arabic",
+}
+
+_GEMINI_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+)
+
+
+def _lang_label(lang: str) -> str:
+    return LANG_LABELS.get((lang or "uz").lower(), "English")
+
+
+def _parse_gemini_movie_json(text_out: str) -> dict | None:
+    """Gemini javobidan {found, title, summary} JSON ajratish."""
+    if not text_out:
+        return None
+    raw = text_out.strip()
+    # ```json ... ``` ni olib tashlash
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw, re.I)
+    if fence:
+        raw = fence.group(1).strip()
+    # Birinchi {...} blok
+    brace = re.search(r"\{[\s\S]*\}", raw)
+    if not brace:
+        return None
+    try:
+        data = json.loads(brace.group(0))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    if data.get("found") is False:
+        return {"found": False}
+    title = clean_title(str(data.get("title") or "").strip())
+    if not title or looks_like_prose(title):
+        return None
+    summary = str(data.get("summary") or "").strip()
+    # HTML/markdown tozalash
+    summary = re.sub(r"[`*_#]+", "", summary)
+    summary = re.sub(r"\s+", " ", summary).strip()
+    if len(summary) > 600:
+        summary = summary[:597].rstrip() + "…"
+    return {"found": True, "title": title, "summary": summary}
+
+
+async def _gemini_generate_text(
+    client: httpx.AsyncClient,
+    api_key: str,
+    parts: list[dict],
+) -> tuple[str, str]:
+    """Birinchi ishlagan modeldan matn qaytaradi: (text, model)."""
+    headers = {**_http_headers(), "x-goog-api-key": api_key}
+    last_errors: list[str] = []
+    for model in _GEMINI_MODELS:
+        endpoint = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent?key={api_key}"
+        )
+        resp = await client.post(
+            endpoint,
+            json={"contents": [{"parts": parts}]},
+            headers=headers,
+        )
+        if resp.status_code != 200:
+            last_errors.append(f"{model}:{resp.status_code}")
+            continue
+        body = resp.json()
+        text_out = (
+            body.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+            .strip()
+        )
+        if text_out:
+            return text_out, model
+    if last_errors:
+        print(f"gemini generate failed: {last_errors[:8]}", flush=True)
+    return "", ""
+
+
+async def gemini_enrich_movie(title: str, lang: str = "uz") -> dict | None:
+    """
+    Topilgan nomni app tiliga o‘girish + qisqa mazmun (spoiler-light).
+    Yandex/OCR faqat nom bersa chaqiriladi.
+    """
+    title = (title or "").strip()
+    if not title:
+        return None
+    api_key = _gemini_api_key()
+    if not api_key:
+        return {"ok": True, "title": title, "summary": "", "source": "title"}
+
+    lang_name = _lang_label(lang)
+    prompt = (
+        f"Movie title input: {title!r}\n"
+        f"App UI language: {lang_name} (code: {lang}).\n\n"
+        "Return ONLY valid JSON (no markdown):\n"
+        '{"found":true,"title":"...","summary":"..."}\n'
+        "Rules:\n"
+        f"- title: official/local movie name IN {lang_name}, with year if known "
+        "(e.g. Uzbek uses 'Osmondan tushgan fil (2023)' for The Magician's Elephant; "
+        "Russian uses 'Начало (2010)' for Inception).\n"
+        f"- summary: 2-3 short sentences in {lang_name} about what the film is about "
+        "(spoiler-light, max ~400 chars).\n"
+        "If the input is not a real movie: {\"found\":false}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=45, headers=_http_headers()) as client:
+            text_out, model = await _gemini_generate_text(
+                client, api_key, [{"text": prompt}]
+            )
+        parsed = _parse_gemini_movie_json(text_out)
+        if parsed and parsed.get("found") and parsed.get("title"):
+            return {
+                "ok": True,
+                "title": parsed["title"],
+                "summary": parsed.get("summary") or "",
+                "source": f"Internet · Gemini enrich ({model})",
+                "error": "",
+            }
+    except Exception as e:
+        print(f"gemini_enrich_movie error: {type(e).__name__}: {e}", flush=True)
+    return {"ok": True, "title": title, "summary": "", "source": "title", "error": ""}
+
+
+async def ensure_localized_result(result: dict, lang: str = "uz") -> dict:
+    """Natijaga tilga mos nom + summary qo‘shish (yo‘q bo‘lsa Gemini)."""
+    if not result or not result.get("ok") or not result.get("title"):
+        out = dict(result or {})
+        out.setdefault("summary", "")
+        return out
+    out = dict(result)
+    out.setdefault("summary", "")
+    # Vision JSON allaqachon til + mazmun bergan
+    if out.get("localized") is True and out.get("summary"):
+        return out
+    enriched = await gemini_enrich_movie(out["title"], lang)
+    if enriched and enriched.get("ok"):
+        if enriched.get("title"):
+            out["title"] = enriched["title"]
+        if enriched.get("summary"):
+            out["summary"] = enriched["summary"]
+        out["localized"] = True
+    return out
+
+
 async def yandex_reverse_image_movie(
     client: httpx.AsyncClient,
     *,
@@ -557,23 +719,40 @@ async def gemini_identify_movie(
     image_url: str = "",
     image_bytes: bytes | None = None,
     mime: str = "image/jpeg",
+    lang: str = "uz",
 ) -> dict | None:
-    """GEMINI_API_KEY — rasm/kadrni tanish + ekrandagi yozuvdan nom o‘qish."""
+    """GEMINI_API_KEY — rasm/kadrni tanish; nom + qisqa mazmun app tilida."""
     import base64
 
     api_key = _gemini_api_key()
     if not api_key:
         return None
 
-    prompts = (
-        # Avval ekrandagi matn (Instagram caption/overlay)
+    lang_name = _lang_label(lang)
+    json_prompt = (
+        "This is a screenshot/frame that may include Instagram/TikTok UI.\n"
+        "Identify the movie or animated film.\n"
+        f"App UI language for the answer: {lang_name} (code: {lang}).\n\n"
+        "Return ONLY valid JSON (no markdown):\n"
+        '{"found":true,"title":"...","summary":"...","confidence":"high|medium|low"}\n'
+        "or {\"found\":false}\n\n"
+        "Rules:\n"
+        "- Prefer reading on-screen movie title text (e.g. 'Osmondan tushgan fil 2023') "
+        "over guessing from Instagram captions.\n"
+        f"- title MUST be in {lang_name} when a local title exists "
+        "(Uzbek: Osmondan tushgan fil (2023); Russian: Начало (2010) for Inception). "
+        "Include year if known.\n"
+        f"- summary: 2-3 short sentences in {lang_name} about the plot (spoiler-light).\n"
+        "- Do NOT use social-media captions as the movie title.\n"
+        "- If unknown: {\"found\":false}"
+    )
+    # Fallback: eski oddiy format (OCR)
+    plain_prompts = (
         (
             "This is a screenshot that may include Instagram/TikTok UI and captions. "
-            "Read ALL visible text. If a movie/cartoon title with year appears "
-            "(e.g. 'Osmondan tushgan fil 2023' or 'Inception (2010)'), "
+            "Read ALL visible text. If a movie/cartoon title with year appears, "
             "reply with ONLY that title and year like: Osmondan tushgan fil (2023). "
-            "Prefer the on-screen title over guessing. "
-            "If none, identify the film visually. "
+            "Prefer the on-screen title. If none, identify visually. "
             "If unknown, reply exactly: UNKNOWN"
         ),
         (
@@ -581,20 +760,9 @@ async def gemini_identify_movie(
             "Reply ONLY: Title (Year). If unknown: UNKNOWN"
         ),
     )
-    models = (
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-flash-latest",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-8b",
-    )
-    last_errors: list[str] = []
+
     try:
-        headers = {
-            **_http_headers(),
-            "x-goog-api-key": api_key,
-        }
-        async with httpx.AsyncClient(timeout=45, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=45, headers=_http_headers()) as client:
             data = image_bytes
             ctype = mime or "image/jpeg"
             if data is None and image_url:
@@ -602,86 +770,82 @@ async def gemini_identify_movie(
             if not data:
                 return None
             b64 = base64.b64encode(data[:2_000_000]).decode("ascii")
+            image_part = {"inline_data": {"mime_type": ctype, "data": b64}}
 
-            for prompt in prompts:
-                for model in models:
-                    endpoint = (
-                        "https://generativelanguage.googleapis.com/v1beta/models/"
-                        f"{model}:generateContent?key={api_key}"
-                    )
-                    payload = {
-                        "contents": [
-                            {
-                                "parts": [
-                                    {"text": prompt},
-                                    {"inline_data": {"mime_type": ctype, "data": b64}},
-                                ]
-                            }
-                        ]
+            # 1) JSON: til + summary
+            text_out, model = await _gemini_generate_text(
+                client, api_key, [{"text": json_prompt}, image_part]
+            )
+            parsed = _parse_gemini_movie_json(text_out)
+            if parsed and parsed.get("found") and parsed.get("title"):
+                return {
+                    "ok": True,
+                    "title": parsed["title"],
+                    "summary": parsed.get("summary") or "",
+                    "localized": True,
+                    "source": f"Internet · Gemini ({model})",
+                    "error": "",
+                }
+
+            # 2) Oddiy OCR / Title (Year)
+            for prompt in plain_prompts:
+                text_out, model = await _gemini_generate_text(
+                    client, api_key, [{"text": prompt}, image_part]
+                )
+                if not text_out:
+                    continue
+                from_ocr = extract_movie_from_ocr_text(text_out)
+                if from_ocr:
+                    return {
+                        "ok": True,
+                        "title": from_ocr,
+                        "summary": "",
+                        "localized": False,
+                        "source": f"Internet · Gemini OCR ({model})",
+                        "error": "",
                     }
-                    resp = await client.post(endpoint, json=payload)
-                    if resp.status_code != 200:
-                        last_errors.append(f"{model}:{resp.status_code}")
-                        continue
-                    body = resp.json()
-                    text_out = (
-                        body.get("candidates", [{}])[0]
-                        .get("content", {})
-                        .get("parts", [{}])[0]
-                        .get("text", "")
-                        .strip()
-                    )
-                    if not text_out:
-                        continue
-                    # OCR matndan ajratib ko‘rish
-                    from_ocr = extract_movie_from_ocr_text(text_out)
-                    if from_ocr:
-                        return {
-                            "ok": True,
-                            "title": from_ocr,
-                            "source": f"Internet · Gemini OCR ({model})",
-                            "error": "",
-                        }
-                    if text_out.upper().startswith("UNKNOWN"):
-                        continue
-                    line = text_out.splitlines()[0].strip().strip("`\"'")
-                    movie = (
-                        normalize_movie_hit(line, line)
-                        or extract_movie_from_ocr_text(line)
-                        or clean_title(line)
-                    )
-                    if movie and not looks_like_prose(movie):
-                        return {
-                            "ok": True,
-                            "title": movie,
-                            "source": f"Internet · Gemini ({model})",
-                            "error": "",
-                        }
+                if text_out.upper().startswith("UNKNOWN"):
+                    continue
+                line = text_out.splitlines()[0].strip().strip("`\"'")
+                movie = (
+                    normalize_movie_hit(line, line)
+                    or extract_movie_from_ocr_text(line)
+                    or clean_title(line)
+                )
+                if movie and not looks_like_prose(movie):
+                    return {
+                        "ok": True,
+                        "title": movie,
+                        "summary": "",
+                        "localized": False,
+                        "source": f"Internet · Gemini ({model})",
+                        "error": "",
+                    }
     except Exception as e:
         print(f"gemini_identify_movie error: {type(e).__name__}: {e}", flush=True)
         return None
-    if last_errors:
-        print(f"gemini_identify_movie failed: {last_errors[:8]}", flush=True)
     return None
 
 
 async def identify_movie_from_image_bytes(
-    image_bytes: bytes, mime: str = "image/jpeg"
+    image_bytes: bytes, mime: str = "image/jpeg", lang: str = "uz"
 ) -> dict:
     """Telegram orqali yuborilgan screenshot/rasmni aniqlash."""
     if not image_bytes:
-        return {"ok": False, "title": "", "source": "", "error": "no_image"}
+        return {"ok": False, "title": "", "summary": "", "source": "", "error": "no_image"}
 
     has_key = bool(_gemini_api_key())
     print(
-        f"identify_image: bytes={len(image_bytes)} mime={mime} gemini={has_key}",
+        f"identify_image: bytes={len(image_bytes)} mime={mime} lang={lang} gemini={has_key}",
         flush=True,
     )
 
     if has_key:
-        ghit = await gemini_identify_movie(image_bytes=image_bytes, mime=mime)
+        ghit = await gemini_identify_movie(
+            image_bytes=image_bytes, mime=mime, lang=lang
+        )
         if ghit and ghit.get("ok"):
-            return ghit
+            return await ensure_localized_result(ghit, lang)
 
     # Yandex — Gemini bo‘lmasa yoki yiqilsa
     try:
@@ -692,13 +856,25 @@ async def identify_movie_from_image_bytes(
                 client, image_bytes=image_bytes, mime=mime
             )
             if hit and hit.get("ok"):
-                return hit
+                return await ensure_localized_result(hit, lang)
     except Exception as e:
         print(f"yandex image identify error: {e}", flush=True)
 
     if not has_key:
-        return {"ok": False, "title": "", "source": "", "error": "need_gemini"}
-    return {"ok": False, "title": "", "source": "", "error": "not_identified"}
+        return {
+            "ok": False,
+            "title": "",
+            "summary": "",
+            "source": "",
+            "error": "need_gemini",
+        }
+    return {
+        "ok": False,
+        "title": "",
+        "summary": "",
+        "source": "",
+        "error": "not_identified",
+    }
 
 
 def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -> bytes | None:
@@ -753,18 +929,24 @@ def extract_jpeg_frame_from_video(video_bytes: bytes, at_seconds: float = 1.0) -
     return None
 
 
-async def identify_movie_from_video_bytes(video_bytes: bytes) -> dict:
+async def identify_movie_from_video_bytes(video_bytes: bytes, lang: str = "uz") -> dict:
     """Yuborilgan video fayldan kadr olib film nomini aniqlash."""
     if not video_bytes:
-        return {"ok": False, "title": "", "source": "", "error": "no_image"}
+        return {"ok": False, "title": "", "summary": "", "source": "", "error": "no_image"}
     if len(video_bytes) > 20 * 1024 * 1024:
-        return {"ok": False, "title": "", "source": "", "error": "video_too_large"}
+        return {
+            "ok": False,
+            "title": "",
+            "summary": "",
+            "source": "",
+            "error": "video_too_large",
+        }
 
     frame = extract_jpeg_frame_from_video(video_bytes, at_seconds=1.0)
     if not frame:
-        return {"ok": False, "title": "", "source": "", "error": "no_frame"}
+        return {"ok": False, "title": "", "summary": "", "source": "", "error": "no_frame"}
 
-    result = await identify_movie_from_image_bytes(frame, "image/jpeg")
+    result = await identify_movie_from_image_bytes(frame, "image/jpeg", lang=lang)
     if result.get("ok") and result.get("source"):
         result["source"] = f"{result['source']} · video kadr"
     return result
@@ -856,7 +1038,9 @@ def yt_dlp_fetch_for_identify(url: str) -> dict:
             return out
 
 
-async def _identify_from_social_download(url: str, host: str) -> dict | None:
+async def _identify_from_social_download(
+    url: str, host: str, lang: str = "uz"
+) -> dict | None:
     """Silka orqali video/thumb yuklab aniqlash (best-effort)."""
     import asyncio
 
@@ -865,7 +1049,7 @@ async def _identify_from_social_download(url: str, host: str) -> dict | None:
     thumb = fetched.get("thumbnail_url") or ""
 
     if video_bytes:
-        result = await identify_movie_from_video_bytes(video_bytes)
+        result = await identify_movie_from_video_bytes(video_bytes, lang=lang)
         if result.get("ok"):
             result["host"] = host
             src = result.get("source") or "Internet"
@@ -881,12 +1065,15 @@ async def _identify_from_social_download(url: str, host: str) -> dict | None:
             if img_bytes:
                 if _gemini_api_key():
                     ghit = await gemini_identify_movie(
-                        image_url=thumb, image_bytes=img_bytes, mime=mime
+                        image_url=thumb,
+                        image_bytes=img_bytes,
+                        mime=mime,
+                        lang=lang,
                     )
                     if ghit and ghit.get("ok"):
                         ghit["host"] = host
                         ghit["source"] = f"{ghit.get('source')} · auto-thumb"
-                        return ghit
+                        return await ensure_localized_result(ghit, lang)
                 async with httpx.AsyncClient(
                     timeout=FETCH_TIMEOUT, follow_redirects=True, headers=_http_headers()
                 ) as client:
@@ -896,17 +1083,18 @@ async def _identify_from_social_download(url: str, host: str) -> dict | None:
                 if hit and hit.get("ok"):
                     hit["host"] = host
                     hit["source"] = f"{hit.get('source')} · auto-thumb"
-                    return hit
+                    return await ensure_localized_result(hit, lang)
         except Exception:
             pass
     return None
 
 
-async def fetch_page_title(url: str) -> dict:
+async def fetch_page_title(url: str, lang: str = "uz") -> dict:
     """
-    Asosiy API: {ok, title, source, host, error}
+    Asosiy API: {ok, title, summary, source, host, error}
     Caption emas — preview kadr + internet/AI.
     Social silkalarda kerak bo‘lsa yt-dlp orqali avtomatik yuklab (faqat aniqlash).
+    Nom va mazmun app tilida (lang).
     """
     url = normalize_media_url(url)
     host = _host_hint(url)
@@ -945,18 +1133,21 @@ async def fetch_page_title(url: str) -> dict:
             if social and thumb:
                 if _gemini_api_key():
                     ghit = await gemini_identify_movie(
-                        image_url=thumb, image_bytes=img_bytes, mime=mime
+                        image_url=thumb,
+                        image_bytes=img_bytes,
+                        mime=mime,
+                        lang=lang,
                     )
                     if ghit and ghit.get("ok"):
                         ghit["host"] = host
-                        return ghit
+                        return await ensure_localized_result(ghit, lang)
 
                 hit = await yandex_reverse_image_movie(
                     client, image_url=thumb, image_bytes=img_bytes, mime=mime
                 )
                 if hit and hit.get("ok"):
                     hit["host"] = host
-                    return hit
+                    return await ensure_localized_result(hit, lang)
 
             elif thumb:
                 hit = await yandex_reverse_image_movie(
@@ -964,27 +1155,34 @@ async def fetch_page_title(url: str) -> dict:
                 )
                 if hit and hit.get("ok"):
                     hit["host"] = host
-                    return hit
+                    return await ensure_localized_result(hit, lang)
                 ghit = await gemini_identify_movie(
-                    image_url=thumb, image_bytes=img_bytes, mime=mime
+                    image_url=thumb,
+                    image_bytes=img_bytes,
+                    mime=mime,
+                    lang=lang,
                 )
                 if ghit and ghit.get("ok"):
                     ghit["host"] = host
-                    return ghit
+                    return await ensure_localized_result(ghit, lang)
 
             if not social and page_title and not looks_like_prose(page_title):
                 if YEAR_IN_TEXT_RE.search(page_title) or len(page_title) <= 80:
-                    return {
-                        "ok": True,
-                        "title": page_title,
-                        "source": site or host or "link",
-                        "host": host,
-                        "error": "",
-                    }
+                    return await ensure_localized_result(
+                        {
+                            "ok": True,
+                            "title": page_title,
+                            "summary": "",
+                            "source": site or host or "link",
+                            "host": host,
+                            "error": "",
+                        },
+                        lang,
+                    )
 
         # Social (yoki preview yo‘q): silka orqali avtomatik yuklab aniqlash
         if social or not thumb:
-            auto = await _identify_from_social_download(url, host)
+            auto = await _identify_from_social_download(url, host, lang=lang)
             if auto and auto.get("ok"):
                 return auto
 
@@ -992,6 +1190,7 @@ async def fetch_page_title(url: str) -> dict:
             return {
                 "ok": False,
                 "title": "",
+                "summary": "",
                 "source": "",
                 "host": host,
                 "error": "need_gemini",
@@ -1000,6 +1199,7 @@ async def fetch_page_title(url: str) -> dict:
         return {
             "ok": False,
             "title": "",
+            "summary": "",
             "source": "",
             "host": host,
             "error": "no_image" if not thumb else "not_identified",
@@ -1008,17 +1208,18 @@ async def fetch_page_title(url: str) -> dict:
         return {
             "ok": False,
             "title": "",
+            "summary": "",
             "source": "",
             "host": host,
             "error": type(e).__name__,
         }
 
 
-async def resolve_movie_title_from_message(message) -> dict:
+async def resolve_movie_title_from_message(message, lang: str = "uz") -> dict:
     urls = extract_urls_from_message(message)
     if not urls:
-        return {"ok": False, "error": "no_url", "title": "", "url": ""}
+        return {"ok": False, "error": "no_url", "title": "", "summary": "", "url": ""}
     url = urls[0]
-    result = await fetch_page_title(url)
+    result = await fetch_page_title(url, lang=lang)
     result["url"] = url
     return result
