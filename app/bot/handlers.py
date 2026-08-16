@@ -32,6 +32,7 @@ from app.phone_share import accept_phone_share, complete_phone_await_after_conta
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
 from app.telegram_client import webapp_open_keyboard
+from app.user_wipe import wipe_user
 
 router = Router()
 
@@ -478,17 +479,28 @@ async def cmd_stop(message: Message, state: FSMContext):
 
 @router.message(Command("reset"))
 async def cmd_reset(message: Message, state: FSMContext):
+    """Vaqtinchalik / test: profilni o‘chirib, qayta /start bilan ro‘yxat."""
     lang = "uz"
+    uid = message.from_user.id
     async with async_session() as session:
-        user = await session.get(User, message.from_user.id)
+        user = await session.get(User, uid)
         if user:
             lang = _ui_lang(user)
-            await cancel_wait(user.id, user.looking_for.value)
-            await session.delete(user)
-            await session.commit()
 
+    deleted = await wipe_user(uid)
     await state.clear()
-    await message.answer(t(lang, "reset_confirm"), reply_markup=ReplyKeyboardRemove())
+
+    if not deleted:
+        await message.answer(
+            "Profil topilmadi. Ro‘yxatdan o‘tish uchun /start yuboring.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return
+
+    await message.answer(
+        t(lang, "reset_confirm"),
+        reply_markup=ReplyKeyboardRemove(),
+    )
 
 
 def _is_admin(user_id: int | None) -> bool:
