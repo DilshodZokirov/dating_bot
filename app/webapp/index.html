@@ -505,6 +505,98 @@
     background: #1f8f78;
     color: #fff;
   }
+  .chat-bubble .ticks {
+    display: block;
+    text-align: right;
+    font-size: 0.72rem;
+    opacity: 0.85;
+    margin-top: 4px;
+    letter-spacing: -1px;
+  }
+  .chat-bubble .ticks.read { opacity: 1; }
+  .unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 6px;
+    border-radius: 9px;
+    background: #c45c4a;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+  .nav-btn .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 22px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #c45c4a;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+  .nav-btn { position: relative; }
+  .suggest-box {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .suggest-box h2 {
+    font-size: 1.05rem;
+    margin: 0 0 6px;
+  }
+  .suggest-box .lead {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0 0 12px;
+  }
+  .suggest-box textarea {
+    width: 100%;
+    min-height: 90px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(0,0,0,0.18);
+    color: var(--ink);
+    padding: 12px;
+    font: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .suggest-box .send-btn {
+    margin-top: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .suggest-list { margin-top: 16px; }
+  .suggest-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9rem;
+  }
+  .suggest-item .meta { color: var(--muted); font-size: 0.78rem; margin-bottom: 4px; }
+  .suggest-item .reply {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(26,107,92,0.18);
+    color: var(--ink);
+  }
   .chat-compose {
     display: flex;
     gap: 8px;
@@ -1330,6 +1422,14 @@
       <button class="save-btn" id="saveProfileBtn">Saqlash</button>
       <div class="save-status" id="saveStatus"></div>
     </div>
+    <div class="form suggest-box" id="suggestBox">
+      <h2 id="suggestTitle">Takliflar</h2>
+      <p class="lead" id="suggestLead">Bot haqidagi fikr va takliflaringizni yozing — admin ko‘radi.</p>
+      <textarea id="suggestInput" maxlength="2000" rows="4"></textarea>
+      <button type="button" class="send-btn" id="suggestSendBtn">Yuborish</button>
+      <div class="save-status" id="suggestStatus"></div>
+      <div class="suggest-list" id="suggestList"></div>
+    </div>
   </div>
 
   <!-- SAQLANGANLAR -->
@@ -1374,6 +1474,7 @@
     <button type="button" class="nav-btn" data-view="savedView">
       <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
       <span id="navSavedLabel">Saqlangan</span>
+      <span class="nav-badge" id="navSavedBadge" style="display:none">0</span>
     </button>
     <button type="button" class="nav-btn" data-view="adminView" id="navAdminBtn">
       <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
@@ -1654,6 +1755,24 @@ const TRANSLATIONS = {
   },
   chat_send: { uz: "Yuborish", ru: "Отправить", en: "Send", de: "Senden", tg: "Фиристодан", tr: "Gönder", ko: "보내기", ja: "送信", zh: "发送",
     ar: "إرسال",
+  },
+  suggest_title: { uz: "Takliflar", ru: "Предложения", en: "Suggestions", de: "Vorschläge", tg: "Пешниҳодҳо", tr: "Öneriler", ko: "제안", ja: "提案", zh: "建议",
+    ar: "اقتراحات",
+  },
+  suggest_lead: { uz: "Bot haqidagi fikr va takliflaringizni yozing — admin ko‘radi.", ru: "Напишите идеи о боте — админ увидит.", en: "Share ideas about the bot — admin will see them.", de: "Ideen zum Bot — der Admin sieht sie.", tg: "Фикру пешниҳодҳо дар бораи бот — админ мебинад.", tr: "Bot hakkında önerilerinizi yazın — yönetici görür.", ko: "봇에 대한 의견을 남겨 주세요 — 관리자가 봅니다.", ja: "ボットへの提案を書いてください — 管理者が見ます。", zh: "写下对机器人的建议 — 管理员会看到。",
+    ar: "اكتب اقتراحاتك حول البوت — سيراها المشرف.",
+  },
+  suggest_placeholder: { uz: "Taklifingiz…", ru: "Ваше предложение…", en: "Your suggestion…", de: "Ihr Vorschlag…", tg: "Пешниҳоди шумо…", tr: "Öneriniz…", ko: "제안 내용…", ja: "ご提案…", zh: "您的建议…",
+    ar: "اقتراحك…",
+  },
+  suggest_send: { uz: "Yuborish", ru: "Отправить", en: "Send", de: "Senden", tg: "Фиристодан", tr: "Gönder", ko: "보내기", ja: "送信", zh: "发送",
+    ar: "إرسال",
+  },
+  suggest_ok: { uz: "Taklif yuborildi — rahmat!", ru: "Предложение отправлено — спасибо!", en: "Suggestion sent — thanks!", de: "Vorschlag gesendet — danke!", tg: "Пешниҳод фиристода шуд — раҳмат!", tr: "Öneri gönderildi — teşekkürler!", ko: "제안이 전송되었습니다 — 감사합니다!", ja: "提案を送りました — ありがとう！", zh: "建议已发送 — 谢谢！",
+    ar: "تم إرسال الاقتراح — شكرًا!",
+  },
+  suggest_reply: { uz: "Admin javobi", ru: "Ответ админа", en: "Admin reply", de: "Admin-Antwort", tg: "Ҷавоби админ", tr: "Yönetici yanıtı", ko: "관리자 답변", ja: "管理者の返信", zh: "管理员回复",
+    ar: "رد المشرف",
   },
   nav_admin: { uz: "Admin", ru: "Админ", en: "Admin", de: "Admin", tg: "Админ", tr: "Yönetici", ko: "관리자", ja: "管理", zh: "管理",
     ar: "المشرف",
@@ -2209,6 +2328,11 @@ function applyStaticTranslations() {
   setText("favInviteBtn", "fav_invite_btn");
   setText("phoneRequestBtn", "phone_btn");
   setText("chatSendBtn", "chat_send");
+  setText("suggestTitle", "suggest_title");
+  setText("suggestLead", "suggest_lead");
+  setText("suggestSendBtn", "suggest_send");
+  const suggestInput = document.getElementById("suggestInput");
+  if (suggestInput) suggestInput.placeholder = tr("suggest_placeholder");
   setText("adminTitle", "admin_title");
   setText("adminHint", "admin_hint");
   setText("adminTabStats", "admin_tab_stats");
@@ -2649,6 +2773,7 @@ async function loadMe() {
     setAvatarUI(me.avatar_url, me.name);
     updateProfilePreview();
     meLoaded = true;
+    loadSavedList().catch(() => {});
   } catch (e) {
     showError(e.message);
   }
@@ -2924,6 +3049,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.view).classList.add("active");
     if (btn.dataset.view === "savedView") loadSavedList();
+    if (btn.dataset.view === "profileView") loadSuggestions();
     if (btn.dataset.view === "adminView") loadAdminPanel();
   });
 });
@@ -2998,9 +3124,11 @@ async function loadSavedList() {
       const thumb = it.avatar_url
         ? `<img class="thumb" src="${it.avatar_url}" alt="">`
         : `<div class="thumb letter">${(it.name || "?").charAt(0).toUpperCase()}</div>`;
+      const unread = Number(it.unread_count || 0);
+      const unreadHtml = unread > 0 ? `<span class="unread-badge">${unread > 99 ? "99+" : unread}</span>` : "";
       let actions = "";
       if (it.can_chat && it.thread_id) {
-        actions += `<button type="button" class="chat" data-chat="${it.thread_id}" data-chat-name="${(it.name || "").replace(/"/g, "&quot;")}">${tr("chat_btn")}</button>`;
+        actions += `<button type="button" class="chat" data-chat="${it.thread_id}" data-chat-name="${(it.name || "").replace(/"/g, "&quot;")}">${tr("chat_btn")}${unreadHtml}</button>`;
         actions += `<button type="button" class="invite" data-invite="${it.partner_id}">${tr("invite_btn")}</button>`;
       } else {
         actions += `<button type="button" class="fav-invite" data-fav-invite="${it.partner_id}">${tr("fav_invite_btn")}</button>`;
@@ -3017,11 +3145,76 @@ async function loadSavedList() {
         <div class="saved-actions">${actions}</div>`;
       list.appendChild(row);
     }
+    updateSavedNavBadge(data.total_unread || items.reduce((s, x) => s + (Number(x.unread_count) || 0), 0));
   } catch (e) {
     empty.style.display = "block";
     empty.textContent = e.message;
   }
 }
+
+function updateSavedNavBadge(n) {
+  const badge = document.getElementById("navSavedBadge");
+  if (!badge) return;
+  const count = Number(n) || 0;
+  if (count > 0) {
+    badge.style.display = "block";
+    badge.textContent = count > 99 ? "99+" : String(count);
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+async function loadSuggestions() {
+  const list = document.getElementById("suggestList");
+  if (!list) return;
+  try {
+    const data = await api("/api/suggestions");
+    const items = data.items || [];
+    if (!items.length) {
+      list.innerHTML = "";
+      return;
+    }
+    list.innerHTML = items.map((s) => {
+      const reply = s.admin_reply
+        ? `<div class="reply"><strong>${tr("suggest_reply")}:</strong> ${escapeHtml(s.admin_reply)}</div>`
+        : "";
+      return `<div class="suggest-item"><div class="meta">#${s.id}</div><div>${escapeHtml(s.text || "")}</div>${reply}</div>`;
+    }).join("");
+  } catch (_) {
+    list.innerHTML = "";
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+document.getElementById("suggestSendBtn")?.addEventListener("click", async () => {
+  const input = document.getElementById("suggestInput");
+  const status = document.getElementById("suggestStatus");
+  const text = (input?.value || "").trim();
+  if (text.length < 3) {
+    if (status) status.textContent = tr("suggest_placeholder");
+    return;
+  }
+  try {
+    await api("/api/suggestions", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    if (input) input.value = "";
+    if (status) status.textContent = tr("suggest_ok");
+    tg?.showAlert?.(tr("suggest_ok"));
+    loadSuggestions();
+  } catch (e) {
+    if (status) status.textContent = e.message || String(e);
+    tg?.showAlert?.(e.message || String(e));
+  }
+});
 
 document.getElementById("chatInvitesList")?.addEventListener("click", async (e) => {
   const acc = e.target.closest("[data-invite-accept]");
@@ -3137,10 +3330,41 @@ function closeChatThread() {
 function appendChatBubble(m) {
   const msgs = document.getElementById("chatMsgs");
   if (!msgs) return;
+  const existing = msgs.querySelector(`[data-msg-id="${m.id}"]`);
+  if (existing) {
+    if (m.mine) updateChatTicks(existing, m.read);
+    return;
+  }
   const el = document.createElement("div");
   el.className = "chat-bubble " + (m.mine ? "mine" : "them");
-  el.textContent = m.text || "";
+  el.dataset.msgId = String(m.id);
+  const text = document.createElement("div");
+  text.className = "txt";
+  text.textContent = m.text || "";
+  el.appendChild(text);
+  if (m.mine) {
+    const ticks = document.createElement("span");
+    ticks.className = "ticks" + (m.read ? " read" : "");
+    ticks.textContent = m.read ? "✓✓" : "✓";
+    el.appendChild(ticks);
+  }
   msgs.appendChild(el);
+}
+
+function updateChatTicks(el, read) {
+  const ticks = el.querySelector(".ticks");
+  if (!ticks) return;
+  ticks.textContent = read ? "✓✓" : "✓";
+  ticks.classList.toggle("read", !!read);
+}
+
+function applyChatReads(reads) {
+  const msgs = document.getElementById("chatMsgs");
+  if (!msgs || !reads) return;
+  for (const r of reads) {
+    const el = msgs.querySelector(`[data-msg-id="${r.id}"]`);
+    if (el) updateChatTicks(el, true);
+  }
 }
 
 async function refreshChatMessages(initial) {
@@ -3159,6 +3383,7 @@ async function refreshChatMessages(initial) {
       appendChatBubble(m);
       if (m.id > chatLastMsgId) chatLastMsgId = m.id;
     }
+    applyChatReads(data.reads || []);
     if ((initial || nearBottom) && msgs) msgs.scrollTop = msgs.scrollHeight;
   } catch (_) {}
 }

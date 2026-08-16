@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from aiogram import F, Router
 from aiogram.enums import ChatAction
 from aiogram.filters import CommandStart, Command
@@ -29,9 +31,9 @@ from app.matching.age_brackets import default_prefer_ages
 from app.matching.queue import cancel_proposals_by_user, cancel_wait, requeue_user, set_result
 from app.matching.respond import respond_to_proposal
 from app.phone_share import accept_phone_share, complete_phone_await_after_contact, decline_phone_share
-from app.models import Gender, Language, LookingFor, ReportStatus, User
+from app.models import Gender, Language, LookingFor, ReportStatus, Suggestion, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
-from app.telegram_client import webapp_open_keyboard
+from app.telegram_client import send_message, webapp_open_keyboard
 
 router = Router()
 
@@ -507,7 +509,8 @@ async def cmd_admin(message: Message):
         "/ban &lt;user_id&gt; — ban\n"
         "/unban &lt;user_id&gt; — bandan chiqarish\n"
         "/report_done &lt;id&gt; — shikoyatni yopish\n"
-        "/report_dismiss &lt;id&gt; — rad etish",
+        "/report_dismiss &lt;id&gt; — rad etish\n"
+        "/reply &lt;taklif_id&gt; &lt;matn&gt; — taklifga javob",
         parse_mode="HTML",
     )
 
@@ -618,6 +621,55 @@ async def cmd_report_dismiss(message: Message):
         await message.answer("Shikoyat topilmadi.")
         return
     await message.answer(f"🗑 Shikoyat #{report.id} rad etildi.")
+
+
+@router.message(Command("reply"))
+async def cmd_reply_suggestion(message: Message):
+    """Taklifga admin javobi: /reply <id> <matn>"""
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    raw = (message.text or "").strip()
+    parts = raw.split(maxsplit=2)
+    if len(parts) < 3 or not parts[1].isdigit():
+        await message.answer(
+            "Foydalanish: /reply &lt;taklif_id&gt; &lt;matn&gt;",
+            parse_mode="HTML",
+        )
+        return
+    sug_id = int(parts[1])
+    reply_text = parts[2].strip()
+    if len(reply_text) < 1:
+        await message.answer("Javob matni bo'sh.")
+        return
+
+    async with async_session() as session:
+        sug = await session.get(Suggestion, sug_id)
+        if not sug:
+            await message.answer(f"Taklif #{sug_id} topilmadi.")
+            return
+        sug.admin_reply = reply_text[:2000]
+        sug.replied_at = datetime.now(timezone.utc)
+        sug.replied_by_admin_id = message.from_user.id
+        user_id = sug.user_id
+        original = sug.body
+        await session.commit()
+
+    try:
+        await send_message(
+            user_id,
+            f"💬 <b>Admin javobi</b> (taklif #{sug_id})\n\n"
+            f"Sizning taklifingiz:\n<i>{(original or '')[:400]}</i>\n\n"
+            f"Javob:\n{reply_text[:1500]}",
+        )
+    except Exception as e:
+        await message.answer(f"Javob saqlandi, lekin foydalanuvchiga yuborilmadi: {e}")
+        return
+
+    await message.answer(
+        f"✅ Taklif #{sug_id} ga javob yuborildi (user <code>{user_id}</code>).",
+        parse_mode="HTML",
+    )
 
 
 @router.message(F.photo)

@@ -97,3 +97,37 @@ async def init_db():
         await conn.execute(
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(32)")
         )
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_until TIMESTAMPTZ")
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS block_strike_count INTEGER DEFAULT 0"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS report_strike_count INTEGER DEFAULT 0"
+            )
+        )
+        await conn.execute(
+            text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ")
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE users
+                SET block_strike_count = 0
+                WHERE block_strike_count IS NULL
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE users
+                SET report_strike_count = 0
+                WHERE report_strike_count IS NULL
+                """
+            )
+        )

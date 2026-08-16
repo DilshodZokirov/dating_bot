@@ -92,6 +92,10 @@ class User(Base):
     is_in_call: Mapped[bool] = mapped_column(default=False)
     # Telegram contact orqali ulashilgan telefon (ixtiyoriy)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Vaqtinchalik chaqiruv bandi (blok/shikoyat eskalatsiyasi)
+    ban_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    block_strike_count: Mapped[int] = mapped_column(Integer, default=0)
+    report_strike_count: Mapped[int] = mapped_column(Integer, default=0)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -208,6 +212,21 @@ class ChatMessage(Base):
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
     body: Mapped[str] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
+class Suggestion(Base):
+    """Foydalanuvchi taklifi — admin botga boradi."""
+
+    __tablename__ = "suggestions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), index=True)
+    body: Mapped[str] = mapped_column(String(2000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    admin_reply: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    replied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    replied_by_admin_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
 
 class PhoneShareStatus(str, enum.Enum):
