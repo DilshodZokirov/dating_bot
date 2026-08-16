@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
+from app.admin_stats import collect_admin_stats
 from app.avatars import (
     ALLOWED_TYPES,
     MAX_AVATAR_BYTES,
@@ -1503,31 +1504,7 @@ class AdminUserIdRequest(BaseModel):
 async def admin_stats(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
     _require_admin(int(tg_user["id"]))
-
-    async with async_session() as session:
-        users_count = (await session.execute(select(func.count()).select_from(User))).scalar() or 0
-        banned_count = (
-            await session.execute(select(func.count()).select_from(User).where(User.is_banned.is_(True)))
-        ).scalar() or 0
-        open_reports = (
-            await session.execute(
-                select(func.count()).select_from(Report).where(Report.status == ReportStatus.open)
-            )
-        ).scalar() or 0
-        active_calls = (
-            await session.execute(
-                select(func.count()).select_from(CallSession).where(CallSession.status == SessionStatus.active)
-            )
-        ).scalar() or 0
-        threads_count = (await session.execute(select(func.count()).select_from(ChatThread))).scalar() or 0
-
-    return {
-        "users": users_count,
-        "banned": banned_count,
-        "open_reports": open_reports,
-        "active_calls": active_calls,
-        "chat_threads": threads_count,
-    }
+    return await collect_admin_stats()
 
 
 @router.get("/admin/reports")
