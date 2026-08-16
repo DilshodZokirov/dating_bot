@@ -1350,12 +1350,12 @@
   <div class="view" id="adminView">
     <div class="page-head">
       <h1 id="adminTitle">Admin</h1>
-      <p id="adminHint">Shikoyatlar, ban va statistika</p>
+      <p id="adminHint">Foydalanuvchilar soni, viloyatlar, shikoyatlar</p>
     </div>
     <div class="admin-stats" id="adminStats"></div>
     <div class="admin-tabs">
-      <button type="button" class="active" data-admin-tab="reports" id="adminTabReports">Shikoyatlar</button>
-      <button type="button" data-admin-tab="calls" id="adminTabCalls">Aloqalar</button>
+      <button type="button" class="active" data-admin-tab="stats" id="adminTabStats">Statistika</button>
+      <button type="button" data-admin-tab="reports" id="adminTabReports">Shikoyatlar</button>
       <button type="button" data-admin-tab="users" id="adminTabUsers">Foydalanuvchilar</button>
       <button type="button" data-admin-tab="banned" id="adminTabBanned">Ban</button>
     </div>
@@ -1661,17 +1661,32 @@ const TRANSLATIONS = {
   admin_title: { uz: "Admin panel", ru: "Админ-панель", en: "Admin panel", de: "Admin-Panel", tg: "Панели админ", tr: "Yönetici paneli", ko: "관리자 패널", ja: "管理パネル", zh: "管理面板",
     ar: "لوحة المشرف",
   },
-  admin_hint: { uz: "Shikoyatlar, ban va statistika", ru: "Жалобы, бан и статистика", en: "Reports, bans and stats", de: "Meldungen, Bans und Stats", tg: "Шикоятҳо, бан ва омор", tr: "Şikayetler, ban ve istatistik", ko: "신고, 차단 및 통계", ja: "通報・BAN・統計", zh: "举报、封禁和统计",
-    ar: "البلاغات والحظر والإحصائيات",
+  admin_hint: { uz: "Foydalanuvchilar soni, viloyatlar, shikoyatlar", ru: "Число пользователей, регионы, жалобы", en: "User counts, regions, reports", de: "Nutzerzahlen, Regionen, Meldungen", tg: "Шумораи корбарон, вилоятҳо, шикоятҳо", tr: "Kullanıcı sayısı, bölgeler, şikayetler", ko: "사용자 수, 지역, 신고", ja: "ユーザー数・地域・通報", zh: "用户数、地区、举报",
+    ar: "عدد المستخدمين والمناطق والبلاغات",
   },
   admin_tab_reports: { uz: "Shikoyatlar", ru: "Жалобы", en: "Reports", de: "Meldungen", tg: "Шикоятҳо", tr: "Şikayetler", ko: "신고", ja: "通報", zh: "举报",
     ar: "البلاغات",
+  },
+  admin_tab_stats: { uz: "Statistika", ru: "Статистика", en: "Stats", de: "Statistik", tg: "Омор", tr: "İstatistik", ko: "통계", ja: "統計", zh: "统计",
+    ar: "إحصائيات",
   },
   admin_tab_users: { uz: "Foydalanuvchilar", ru: "Пользователи", en: "Users", de: "Nutzer", tg: "Корбарон", tr: "Kullanıcılar", ko: "사용자", ja: "ユーザー", zh: "用户",
     ar: "المستخدمون",
   },
   admin_tab_banned: { uz: "Ban", ru: "Бан", en: "Banned", de: "Gesperrt", tg: "Бан", tr: "Ban", ko: "차단", ja: "BAN", zh: "封禁",
     ar: "محظورون",
+  },
+  admin_regions_title: { uz: "Viloyat / shahar bo‘yicha", ru: "По регионам / городам", en: "By region / city", de: "Nach Region / Stadt", tg: "Вилоят / шаҳр", tr: "Bölge / şehir", ko: "지역/도시별", ja: "地域・都市別", zh: "按地区/城市",
+    ar: "حسب المنطقة / المدينة",
+  },
+  admin_gender_title: { uz: "Jins", ru: "Пол", en: "Gender", de: "Geschlecht", tg: "Ҷинс", tr: "Cinsiyet", ko: "성별", ja: "性別", zh: "性别",
+    ar: "الجنس",
+  },
+  admin_lang_title: { uz: "Til", ru: "Язык", en: "Language", de: "Sprache", tg: "Забон", tr: "Dil", ko: "언어", ja: "言語", zh: "语言",
+    ar: "اللغة",
+  },
+  admin_stat_active_calls: { uz: "Faol qo‘ng‘iroq", ru: "Активные звонки", en: "Active calls", de: "Aktive Anrufe", tg: "Зангҳои фаъол", tr: "Aktif arama", ko: "진행 중 통화", ja: "通話中", zh: "进行中通话",
+    ar: "مكالمات نشطة",
   },
   admin_resolve: { uz: "Yopish", ru: "Закрыть", en: "Resolve", de: "Erledigt", tg: "Пӯшидан", tr: "Kapat", ko: "처리", ja: "完了", zh: "处理",
     ar: "إغلاق",
@@ -2196,8 +2211,8 @@ function applyStaticTranslations() {
   setText("chatSendBtn", "chat_send");
   setText("adminTitle", "admin_title");
   setText("adminHint", "admin_hint");
+  setText("adminTabStats", "admin_tab_stats");
   setText("adminTabReports", "admin_tab_reports");
-  setText("adminTabCalls", "admin_tab_calls");
   setText("adminTabUsers", "admin_tab_users");
   setText("adminTabBanned", "admin_tab_banned");
   setText("adminUserSearchBtn", "admin_search");
@@ -3174,48 +3189,64 @@ document.getElementById("chatCompose")?.addEventListener("submit", async (e) => 
 });
 
 /* ---- Admin panel ---- */
-let adminTab = "reports";
+let adminTab = "stats";
 
 async function loadAdminPanel() {
   if (!meIsAdmin) return;
+  let stats = null;
   try {
-    const stats = await api("/api/admin/stats");
+    stats = await api("/api/admin/stats");
     const box = document.getElementById("adminStats");
     if (box) {
       box.innerHTML = `
         <div class="admin-stat"><div class="n">${stats.users ?? 0}</div><div class="l">${tr("admin_stat_users")}</div></div>
         <div class="admin-stat"><div class="n">${stats.open_reports ?? 0}</div><div class="l">${tr("admin_stat_reports")}</div></div>
         <div class="admin-stat"><div class="n">${stats.banned ?? 0}</div><div class="l">${tr("admin_stat_banned")}</div></div>
-        <div class="admin-stat"><div class="n">${stats.chat_threads ?? 0}</div><div class="l">${tr("admin_stat_chats")}</div></div>`;
+        <div class="admin-stat"><div class="n">${stats.active_calls ?? 0}</div><div class="l">${tr("admin_stat_active_calls")}</div></div>`;
     }
   } catch (_) {}
   document.getElementById("adminSearchRow").style.display = adminTab === "users" ? "flex" : "none";
-  if (adminTab === "reports") await loadAdminReports();
-  else if (adminTab === "calls") await loadAdminCalls();
+  if (adminTab === "stats") await loadAdminRegionStats(stats);
+  else if (adminTab === "reports") await loadAdminReports();
   else if (adminTab === "banned") await loadAdminBanned();
   else await loadAdminUsers();
 }
 
-async function loadAdminCalls() {
+async function loadAdminRegionStats(preloaded) {
   const list = document.getElementById("adminList");
   if (!list) return;
   list.innerHTML = "";
   try {
-    const data = await api("/api/admin/calls");
-    const items = data.items || [];
-    if (!items.length) {
-      list.innerHTML = `<div class="empty-saved" style="display:block">${tr("admin_tab_calls")}: 0</div>`;
-      return;
+    const stats = preloaded || await api("/api/admin/stats");
+    const cities = stats.by_city || [];
+    const genders = stats.by_gender || [];
+    const langs = stats.by_language || [];
+
+    const regionCard = document.createElement("div");
+    regionCard.className = "admin-card";
+    const regionLines = cities
+      .filter((r) => Number(r.count) > 0)
+      .map((r) => `<div class="sub">${r.city}: <b>${r.count}</b></div>`)
+      .join("") || `<div class="sub">0</div>`;
+    regionCard.innerHTML = `<div class="title">${tr("admin_regions_title")}</div>${regionLines}`;
+    list.appendChild(regionCard);
+
+    if (genders.length) {
+      const gCard = document.createElement("div");
+      gCard.className = "admin-card";
+      gCard.innerHTML = `<div class="title">${tr("admin_gender_title")}</div>` + genders.map((r) => {
+        const label = r.gender === "male" ? tr("gender_male") : (r.gender === "female" ? tr("gender_female") : r.gender);
+        return `<div class="sub">${label}: <b>${r.count}</b></div>`;
+      }).join("");
+      list.appendChild(gCard);
     }
-    for (const c of items) {
-      const card = document.createElement("div");
-      card.className = "admin-card";
-      card.innerHTML = `
-        <div class="title">${c.user1.name} ↔ ${c.user2.name}</div>
-        <div class="sub">id ${c.user1.id} · ${c.user2.id}</div>
-        <div class="sub">room ${c.room_id}</div>
-        <div class="sub">${c.started_at || ""}</div>`;
-      list.appendChild(card);
+
+    if (langs.length) {
+      const lCard = document.createElement("div");
+      lCard.className = "admin-card";
+      lCard.innerHTML = `<div class="title">${tr("admin_lang_title")}</div>` +
+        langs.map((r) => `<div class="sub">${r.language}: <b>${r.count}</b></div>`).join("");
+      list.appendChild(lCard);
     }
   } catch (e) {
     list.innerHTML = `<div class="empty-saved" style="display:block">${e.message}</div>`;

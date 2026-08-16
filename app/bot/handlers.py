@@ -12,6 +12,7 @@ from aiogram.types import (
     MenuButtonWebApp,
 )
 
+from app.admin_stats import collect_admin_stats, format_stats_html
 from app.bot.states import Registration
 from app.config import settings
 from app.database import async_session
@@ -501,6 +502,7 @@ async def cmd_admin(message: Message):
         return
     await message.answer(
         "🛡 <b>Admin</b>\n\n"
+        "/stats — foydalanuvchilar statistikasi (viloyatlar)\n"
         "/reports — ochiq shikoyatlar\n"
         "/ban &lt;user_id&gt; — ban\n"
         "/unban &lt;user_id&gt; — bandan chiqarish\n"
@@ -508,6 +510,28 @@ async def cmd_admin(message: Message):
         "/report_dismiss &lt;id&gt; — rad etish",
         parse_mode="HTML",
     )
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message):
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+    stats = await collect_admin_stats()
+    text = format_stats_html(stats)
+    # Telegram 4096 limit — bo‘lib yuborish
+    if len(text) <= 4000:
+        await message.answer(text, parse_mode="HTML")
+        return
+    chunk = ""
+    for line in text.split("\n"):
+        if len(chunk) + len(line) + 1 > 4000:
+            await message.answer(chunk, parse_mode="HTML")
+            chunk = line + "\n"
+        else:
+            chunk += line + "\n"
+    if chunk.strip():
+        await message.answer(chunk, parse_mode="HTML")
 
 
 @router.message(Command("reports"))
