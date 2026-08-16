@@ -172,7 +172,7 @@ class ProfileUpdate(BaseModel):
     ui_language: Language | None = None  # dastur (UI) tili
     city: str | None = Field(default=None, max_length=64)
     search_scope: SearchScope | None = None
-    age: int | None = Field(default=None, ge=12, le=100)
+    age: int | None = Field(default=None, ge=1, le=120)
     looking_for: LookingFor | None = None
     prefer_age_min: int | None = Field(default=None, ge=0, le=100)
     prefer_age_max: int | None = Field(default=None, ge=0, le=100)
@@ -285,8 +285,11 @@ async def update_profile(update: ProfileUpdate, x_telegram_init_data: str | None
         if update.search_scope is not None:
             user.search_scope = update.search_scope
         if update.age is not None:
-            if update.age < settings.min_age:
-                raise HTTPException(status_code=400, detail=f"Minimal yosh: {settings.min_age}")
+            if update.age < 1 or update.age > settings.max_age:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Yosh 1–{settings.max_age} oralig‘ida bo‘lishi kerak",
+                )
             user.age = update.age
         if update.looking_for is not None:
             user.looking_for = update.looking_for

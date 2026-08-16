@@ -7,8 +7,9 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
 
-    min_age: int = 12  # o'z yoshi minimal (12+)
+    min_age: int = 1  # o'z yoshi — pastki texnik chegara (dasturda 18+ majburiy emas)
     max_age_gap: int = 5  # ishlatilmaydi — oraliqni foydalanuvchi o'zi tanlaydi
+    max_age: int = 120  # o'z yoshi yuqori texnik chegara
 
     webapp_url: str = ""  # Mini App uchun ochiq HTTPS manzil (masalan ngrok / Render)
 

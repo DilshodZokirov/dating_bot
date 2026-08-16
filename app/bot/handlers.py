@@ -33,6 +33,7 @@ from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
 from app.telegram_client import webapp_open_keyboard
 from app.user_wipe import wipe_user
+from sqlalchemy import select
 
 router = Router()
 
@@ -366,7 +367,12 @@ async def on_contact_shared(message: Message):
 @router.message(Registration.name, F.text, ~F.text.startswith("/"))
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text.strip()[:64])
-    await message.answer("Yoshingizni kiriting (faqat raqam):")
+    await message.answer(
+        "Yoshingizni kiriting (faqat raqam).\n"
+        "<i>Masalan: 20</i>\n"
+        "Yoshga qat’iy chegara yo‘q — o‘zingiznikini yozing.",
+        parse_mode="HTML",
+    )
     await state.set_state(Registration.age)
 
 
@@ -377,16 +383,19 @@ async def process_age(message: Message, state: FSMContext):
         return
 
     age = int(message.text)
-    if age < settings.min_age:
-        await message.answer(f"Kechirasiz, bu botdan faqat {settings.min_age}+ yoshdagi foydalanuvchilar foydalana oladi.")
-        await state.clear()
-        return
-    if age > 100:
-        await message.answer("Yoshni to'g'ri kiriting.")
+    if age < 1 or age > settings.max_age:
+        await message.answer(
+            f"Yoshni to‘g‘ri kiriting (1–{settings.max_age} oralig‘ida, faqat raqam)."
+        )
         return
 
     await state.update_data(age=age)
-    await message.answer("Jinsingizni tanlang:", reply_markup=gender_kb)
+    await message.answer(
+        "Jinsingizni tanlang:\n"
+        "<i>Bu qidiruvda mos suhbatdosh topish uchun kerak.</i>",
+        reply_markup=gender_kb,
+        parse_mode="HTML",
+    )
     await state.set_state(Registration.gender)
 
 
@@ -526,6 +535,7 @@ async def cmd_admin(message: Message):
     await message.answer(
         "🛡 <b>Admin</b>\n\n"
         "/stats — foydalanuvchilar statistikasi (viloyatlar)\n"
+        "/stats_name — barcha userlar: ism, yosh, jins\n"
         "/reports — ochiq shikoyatlar\n"
         "/ban &lt;user_id&gt; — ban\n"
         "/unban &lt;user_id&gt; — bandan chiqarish\n"
@@ -548,6 +558,48 @@ async def cmd_stats(message: Message):
         return
     chunk = ""
     for line in text.split("\n"):
+        if len(chunk) + len(line) + 1 > 4000:
+            await message.answer(chunk, parse_mode="HTML")
+            chunk = line + "\n"
+        else:
+            chunk += line + "\n"
+    if chunk.strip():
+        await message.answer(chunk, parse_mode="HTML")
+
+
+@router.message(Command("stats_name"))
+async def cmd_stats_name(message: Message):
+    """Barcha foydalanuvchilar: ism, yosh, jins (ketma-ket)."""
+    if not _is_admin(message.from_user.id):
+        await message.answer("Ruxsat yo'q.")
+        return
+
+    async with async_session() as session:
+        rows = list(
+            (
+                await session.execute(
+                    select(User).order_by(User.created_at.asc(), User.id.asc())
+                )
+            ).scalars().all()
+        )
+
+    if not rows:
+        await message.answer("Foydalanuvchi yo‘q.")
+        return
+
+    def _gender_uz(g) -> str:
+        val = g.value if hasattr(g, "value") else str(g)
+        return "Erkak" if val == "male" else "Ayol" if val == "female" else val
+
+    lines = [f"👥 <b>Barcha foydalanuvchilar</b> ({len(rows)})\n"]
+    for i, u in enumerate(rows, start=1):
+        lines.append(
+            f"{i}. <b>{u.name}</b> · {u.age} · {_gender_uz(u.gender)}"
+            f" · <code>{u.id}</code>"
+        )
+
+    chunk = ""
+    for line in lines:
         if len(chunk) + len(line) + 1 > 4000:
             await message.answer(chunk, parse_mode="HTML")
             chunk = line + "\n"

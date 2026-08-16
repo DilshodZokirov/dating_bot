@@ -294,16 +294,46 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ar": "⚠️ WEBAPP_URL فارغ. تحقق من .env.",
     },
     "reg_hello": {
-        "uz": "Salom! <b>Soyla</b> — suhbatdosh topib, video qo‘ng‘iroq.\n\nIsmingiz?",
-        "ru": "Привет! <b>Soyla</b> — найти собеседника и видеозвонок.\n\nКак вас зовут?",
-        "en": "Hi! <b>Soyla</b> — find a partner and jump on a video call.\n\nWhat’s your name?",
-        "de": "Hallo! <b>Soyla</b> — Partner finden und Videoanruf.\n\nIhr Name?",
-        "tg": "Салом! <b>Soyla</b> — ҳамсуҳбат ва видеозанг.\n\nНоматон?",
-        "tr": "Merhaba! <b>Soyla</b> — eşleşme bul, görüntülü ara.\n\nAdınız?",
-        "ko": "안녕하세요! <b>Soyla</b> — 상대를 찾고 영상 통화.\n\n이름이 뭐예요?",
-        "ja": "こんにちは！<b>Soyla</b> — 相手を見つけてビデオ通話。\n\nお名前は？",
-        "zh": "你好！<b>Soyla</b> — 找到聊天对象并视频通话。\n\n你叫什么？",
-        "ar": "مرحبًا! <b>Soyla</b> — اعثر على شريك وابدأ مكالمة فيديو.\n\nما اسمك؟",
+        "uz": "Salom! <b>Soyla</b> — speaking, do‘st va juft topish.\n\n"
+              "Ro‘yxat: ism → yosh → jins → til.\n"
+              "Yoshga qat’iy chegara yo‘q.\n\n"
+              "Ismingiz?",
+        "ru": "Привет! <b>Soyla</b> — speaking, друзья и знакомства.\n\n"
+              "Регистрация: имя → возраст → пол → язык.\n"
+              "Жёсткого возрастного лимита нет.\n\n"
+              "Как вас зовут?",
+        "en": "Hi! <b>Soyla</b> — speaking, friends and dating.\n\n"
+              "Sign up: name → age → gender → language.\n"
+              "No hard age lock.\n\n"
+              "What’s your name?",
+        "de": "Hallo! <b>Soyla</b> — Speaking, Freunde und Dating.\n\n"
+              "Registrierung: Name → Alter → Geschlecht → Sprache.\n"
+              "Kein hartes Alterslimit.\n\n"
+              "Ihr Name?",
+        "tg": "Салом! <b>Soyla</b> — speaking, дӯст ва ҷуфт.\n\n"
+              "Сабт: ном → синну сол → ҷинс → забон.\n"
+              "Ҳадди қатъии синну сол нест.\n\n"
+              "Номатон?",
+        "tr": "Merhaba! <b>Soyla</b> — speaking, arkadaş ve eşleşme.\n\n"
+              "Kayıt: ad → yaş → cinsiyet → dil.\n"
+              "Katı yaş sınırı yok.\n\n"
+              "Adınız?",
+        "ko": "안녕하세요! <b>Soyla</b> — speaking, 친구, 소개팅.\n\n"
+              "가입: 이름 → 나이 → 성별 → 언어.\n"
+              "엄격한 나이 제한 없음.\n\n"
+              "이름이 뭐예요?",
+        "ja": "こんにちは！<b>Soyla</b> — speaking・友達・出会い。\n\n"
+              "登録：名前→年齢→性別→言語。\n"
+              "厳しい年齢制限はありません。\n\n"
+              "お名前は？",
+        "zh": "你好！<b>Soyla</b> — speaking、交友、配对。\n\n"
+              "注册：姓名→年龄→性别→语言。\n"
+              "没有硬性年龄限制。\n\n"
+              "你叫什么？",
+        "ar": "مرحبًا! <b>Soyla</b> — محادثة وأصدقاء وتعارف.\n\n"
+              "التسجيل: الاسم → العمر → الجنس → اللغة.\n"
+              "لا يوجد حد عمري صارم.\n\n"
+              "ما اسمك؟",
     },
     "reg_done": {
         "uz": "✅ Tayyor, {name}!\nQidiruv: pastdagi <b>Menu → Qidirish</b>.",
