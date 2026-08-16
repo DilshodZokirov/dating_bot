@@ -121,8 +121,9 @@
     margin: 0;
     color: var(--muted);
     font-size: 0.92rem;
-    max-width: 17rem;
+    max-width: 22rem;
     line-height: 1.45;
+    white-space: pre-line;
   }
 
   .pool-line {
@@ -271,7 +272,8 @@
     margin: 6px 0 0;
     color: var(--muted);
     font-size: 0.92rem;
-    line-height: 1.4;
+    line-height: 1.45;
+    white-space: pre-line;
   }
 
   .form {
@@ -1308,7 +1310,7 @@
     </div>
     <div class="form">
       <div class="field"><label id="lblName">Ism</label><input type="text" id="profileName" maxlength="64"></div>
-      <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="12" max="100" step="1"></div>
+      <div class="field"><label id="lblAge">Yoshim</label><input type="number" id="profileAge" min="1" max="120" step="1"></div>
       <div class="field"><label id="lblBio">Qiziqishlar</label><textarea id="profileBio" maxlength="300"></textarea></div>
       <div class="field"><label id="lblLocation">Yashash joyi</label><input type="text" id="profileLocation" maxlength="100"></div>
       <div class="field">
@@ -1391,8 +1393,8 @@ const TRANSLATIONS = {
   idle_title: { uz: "Yangi suhbatni boshlang", ru: "Начните новый разговор", en: "Start a new chat", de: "Neuen Chat starten", tg: "Сӯҳбати навро оғоз кунед", tr: "Yeni bir sohbet başlatın", ko: "새 대화 시작", ja: "新しいチャットを始める", zh: "开始新聊天",
     ar: "ابدأ محادثة جديدة",
   },
-  idle_hint: { uz: "Mos suhbatdoshni topib, darhol video qo‘ng‘iroqqa ulanamiz.", ru: "Найдём собеседника и сразу подключим к видеозвонку.", en: "We’ll find a match and connect you to a video call.", de: "Wir finden ein Match und verbinden Sie mit einem Videoanruf.", tg: "Ҳамсуҳбати мувофиқ ёфта, фавран ба видеозанг пайваст мекунем.", tr: "Uygun birini bulup hemen görüntülü aramaya bağlarız.", ko: "맞는 상대를 찾아 바로 영상 통화로 연결합니다.", ja: "マッチを見つけてすぐにビデオ通話に接続します。", zh: "找到匹配对象后立即连接视频通话。",
-    ar: "سنجد شريكًا مناسبًا ونوصلك بمكالمة فيديو فورًا.",
+  idle_hint: { uz: "1) Katta tugmani bosing → qidiruv.\n2) Taklif kelganda Roziman / Yo‘q.\n3) Ikkalangiz rozilik bersangiz — video suhbat.\nTil va yosh: «Aloqa sozlamalari».", ru: "1) Большая кнопка — поиск.\n2) Предложение: Согласен / Нет.\n3) Оба согласились — видеозвонок.\nЯзык и возраст: «Параметры общения».", en: "1) Tap the big button to search.\n2) Accept or decline a match.\n3) Both accept — video call.\nLanguage & age: Chat settings.", de: "1) Großen Button tippen — Suche.\n2) Annehmen / Ablehnen.\n3) Beide einverstanden — Videoanruf.\nSprache & Alter: Chat-Einstellungen.", tg: "1) Тугмаи калон — ҷустуҷӯ.\n2) Розӣ / Не.\n3) Ҳарду розӣ — видеозанг.\nЗабон ва синну сол: Танзимоти суҳбат.", tr: "1) Büyük düğme — arama.\n2) Kabul / Red.\n3) İkiniz de kabul — görüntülü sohbet.\nDil ve yaş: Sohbet ayarları.", ko: "1) 큰 버튼으로 검색.\n2) 수락 / 거절.\n3) 둘 다 수락 — 영상 통화.\n언어·나이: 채팅 설정.", ja: "1) 大きなボタンで検索。\n2) 承諾 / 拒否。\n3) 双方承諾でビデオ通話。\n言語・年齢はチャット設定。", zh: "1) 点大按钮开始搜索。\n2) 接受或拒绝匹配。\n3) 双方同意后视频通话。\n语言和年龄在聊天设置。",
+    ar: "1) الزر الكبير للبحث.\n2) قبول أو رفض.\n3) عند موافقة الطرفين — مكالمة فيديو.\nاللغة والعمر: إعدادات التواصل.",
   },
   pool_zero: { uz: "Hozir sizning sozlamalaringiz bo‘yicha hech kim qidirayotgani yo‘q", ru: "Сейчас по вашим настройкам никто не ищет", en: "No one is searching with your settings right now", de: "Gerade sucht niemand mit Ihren Einstellungen", tg: "Ҳоло бо танзимоти шумо ҳеҷ кас ҷустуҷӯ намекунад", tr: "Şu an ayarlarınıza göre kimse aramıyor", ko: "지금 설정에 맞는 검색 중인 사람이 없습니다", ja: "今、設定に合う検索中の人はいません", zh: "目前没有人按你的设置在搜索",
     ar: "لا أحد يبحث بإعداداتك الآن",
@@ -1451,8 +1453,8 @@ const TRANSLATIONS = {
   profile_title: { uz: "Profil", ru: "Профиль", en: "Profile", de: "Profil", tg: "Профил", tr: "Profil", ko: "프로필", ja: "プロフィール", zh: "资料",
     ar: "الملف الشخصي",
   },
-  profile_lead: { uz: "Rasm, ism va dastur tili", ru: "Фото, имя и язык приложения", en: "Photo, name and app language", de: "Foto, Name und App-Sprache", tg: "Акс, ном ва забони барнома", tr: "Fotoğraf, isim ve uygulama dili", ko: "사진, 이름 및 앱 언어", ja: "写真・名前・アプリ言語", zh: "照片、姓名和应用语言",
-    ar: "الصورة والاسم ولغة التطبيق",
+  profile_lead: { uz: "Bu yerda profilingiz: rasm, ism, yosh va dastur tili.\nSaqlashni bosing — o‘zgarishlar qidiruvga ham ta’sir qiladi.", ru: "Здесь ваш профиль: фото, имя, возраст и язык приложения.\nНажмите Сохранить — изменения влияют на поиск.", en: "Your profile: photo, name, age and app language.\nTap Save — changes also affect matching.", de: "Ihr Profil: Foto, Name, Alter und App-Sprache.\nSpeichern — Änderungen gelten auch für die Suche.", tg: "Профил: акс, ном, синну сол ва забони барнома.\nЗахира — ба ҷустуҷӯ таъсир мекунад.", tr: "Profil: fotoğraf, isim, yaş ve uygulama dili.\nKaydet — aramayı da etkiler.", ko: "프로필: 사진, 이름, 나이, 앱 언어.\n저장하면 검색에도 반영됩니다.", ja: "プロフィール：写真・名前・年齢・アプリ言語。\n保存すると検索にも反映。", zh: "个人资料：照片、姓名、年龄和应用语言。\n点保存也会影响匹配。",
+    ar: "ملفك: صورة واسم وعمر ولغة التطبيق.\nاحفظ — تؤثر التغييرات على البحث أيضًا.",
   },
   lbl_ui_language: { uz: "Dastur tili", ru: "Язык приложения", en: "App language", de: "App-Sprache", tg: "Забони барнома", tr: "Uygulama dili", ko: "앱 언어", ja: "アプリ言語", zh: "应用语言",
     ar: "لغة التطبيق",
@@ -1463,8 +1465,8 @@ const TRANSLATIONS = {
   comms_open: { uz: "Aloqa sozlamalari", ru: "Параметры общения", en: "Chat settings", de: "Chat-Einstellungen", tg: "Танзимоти суҳбат", tr: "Sohbet ayarları", ko: "채팅 설정", ja: "チャット設定", zh: "聊天设置",
     ar: "إعدادات التواصل",
   },
-  comms_lead: { uz: "Qidiruv va suhbat shu yerda sozlanadi", ru: "Поиск и общение настраиваются здесь", en: "Search and chat are set here", de: "Suche und Chat hier einstellen", tg: "Ҷустуҷӯ ва суҳбат ин ҷо танзим мешавад", tr: "Arama ve sohbet burada ayarlanır", ko: "검색과 대화는 여기에서 설정", ja: "検索と会話はここで設定", zh: "搜索和聊天在这里设置",
-    ar: "يتم ضبط البحث والدردشة هنا",
+  comms_lead: { uz: "Qidiruv shu sozlamalar bo‘yicha ishlaydi:\n• aloqa tili\n• suhbatdosh jinsi\n• suhbatdosh yoshi\n• shahar / doira\n• mavzu\nO‘zgartirib Saqlashni bosing.", ru: "Поиск идёт по этим настройкам:\n• язык\n• пол собеседника\n• возраст\n• город / область\n• тема\nИзмените и нажмите Сохранить.", en: "Search uses these settings:\n• chat language\n• partner gender\n• partner age\n• city / scope\n• topic\nChange then tap Save.", de: "Suche nutzt diese Einstellungen:\n• Sprache\n• Geschlecht\n• Alter\n• Stadt / Bereich\n• Thema\nÄndern und Speichern.", tg: "Ҷустуҷӯ аз рӯи ин танзимот:\n• забон\n• ҷинс\n• синну сол\n• шаҳр\n• мавзӯъ\nТағйир дода Захира кунед.", tr: "Arama bu ayarlara göre:\n• dil\n• cinsiyet\n• yaş\n• şehir\n• konu\nDeğiştirip Kaydet’e basın.", ko: "검색 설정:\n• 언어\n• 성별\n• 나이\n• 도시\n• 주제\n변경 후 저장.", ja: "検索設定：\n• 言語\n• 性別\n• 年齢\n• 都市\n• トピック\n変更して保存。", zh: "搜索按这些设置：\n• 语言\n• 性别\n• 年龄\n• 城市\n• 主题\n修改后点保存。",
+    ar: "البحث حسب هذه الإعدادات:\n• اللغة\n• الجنس\n• العمر\n• المدينة\n• الموضوع\nعدّل ثم احفظ.",
   },
   close_btn: { uz: "Yopish", ru: "Закрыть", en: "Close", de: "Schließen", tg: "Пӯшидан", tr: "Kapat", ko: "닫기", ja: "閉じる", zh: "关闭",
     ar: "إغلاق",
@@ -1622,8 +1624,8 @@ const TRANSLATIONS = {
   saved_title: { uz: "Saqlanganlar", ru: "Сохранённые", en: "Saved", de: "Gespeicherte", tg: "Захирашудаҳо", tr: "Kayıtlılar", ko: "저장됨", ja: "保存済み", zh: "已保存",
     ar: "المحفوظات",
   },
-  saved_hint: { uz: "Video — offline bo‘lsa ham botiga taklif ketadi.", ru: "Видео — даже офлайн уйдёт приглашение в бот.", en: "Video — invite goes to their bot even if offline.", de: "Video — Einladung geht auch offline an den Bot.", tg: "Видео — офлайн ҳам ба бот таклиф меравад.", tr: "Video — çevrimdışı olsa da bota davet gider.", ko: "영상 — 오프라인이어도 봇으로 초대가 갑니다.", ja: "ビデオ — オフラインでもボットに招待が届きます。", zh: "视频 — 即使离线也会发到对方机器人。",
-    ar: "فيديو — حتى لو غير متصل تصل الدعوة إلى البوت.",
+  saved_hint: { uz: "Bu yerda saqlangan suhbatdoshlar.\n• Chat — yozishish\n• Sevimli — o‘zaro sevimlilar taklifi\n• Video — qo‘ng‘iroqqa chaqirish (offline bo‘lsa ham botiga xabar ketadi)", ru: "Здесь сохранённые собеседники.\n• Чат — переписка\n• Избранное — взаимное приглашение\n• Видео — звонок (даже офлайн — в бот)", en: "Saved partners live here.\n• Chat — messaging\n• Favorite — mutual invite\n• Video — call invite (works offline via bot)", de: "Gespeicherte Partner.\n• Chat — Nachrichten\n• Favorit — gegenseitige Einladung\n• Video — Anruf (auch offline per Bot)", tg: "Ҳамсуҳбатони захирашуда.\n• Чат — навиштан\n• Дӯстдошта — таклиф\n• Видео — занг (офлайн ҳам ба бот)", tr: "Kayıtlı partnerler.\n• Sohbet — yazışma\n• Favori — karşılıklı davet\n• Video — arama (çevrimdışı da bota gider)", ko: "저장된 상대.\n• 채팅 — 메시지\n• 즐겨찾기 — 상호 초대\n• 영상 — 통화 초대 (오프라인도 봇으로)", ja: "保存した相手。\n• チャット — メッセージ\n• お気に入り — 相互招待\n• ビデオ — 通話招待（オフラインでもボットへ）", zh: "已保存的对象。\n• 聊天 — 发消息\n• 收藏 — 互相邀请\n• 视频 — 通话邀请（离线也会发到机器人）",
+    ar: "الشركاء المحفوظون هنا.\n• دردشة — مراسلة\n• مفضل — دعوة متبادلة\n• فيديو — دعوة اتصال (حتى دون اتصال عبر البوت)",
   },
   saved_empty: { uz: "Hali saqlangan suhbatdosh yo‘q.", ru: "Пока нет сохранённых.", en: "No saved partners yet.", de: "Noch keine gespeicherten Partner.", tg: "Ҳанӯз ҳамсуҳбати захирашуда нест.", tr: "Henüz kayıtlı partner yok.", ko: "아직 저장된 상대가 없습니다.", ja: "まだ保存した相手がいません。", zh: "还没有已保存的对象。",
     ar: "لا يوجد شركاء محفوظون بعد.",
@@ -1661,8 +1663,8 @@ const TRANSLATIONS = {
   admin_title: { uz: "Admin panel", ru: "Админ-панель", en: "Admin panel", de: "Admin-Panel", tg: "Панели админ", tr: "Yönetici paneli", ko: "관리자 패널", ja: "管理パネル", zh: "管理面板",
     ar: "لوحة المشرف",
   },
-  admin_hint: { uz: "Foydalanuvchilar soni, viloyatlar, shikoyatlar", ru: "Число пользователей, регионы, жалобы", en: "User counts, regions, reports", de: "Nutzerzahlen, Regionen, Meldungen", tg: "Шумораи корбарон, вилоятҳо, шикоятҳо", tr: "Kullanıcı sayısı, bölgeler, şikayetler", ko: "사용자 수, 지역, 신고", ja: "ユーザー数・地域・通報", zh: "用户数、地区、举报",
-    ar: "عدد المستخدمين والمناطق والبلاغات",
+  admin_hint: { uz: "Statistika, shikoyatlar, foydalanuvchilar va ban.\nBotda: /stats · /stats_name · /reports", ru: "Статистика, жалобы, пользователи и бан.\nВ боте: /stats · /stats_name · /reports", en: "Stats, reports, users and bans.\nIn bot: /stats · /stats_name · /reports", de: "Statistik, Meldungen, Nutzer und Bans.\nIm Bot: /stats · /stats_name · /reports", tg: "Омор, шикоятҳо, корбарон ва бан.\nДар бот: /stats · /stats_name · /reports", tr: "İstatistik, şikayet, kullanıcı ve ban.\nBotta: /stats · /stats_name · /reports", ko: "통계, 신고, 사용자, 차단.\n봇: /stats · /stats_name · /reports", ja: "統計・通報・ユーザー・BAN。\nボット: /stats · /stats_name · /reports", zh: "统计、举报、用户与封禁。\n机器人：/stats · /stats_name · /reports",
+    ar: "إحصاءات وتقارير ومستخدمون وحظر.\nفي البوت: /stats · /stats_name · /reports",
   },
   admin_tab_reports: { uz: "Shikoyatlar", ru: "Жалобы", en: "Reports", de: "Meldungen", tg: "Шикоятҳо", tr: "Şikayetler", ko: "신고", ja: "通報", zh: "举报",
     ar: "البلاغات",
