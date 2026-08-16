@@ -29,6 +29,7 @@ from app.matching.queue import (
     pop_result,
     requeue_user,
     set_result,
+    user_is_reserved,
     SAVED_INVITE_TTL_SECONDS,
 )
 from app.matching.respond import respond_to_proposal
@@ -420,6 +421,10 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
     if user.is_banned:
         raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
 
+    # Allaqachon taklifda (rozilik kutilyapti) — boshqa juft ochilmasin
+    if await user_is_reserved(user.id):
+        return {"status": "pending_proposal"}
+
     # Eski navbat/takliflarni tozalab, yangi qidiruv
     for lf in ("male", "female", "any"):
         await cancel_wait(user.id, lf)
@@ -454,9 +459,14 @@ async def search_status(x_telegram_init_data: str | None = Header(default=None))
     if result:
         return result
 
-    # Navbatda kutayotganda qayta match — ikkala akkaunt birga qidirganda tiqilib qolmasin
     async with async_session() as session:
         user = await session.get(User, uid)
+
+    # Taklifda band (biri rozilik bergan / kutilyapti) — yangi juft qidirilmasin
+    if user and await user_is_reserved(uid):
+        return {"outcome": "waiting_partner"}
+
+    # Navbatda kutayotganda qayta match — ikkala akkaunt birga qidirganda tiqilib qolmasin
     if user and not user.is_banned:
         proposal = await _try_create_proposal(user, leave_queue_if_matched=True)
         if proposal:
@@ -478,6 +488,9 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
     Navbatdan mos kandidat topsa — ikkalasiga proposal result yozadi.
     Qaytaradi: polling uchun proposal dict yoki None.
     """
+    if await user_is_reserved(user.id):
+        return None
+
     exclude = await get_blocked_ids(user.id)
     exclude |= await get_banned_ids()
     exclude.add(user.id)
@@ -509,6 +522,10 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
             await cancel_wait(user.id, lf)
 
     proposal_id = await create_mutual_proposal(requester=_queue_payload(user), candidate=candidate)
+    if not proposal_id:
+        # Biri band bo‘lib qolgan — kandidatni navbatga qaytaramiz
+        await requeue_user(candidate)
+        return None
 
     await set_result(
         user.id, "proposal", proposal_id=proposal_id,
@@ -873,6 +890,8 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
 
     if partner.is_in_call or me.is_in_call:
         raise HTTPException(status_code=409, detail="Suhbatdosh band (qo'ng'iroqda)")
+    if await user_is_reserved(me.id) or await user_is_reserved(partner.id):
+        raise HTTPException(status_code=409, detail="Suhbatdosh band (taklif kutilyapti)")
 
     # Navbatdan chiqarib, to'g'ridan-to'g'ri taklif
     for lf in ("male", "female", "any"):
@@ -884,6 +903,8 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         candidate=_queue_payload(partner),
         ttl=SAVED_INVITE_TTL_SECONDS,
     )
+    if not proposal_id:
+        raise HTTPException(status_code=409, detail="Suhbatdosh band (taklif kutilyapti)")
     # Chaqiruvchi avtomatik rozilik — hamroh botda qabul qiladi
     await respond_to_proposal(me.id, proposal_id, "accepted")
 

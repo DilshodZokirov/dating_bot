@@ -183,6 +183,14 @@ async def find_candidate(
                     prefer_age_min, prefer_age_max, match_topic, candidate, exclude_ids,
                 ):
                     continue
+                # Allaqachon boshqa taklifda band bo‘lsa — o‘tkazib yuboramiz
+                try:
+                    cuid = int(candidate["user_id"])
+                except Exception:
+                    continue
+                if await redis_client.get(_user_proposal_key(cuid)):
+                    await redis_client.lrem(opposite_queue, 1, raw)
+                    continue
                 await redis_client.lrem(opposite_queue, 1, raw)
                 return candidate
         return None
@@ -251,6 +259,40 @@ def _proposal_key(proposal_id: str) -> str:
     return f"matching:proposal:{proposal_id}"
 
 
+def _user_proposal_key(user_id: int) -> str:
+    """Foydalanuvchi hozirgi taklifda band — yangi juft chiqmasin."""
+    return f"matching:user_proposal:{user_id}"
+
+
+async def get_user_proposal_id(user_id: int) -> str | None:
+    return await redis_client.get(_user_proposal_key(user_id))
+
+
+async def user_is_reserved(user_id: int) -> bool:
+    return bool(await get_user_proposal_id(user_id))
+
+
+async def _bind_user_proposal(user_id: int, proposal_id: str, ttl: int) -> None:
+    await redis_client.set(_user_proposal_key(user_id), proposal_id, ex=ttl)
+
+
+async def _clear_user_proposal(user_id: int, proposal_id: str | None = None) -> None:
+    key = _user_proposal_key(user_id)
+    if proposal_id is None:
+        await redis_client.delete(key)
+        return
+    cur = await redis_client.get(key)
+    if cur == proposal_id:
+        await redis_client.delete(key)
+
+
+async def _clear_proposal_reservations(proposal: dict, proposal_id: str | None = None) -> None:
+    pid = proposal_id
+    for uid in (proposal.get("requester_id"), proposal.get("candidate_id")):
+        if uid is not None:
+            await _clear_user_proposal(int(uid), pid)
+
+
 def _side_fields(prefix: str, data: dict) -> dict:
     return {
         f"{prefix}_id": data["user_id"],
@@ -267,17 +309,32 @@ def _side_fields(prefix: str, data: dict) -> dict:
     }
 
 
-async def create_mutual_proposal(requester: dict, candidate: dict, ttl: int | None = None) -> str:
-    proposal_id = uuid.uuid4().hex[:16]
-    payload = {}
-    payload.update(_side_fields("requester", requester))
-    payload.update(_side_fields("candidate", candidate))
-    await redis_client.set(
-        _proposal_key(proposal_id),
-        json.dumps(payload),
-        ex=ttl or PROPOSAL_TTL_SECONDS,
-    )
-    return proposal_id
+async def create_mutual_proposal(requester: dict, candidate: dict, ttl: int | None = None) -> str | None:
+    """
+    Ikkalasini ham band qiladi. Agar birortasi allaqachon taklifda bo‘lsa — None.
+    """
+    ttl_sec = ttl or PROPOSAL_TTL_SECONDS
+    token = await _acquire_lock()
+    try:
+        req_id = int(requester["user_id"])
+        cand_id = int(candidate["user_id"])
+        if await user_is_reserved(req_id) or await user_is_reserved(cand_id):
+            return None
+
+        proposal_id = uuid.uuid4().hex[:16]
+        payload = {}
+        payload.update(_side_fields("requester", requester))
+        payload.update(_side_fields("candidate", candidate))
+        await redis_client.set(
+            _proposal_key(proposal_id),
+            json.dumps(payload),
+            ex=ttl_sec,
+        )
+        await _bind_user_proposal(req_id, proposal_id, ttl_sec)
+        await _bind_user_proposal(cand_id, proposal_id, ttl_sec)
+        return proposal_id
+    finally:
+        await _release_lock(token)
 
 
 async def get_proposal(proposal_id: str) -> dict | None:
@@ -306,13 +363,18 @@ async def set_decision(proposal_id: str, user_id: int, decision: str) -> dict:
 
         if decision == "declined":
             await redis_client.delete(_proposal_key(proposal_id))
+            await _clear_proposal_reservations(proposal, proposal_id)
             return {"status": "declined", "proposal": proposal}
 
         if proposal["requester_decision"] == "accepted" and proposal["candidate_decision"] == "accepted":
             await redis_client.delete(_proposal_key(proposal_id))
+            await _clear_proposal_reservations(proposal, proposal_id)
             return {"status": "matched", "proposal": proposal}
 
+        # Bitta tomon qabul qildi — ikkalasi ham band bo‘lib qoladi
         await redis_client.set(_proposal_key(proposal_id), json.dumps(proposal), ex=PROPOSAL_TTL_SECONDS)
+        await _bind_user_proposal(int(proposal["requester_id"]), proposal_id, PROPOSAL_TTL_SECONDS)
+        await _bind_user_proposal(int(proposal["candidate_id"]), proposal_id, PROPOSAL_TTL_SECONDS)
         return {"status": "waiting_partner", "proposal": proposal}
     finally:
         await _release_lock(token)
@@ -326,8 +388,12 @@ async def cancel_proposals_by_user(user_id: int) -> list[dict]:
             continue
         proposal = json.loads(raw)
         if proposal["requester_id"] == user_id or proposal["candidate_id"] == user_id:
+            pid = key.split(":")[-1]
             await redis_client.delete(key)
+            await _clear_proposal_reservations(proposal, pid)
             cancelled.append(proposal)
+    # Orphan band kalit
+    await _clear_user_proposal(user_id)
     return cancelled
 
 
