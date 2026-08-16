@@ -47,6 +47,7 @@ from app.models import (
     ChatInviteStatus,
     ChatMessage,
     ChatThread,
+    Suggestion,
     Language,
     LookingFor,
     PhoneShareRequest,
@@ -69,6 +70,7 @@ from app.moderation import (
     set_user_banned,
 )
 from app.presence import is_online, online_map, touch_presence
+from app.temp_bans import ban_remaining_seconds, call_ban_detail, is_temp_banned
 from app.telegram_auth import InitDataError, validate_init_data
 from app.phone_share import accept_phone_share, decline_phone_share
 from app.telegram_client import (
@@ -155,11 +157,35 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "search_scope": user.search_scope.value,
         "prefer_age_min": user.prefer_age_min if user.prefer_age_min is not None else settings.min_age,
         "prefer_age_max": user.prefer_age_max if user.prefer_age_max is not None else 100,
-        "is_banned": user.is_banned,
+        "is_banned": bool(user.is_banned) or is_temp_banned(user),
+        "ban_until": (
+            user.ban_until.isoformat()
+            if getattr(user, "ban_until", None) and not user.is_banned
+            else None
+        ),
+        "ban_remaining_seconds": ban_remaining_seconds(user) if not user.is_banned else 0,
         "is_admin": int(user.id) in settings.admin_id_set(),
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
         "match_topic": normalize_topic(getattr(user, "match_topic", None)),
+    }
+
+
+def _raise_if_call_banned(user: User | None) -> None:
+    detail = call_ban_detail(user)
+    if detail:
+        raise HTTPException(status_code=403, detail=detail)
+
+
+def _msg_payload(m: ChatMessage, me_id: int) -> dict:
+    return {
+        "id": m.id,
+        "sender_id": m.sender_id,
+        "text": m.body,
+        "created_at": m.created_at.isoformat() if m.created_at else None,
+        "mine": m.sender_id == me_id,
+        "read_at": m.read_at.isoformat() if m.read_at else None,
+        "read": bool(m.read_at),
     }
 
 
@@ -402,8 +428,7 @@ async def search_pool(x_telegram_init_data: str | None = Header(default=None)):
         user = await session.get(User, tg_user["id"])
     if not user:
         raise HTTPException(status_code=400, detail="Avval botda /start orqali ro'yxatdan o'ting")
-    if user.is_banned:
-        raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
+    _raise_if_call_banned(user)
     count = await _compatible_pool_count(user)
     return {"count": count}
 
@@ -417,8 +442,7 @@ async def search_start(x_telegram_init_data: str | None = Header(default=None)):
 
     if not user:
         raise HTTPException(status_code=400, detail="Avval botda /start orqali ro'yxatdan o'ting")
-    if user.is_banned:
-        raise HTTPException(status_code=403, detail="Hisobingiz cheklangan")
+    _raise_if_call_banned(user)
 
     # Eski navbat/takliflarni tozalab, yangi qidiruv
     for lf in ("male", "female", "any"):
@@ -457,7 +481,7 @@ async def search_status(x_telegram_init_data: str | None = Header(default=None))
     # Navbatda kutayotganda qayta match — ikkala akkaunt birga qidirganda tiqilib qolmasin
     async with async_session() as session:
         user = await session.get(User, uid)
-    if user and not user.is_banned:
+    if user and not is_temp_banned(user):
         proposal = await _try_create_proposal(user, leave_queue_if_matched=True)
         if proposal:
             # set_result o'zimizga ham yozilgan — shu poll javobida qaytaramiz, dublikat bo'lmasin
@@ -465,7 +489,7 @@ async def search_status(x_telegram_init_data: str | None = Header(default=None))
             return proposal
 
     count = 0
-    if user and not user.is_banned:
+    if user and not is_temp_banned(user):
         try:
             count = await _compatible_pool_count(user)
         except Exception:
@@ -500,7 +524,7 @@ async def _try_create_proposal(user: User, leave_queue_if_matched: bool = False)
     async with async_session() as session:
         candidate_user = await session.get(User, candidate["user_id"])
 
-    if not candidate_user or candidate_user.is_banned:
+    if not candidate_user or is_temp_banned(candidate_user):
         # Kandidat yaroqsiz — qayta navbatga qo'ymaymiz (banned)
         return None
 
@@ -735,10 +759,21 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
         partner_ids = [int(u.id) for _, u in rows]
         threads = await user_threads(session, me_id)
         thread_by_partner: dict[int, int] = {}
+        unread_by_thread: dict[int, int] = {}
         for th in threads:
             pid = await thread_partner_id(th, me_id)
             if pid is not None:
                 thread_by_partner[int(pid)] = int(th.id)
+            unread = await session.scalar(
+                select(func.count())
+                .select_from(ChatMessage)
+                .where(
+                    ChatMessage.thread_id == th.id,
+                    ChatMessage.sender_id != me_id,
+                    ChatMessage.read_at.is_(None),
+                )
+            )
+            unread_by_thread[int(th.id)] = int(unread or 0)
         mutual_ids: set[int] = set()
         if partner_ids:
             mutual_rows = (
@@ -754,8 +789,12 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
     online = await online_map(partner_ids)
 
     items = []
+    total_unread = 0
     for saved, partner in rows:
         pid = int(partner.id)
+        tid = thread_by_partner.get(pid)
+        unread = unread_by_thread.get(tid, 0) if tid else 0
+        total_unread += unread
         items.append({
             "partner_id": partner.id,
             "name": partner.name,
@@ -770,9 +809,10 @@ async def list_saved(x_telegram_init_data: str | None = Header(default=None)):
             "saved_at": saved.created_at.isoformat() if saved.created_at else None,
             "mutual": pid in mutual_ids or pid in thread_by_partner,
             "can_chat": pid in thread_by_partner,
-            "thread_id": thread_by_partner.get(pid),
+            "thread_id": tid,
+            "unread_count": unread,
         })
-    return {"items": items}
+    return {"items": items, "total_unread": total_unread}
 
 
 @router.post("/saved")
@@ -852,8 +892,9 @@ async def invite_saved(payload: InviteRequest, x_telegram_init_data: str | None 
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
     if not saved:
         raise HTTPException(status_code=400, detail="Avval suhbatdoshni saqlang")
-    if me.is_banned or partner.is_banned:
-        raise HTTPException(status_code=403, detail="Hisob cheklangan")
+    _raise_if_call_banned(me)
+    if is_temp_banned(partner):
+        raise HTTPException(status_code=403, detail="Suhbatdosh hisobi cheklangan")
 
     # Tiqilib qolgan is_in_call (presence yo‘q) — offline uchun tozalaymiz
     if partner.is_in_call and not await is_online(partner.id):
@@ -1380,6 +1421,15 @@ async def list_chat_threads(x_telegram_init_data: str | None = Header(default=No
                     .limit(1)
                 )
             ).scalar_one_or_none()
+            unread = await session.scalar(
+                select(func.count())
+                .select_from(ChatMessage)
+                .where(
+                    ChatMessage.thread_id == th.id,
+                    ChatMessage.sender_id != me_id,
+                    ChatMessage.read_at.is_(None),
+                )
+            )
             partner_ids.append(pid)
             items.append({
                 "thread_id": th.id,
@@ -1391,10 +1441,13 @@ async def list_chat_threads(x_telegram_init_data: str | None = Header(default=No
                         "text": last.body,
                         "created_at": last.created_at.isoformat() if last.created_at else None,
                         "mine": last.sender_id == me_id,
+                        "read_at": last.read_at.isoformat() if last.read_at else None,
+                        "read": bool(last.read_at),
                     }
                     if last
                     else None
                 ),
+                "unread_count": int(unread or 0),
                 "updated_at": th.updated_at.isoformat() if th.updated_at else None,
             })
 
@@ -1420,26 +1473,52 @@ async def list_chat_messages(
         thread = await session.get(ChatThread, thread_id)
         if not thread or me_id not in (thread.user_a_id, thread.user_b_id):
             raise HTTPException(status_code=404, detail="Chat topilmadi")
+
+        now = datetime.now(timezone.utc)
+        unread_rows = list(
+            (
+                await session.execute(
+                    select(ChatMessage).where(
+                        ChatMessage.thread_id == thread_id,
+                        ChatMessage.sender_id != me_id,
+                        ChatMessage.read_at.is_(None),
+                    )
+                )
+            ).scalars().all()
+        )
+        for um in unread_rows:
+            um.read_at = now
+
         q = select(ChatMessage).where(ChatMessage.thread_id == thread_id)
         if after_id > 0:
             q = q.where(ChatMessage.id > after_id)
         q = q.order_by(ChatMessage.id.asc()).limit(100)
         msgs = list((await session.execute(q)).scalars().all())
+
+        # Yuborgan xabarlarim o‘qilganligi (ptichka yangilash)
+        read_receipts = list(
+            (
+                await session.execute(
+                    select(ChatMessage.id, ChatMessage.read_at).where(
+                        ChatMessage.thread_id == thread_id,
+                        ChatMessage.sender_id == me_id,
+                        ChatMessage.read_at.is_not(None),
+                    )
+                )
+            ).all()
+        )
+
         pid = await thread_partner_id(thread, me_id)
         partner = await session.get(User, pid) if pid else None
+        await session.commit()
 
     return {
         "thread_id": thread_id,
         "partner": _partner_card(partner) if partner else None,
-        "messages": [
-            {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "text": m.body,
-                "created_at": m.created_at.isoformat() if m.created_at else None,
-                "mine": m.sender_id == me_id,
-            }
-            for m in msgs
+        "messages": [_msg_payload(m, me_id) for m in msgs],
+        "reads": [
+            {"id": rid, "read_at": rat.isoformat() if rat else None}
+            for rid, rat in read_receipts
         ],
     }
 
@@ -1477,12 +1556,80 @@ async def send_chat_message(
 
     return {
         "status": "ok",
-        "message": {
-            "id": msg.id,
-            "sender_id": msg.sender_id,
-            "text": msg.body,
-            "created_at": msg.created_at.isoformat() if msg.created_at else None,
-            "mine": True,
+        "message": _msg_payload(msg, me_id),
+    }
+
+
+class SuggestionCreate(BaseModel):
+    text: str = Field(..., min_length=3, max_length=2000)
+
+
+@router.get("/suggestions")
+async def list_my_suggestions(x_telegram_init_data: str | None = Header(default=None)):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    async with async_session() as session:
+        rows = list(
+            (
+                await session.execute(
+                    select(Suggestion)
+                    .where(Suggestion.user_id == me_id)
+                    .order_by(Suggestion.id.desc())
+                    .limit(30)
+                )
+            ).scalars().all()
+        )
+    return {
+        "items": [
+            {
+                "id": s.id,
+                "text": s.body,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "admin_reply": s.admin_reply,
+                "replied_at": s.replied_at.isoformat() if s.replied_at else None,
+            }
+            for s in rows
+        ]
+    }
+
+
+@router.post("/suggestions")
+async def create_suggestion(
+    payload: SuggestionCreate,
+    x_telegram_init_data: str | None = Header(default=None),
+):
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    body = (payload.text or "").strip()
+    if len(body) < 3:
+        raise HTTPException(status_code=400, detail="Taklif juda qisqa")
+
+    async with async_session() as session:
+        me = await session.get(User, me_id)
+        if not me:
+            raise HTTPException(status_code=400, detail="Avval ro'yxatdan o'ting")
+        sug = Suggestion(user_id=me_id, body=body[:2000])
+        session.add(sug)
+        await session.commit()
+        await session.refresh(sug)
+        sug_id = sug.id
+        name = me.name
+
+    await notify_admins(
+        f"💡 Yangi taklif #{sug_id}\n"
+        f"Kim: <code>{me_id}</code> ({name})\n"
+        f"Matn:\n{body[:1500]}\n\n"
+        f"Javob: /reply {sug_id} &lt;matn&gt;"
+    )
+
+    return {
+        "status": "ok",
+        "suggestion": {
+            "id": sug_id,
+            "text": body[:2000],
+            "created_at": sug.created_at.isoformat() if sug.created_at else None,
+            "admin_reply": None,
+            "replied_at": None,
         },
     }
 
@@ -1669,11 +1816,18 @@ async def admin_search_users(
 async def admin_banned_users(x_telegram_init_data: str | None = Header(default=None)):
     tg_user = _auth(x_telegram_init_data)
     _require_admin(int(tg_user["id"]))
+    now = datetime.now(timezone.utc)
     async with async_session() as session:
         users = list(
             (
                 await session.execute(
-                    select(User).where(User.is_banned.is_(True)).order_by(User.id.desc()).limit(100)
+                    select(User)
+                    .where(
+                        (User.is_banned.is_(True))
+                        | ((User.ban_until.is_not(None)) & (User.ban_until > now))
+                    )
+                    .order_by(User.id.desc())
+                    .limit(100)
                 )
             ).scalars().all()
         )
@@ -1685,6 +1839,10 @@ async def admin_banned_users(x_telegram_init_data: str | None = Header(default=N
                 "age": u.age,
                 "city": u.city,
                 "avatar_url": avatar_url(u.id, bool(getattr(u, "has_avatar", False))),
+                "is_banned": bool(u.is_banned),
+                "ban_until": u.ban_until.isoformat() if u.ban_until else None,
+                "block_strikes": int(getattr(u, "block_strike_count", 0) or 0),
+                "report_strikes": int(getattr(u, "report_strike_count", 0) or 0),
             }
             for u in users
         ]
