@@ -1256,6 +1256,34 @@
     </div>
   </div>
 
+  <div class="report-sheet" id="termsSheet" aria-hidden="true">
+    <div class="report-panel" style="max-height:85vh;overflow:auto">
+      <h3 id="termsTitle">Shartlar va ruxsatlar</h3>
+      <p id="termsLead" style="margin:0 0 12px;color:var(--muted);font-size:0.9rem;line-height:1.4">Davom etish uchun quyidagilarga rozilik bering.</p>
+      <ul class="guide-steps" style="list-style:none;padding:0;margin:0 0 14px;display:flex;flex-direction:column;gap:10px">
+        <li style="display:block;padding:0"><span id="termsAge">12+ yosh — yoshga oid qoidalarga rioya qilasiz.</span></li>
+        <li style="display:block;padding:0"><span id="termsRespect">Hurmat: haqorat, spam va nomaqbul kontent taqiqlanadi.</span></li>
+        <li style="display:block;padding:0"><span id="termsMedia">Video suhbat uchun kamera va mikrofon ruxsati so‘raladi.</span></li>
+        <li style="display:block;padding:0"><span id="termsPhone">Telefon raqam faqat siz rozilik bersangiz ulashiladi.</span></li>
+        <li style="display:block;padding:0"><span id="termsPrivacy">Ma’lumotlar xavfsizlik va moderatsiya uchun ishlatiladi.</span></li>
+      </ul>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;font-size:0.9rem;line-height:1.35">
+        <input type="checkbox" id="termsCheck" style="margin-top:3px;width:18px;height:18px;flex-shrink:0">
+        <span id="termsCheckLabel">Shartlar va ruxsatlarga roziman</span>
+      </label>
+      <button type="button" class="guide-ok" id="termsAcceptBtn" disabled>Roziman, davom etish</button>
+    </div>
+  </div>
+
+  <div class="report-sheet" id="permSheet" aria-hidden="true">
+    <div class="report-panel">
+      <h3 id="permTitle">Kamera va mikrofon</h3>
+      <p id="permLead" style="margin:0 0 14px;color:var(--muted);font-size:0.92rem;line-height:1.4">Video suhbat uchun brauzer/Telegram ruxsatini yoqing.</p>
+      <button type="button" class="guide-ok" id="permAllowBtn">Ruxsat berish</button>
+      <button type="button" class="report-cancel" id="permSkipBtn" style="margin-top:8px">Keyinroq</button>
+    </div>
+  </div>
+
   <div class="report-sheet" id="feedbackSheet">
     <div class="report-panel">
       <h3 id="feedbackTitle">Suhbatni baholang</h3>
@@ -1423,6 +1451,54 @@ const TRANSLATIONS = {
   },
   guide_ok: { uz: "Tushundim", ru: "Понятно", en: "Got it", de: "Verstanden", tg: "Фаҳмидам", tr: "Anladım", ko: "알겠어요", ja: "わかった", zh: "知道了",
     ar: "فهمت",
+  },
+  terms_title: { uz: "Shartlar va ruxsatlar", ru: "Условия и разрешения", en: "Terms & permissions", de: "Bedingungen & Rechte", tg: "Шартҳо ва иҷозатҳо", tr: "Şartlar ve izinler", ko: "약관 및 권한", ja: "利用条件と許可", zh: "条款与权限",
+    ar: "الشروط والأذونات",
+  },
+  terms_lead: { uz: "Davom etish uchun quyidagilarga rozilik bering.", ru: "Чтобы продолжить, подтвердите согласие.", en: "Please agree to continue.", de: "Bitte zustimmen, um fortzufahren.", tg: "Барои давом розӣ шавед.", tr: "Devam için onaylayın.", ko: "계속하려면 동의해 주세요.", ja: "続行するには同意してください。", zh: "请同意后继续。",
+    ar: "وافق للمتابعة.",
+  },
+  terms_age: { uz: "12+ yosh — yoshga oid qoidalarga rioya qilasiz.", ru: "12+ — соблюдаете возрастные правила.", en: "12+ — you follow age rules.", de: "12+ — Altersregeln einhalten.", tg: "12+ — қоидаҳои синну сол.", tr: "12+ — yaş kurallarına uyarsınız.", ko: "12+ — 나이 규칙을 지킵니다.", ja: "12歳以上 — 年齢ルールを守ります。", zh: "12+ — 遵守年龄规则。",
+    ar: "12+ — تلتزم بقواعد العمر.",
+  },
+  terms_respect: { uz: "Hurmat: haqorat, spam va nomaqbul kontent taqiqlanadi.", ru: "Уважение: оскорбления, спам и неприемлемый контент запрещены.", en: "Respect: harassment, spam and inappropriate content are banned.", de: "Respekt: Beleidigung, Spam und unangemessene Inhalte verboten.", tg: "Эҳтиром: ҳақорат, спам манъ.", tr: "Saygı: hakaret, spam yasak.", ko: "존중: 비방·스팸·부적절 콘텐츠 금지.", ja: "尊重：侮辱・スパム・不適切コンテンツ禁止。", zh: "尊重：禁止辱骂、垃圾信息和不当内容。",
+    ar: "احترام: يُحظر الإساءة والسبام والمحتوى غير اللائق.",
+  },
+  terms_media: { uz: "Video suhbat uchun kamera va mikrofon ruxsati so‘raladi.", ru: "Для видеозвонка потребуются камера и микрофон.", en: "Camera and mic permission are needed for video calls.", de: "Kamera und Mikrofon für Videoanrufe nötig.", tg: "Барои видео — камера ва микрофон.", tr: "Görüntülü arama için kamera/mikrofon izni gerekir.", ko: "영상 통화에 카메라·마이크 권한이 필요합니다.", ja: "ビデオ通話にはカメラとマイクの許可が必要です。", zh: "视频通话需要相机和麦克风权限。",
+    ar: "المكالمات تحتاج إذن الكاميرا والميكروفون.",
+  },
+  terms_phone: { uz: "Telefon raqam faqat siz rozilik bersangiz ulashiladi.", ru: "Номер телефона — только с вашего согласия.", en: "Phone number is shared only with your consent.", de: "Telefonnummer nur mit Ihrer Zustimmung.", tg: "Рақам — танҳо бо розигии шумо.", tr: "Telefon yalnızca onayınızla paylaşılır.", ko: "전화번호는 동의 시에만 공유됩니다.", ja: "電話番号は同意時のみ共有されます。", zh: "电话号码仅在您同意后分享。",
+    ar: "يُشارك رقم الهاتف فقط بموافقتك.",
+  },
+  terms_privacy: { uz: "Ma’lumotlar xavfsizlik va moderatsiya uchun ishlatiladi.", ru: "Данные используются для безопасности и модерации.", en: "Data is used for safety and moderation.", de: "Daten für Sicherheit und Moderation.", tg: "Маълумот — амният ва модератсия.", tr: "Veriler güvenlik ve moderasyon için kullanılır.", ko: "데이터는 안전·관리에 사용됩니다.", ja: "データは安全とモデレーションに使用。", zh: "数据用于安全与审核。",
+    ar: "تُستخدم البيانات للأمان والإشراف.",
+  },
+  terms_check: { uz: "Shartlar va ruxsatlarga roziman", ru: "Согласен(на) с условиями и разрешениями", en: "I agree to the terms and permissions", de: "Ich stimme Bedingungen und Rechten zu", tg: "Бо шартҳо ва иҷозатҳо розӣ", tr: "Şartları ve izinleri kabul ediyorum", ko: "약관 및 권한에 동의합니다", ja: "利用条件と許可に同意します", zh: "我同意条款与权限",
+    ar: "أوافق على الشروط والأذونات",
+  },
+  terms_accept: { uz: "Roziman, davom etish", ru: "Согласен — продолжить", en: "Agree and continue", de: "Zustimmen und weiter", tg: "Розӣ — давом", tr: "Kabul et ve devam", ko: "동의하고 계속", ja: "同意して続ける", zh: "同意并继续",
+    ar: "موافق ومتابعة",
+  },
+  terms_need: { uz: "Avval shartlarga rozilik bering.", ru: "Сначала примите условия.", en: "Please accept the terms first.", de: "Bitte zuerst Bedingungen akzeptieren.", tg: "Аввал шартҳоро қабул кунед.", tr: "Önce şartları kabul edin.", ko: "먼저 약관에 동의해 주세요.", ja: "先に利用条件に同意してください。", zh: "请先同意条款。",
+    ar: "وافق على الشروط أولاً.",
+  },
+  perm_title: { uz: "Kamera va mikrofon", ru: "Камера и микрофон", en: "Camera & microphone", de: "Kamera & Mikrofon", tg: "Камера ва микрофон", tr: "Kamera ve mikrofon", ko: "카메라 및 마이크", ja: "カメラとマイク", zh: "相机和麦克风",
+    ar: "الكاميرا والميكروفون",
+  },
+  perm_lead: { uz: "Video suhbat uchun brauzer/Telegram ruxsatini yoqing.", ru: "Включите доступ в браузере/Telegram для видеозвонка.", en: "Allow access in the browser/Telegram for video calls.", de: "Zugriff im Browser/Telegram erlauben.", tg: "Барои видео иҷозат диҳед.", tr: "Görüntülü arama için erişime izin verin.", ko: "영상 통화를 위해 권한을 허용하세요.", ja: "ビデオ通話のため許可してください。", zh: "请允许浏览器/Telegram 权限以进行视频通话。",
+    ar: "اسمح بالوصول للمتصفح/تيليجرام لمكالمات الفيديو.",
+  },
+  perm_allow: { uz: "Ruxsat berish", ru: "Разрешить", en: "Allow", de: "Erlauben", tg: "Иҷозат", tr: "İzin ver", ko: "허용", ja: "許可する", zh: "允许",
+    ar: "سماح",
+  },
+  perm_skip: { uz: "Keyinroq", ru: "Позже", en: "Later", de: "Später", tg: "Баъдтар", tr: "Sonra", ko: "나중에", ja: "後で", zh: "稍后",
+    ar: "لاحقاً",
+  },
+  perm_ok: { uz: "Ruxsat berildi.", ru: "Доступ разрешён.", en: "Permission granted.", de: "Zugriff erlaubt.", tg: "Иҷозат дода шуд.", tr: "İzin verildi.", ko: "권한이 허용되었습니다.", ja: "許可されました。", zh: "已授权。",
+    ar: "تم منح الإذن.",
+  },
+  perm_denied: { uz: "Ruxsat berilmadi. Sozlamalardan kamera/mikrofonni yoqing.", ru: "Доступ запрещён. Включите камеру/микрофон в настройках.", en: "Permission denied. Enable camera/mic in settings.", de: "Zugriff verweigert. Kamera/Mikrofon in Einstellungen aktivieren.", tg: "Иҷозат нест. Дар танзимот камера/микрофонро фаъол кунед.", tr: "İzin reddedildi. Ayarlardan kamera/mikrofonu açın.", ko: "권한이 거부되었습니다. 설정에서 카메라/마이크를 켜세요.", ja: "許可が拒否されました。設定でカメラ/マイクを有効に。", zh: "权限被拒绝。请在设置中开启相机/麦克风。",
+    ar: "رُفض الإذن. فعّل الكاميرا/الميكروفون من الإعدادات.",
   },
   searching_title: { uz: "Suhbatdosh qidirilmoqda…", ru: "Ищем собеседника…", en: "Searching…", de: "Suche…", tg: "Ҷустуҷӯ…", tr: "Eşleşme aranıyor…", ko: "검색 중…", ja: "検索中…", zh: "搜索中…",
     ar: "جاري البحث…",
@@ -2176,6 +2252,19 @@ function applyStaticTranslations() {
   setText("guideStep3", "guide_step3");
   setText("guideNote", "guide_note");
   setText("guideOkBtn", "guide_ok");
+  setText("termsTitle", "terms_title");
+  setText("termsLead", "terms_lead");
+  setText("termsAge", "terms_age");
+  setText("termsRespect", "terms_respect");
+  setText("termsMedia", "terms_media");
+  setText("termsPhone", "terms_phone");
+  setText("termsPrivacy", "terms_privacy");
+  setText("termsCheckLabel", "terms_check");
+  setText("termsAcceptBtn", "terms_accept");
+  setText("permTitle", "perm_title");
+  setText("permLead", "perm_lead");
+  setText("permAllowBtn", "perm_allow");
+  setText("permSkipBtn", "perm_skip");
   setText("profileTitle", "profile_title");
   setText("profileLead", "profile_lead");
   setText("lblName", "lbl_name");
@@ -2610,6 +2699,10 @@ function setPreferAgeBounds(minV, maxV) {
 let meLoaded = false;
 let meIsAdmin = false;
 let meUserId = null;
+const TERMS_KEY = "soyla_terms_v1";
+const PERM_KEY = "soyla_perm_asked_v1";
+let termsAccepted = false;
+let mediaPermReady = false;
 
 async function loadMe() {
   meLoaded = false;
@@ -2623,6 +2716,11 @@ async function loadMe() {
     if (!me.registered) { showError(tr("not_registered")); return; }
     meUserId = me.id;
     meIsAdmin = !!me.is_admin;
+    termsAccepted = !!me.terms_accepted;
+    try {
+      if (termsAccepted) localStorage.setItem(TERMS_KEY, "1");
+      else if (localStorage.getItem(TERMS_KEY) === "1") termsAccepted = true;
+    } catch (_) {}
     const adminNav = document.getElementById("navAdminBtn");
     if (adminNav) adminNav.style.display = meIsAdmin ? "" : "none";
     profileLanguage = me.language || "uz";
@@ -2678,9 +2776,117 @@ function maybeShowGuide() {
   showGuideSheet();
 }
 
+function showTermsSheet() {
+  const sheet = document.getElementById("termsSheet");
+  if (!sheet) return;
+  const check = document.getElementById("termsCheck");
+  const btn = document.getElementById("termsAcceptBtn");
+  if (check) check.checked = false;
+  if (btn) btn.disabled = true;
+  sheet.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+}
+
+function hideTermsSheet() {
+  const sheet = document.getElementById("termsSheet");
+  if (!sheet) return;
+  sheet.classList.remove("open");
+  sheet.setAttribute("aria-hidden", "true");
+}
+
+function showPermSheet() {
+  const sheet = document.getElementById("permSheet");
+  if (!sheet) return;
+  sheet.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+}
+
+function hidePermSheet() {
+  const sheet = document.getElementById("permSheet");
+  if (!sheet) return;
+  sheet.classList.remove("open");
+  sheet.setAttribute("aria-hidden", "true");
+}
+
+async function ensureTermsAccepted() {
+  if (termsAccepted) return true;
+  try {
+    if (localStorage.getItem(TERMS_KEY) === "1") {
+      termsAccepted = true;
+      return true;
+    }
+  } catch (_) {}
+  showTermsSheet();
+  return false;
+}
+
+async function requestMediaPermissions() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    stream.getTracks().forEach((t) => t.stop());
+    mediaPermReady = true;
+    try { localStorage.setItem(PERM_KEY, "1"); } catch (_) {}
+    return true;
+  } catch (_) {
+    mediaPermReady = false;
+    return false;
+  }
+}
+
+async function ensureMediaPermissions(forceAsk) {
+  if (mediaPermReady && !forceAsk) return true;
+  try {
+    if (!forceAsk && localStorage.getItem(PERM_KEY) === "1") {
+      mediaPermReady = true;
+      return true;
+    }
+  } catch (_) {}
+  if (!forceAsk) {
+    showPermSheet();
+    return false;
+  }
+  return requestMediaPermissions();
+}
+
 document.getElementById("guideOkBtn")?.addEventListener("click", () => {
   hideGuideSheet();
   tg?.HapticFeedback?.notificationOccurred?.("success");
+});
+
+document.getElementById("termsCheck")?.addEventListener("change", (e) => {
+  const btn = document.getElementById("termsAcceptBtn");
+  if (btn) btn.disabled = !e.target.checked;
+});
+
+document.getElementById("termsAcceptBtn")?.addEventListener("click", async () => {
+  const check = document.getElementById("termsCheck");
+  if (!check?.checked) return;
+  try {
+    await api("/api/me/terms", { method: "POST" });
+  } catch (_) {}
+  termsAccepted = true;
+  try { localStorage.setItem(TERMS_KEY, "1"); } catch (_) {}
+  hideTermsSheet();
+  tg?.HapticFeedback?.notificationOccurred?.("success");
+  maybeShowGuide();
+  // Shartlardan keyin ruxsat so‘rash
+  try {
+    if (localStorage.getItem(PERM_KEY) !== "1") showPermSheet();
+  } catch (_) {
+    showPermSheet();
+  }
+});
+
+document.getElementById("permAllowBtn")?.addEventListener("click", async () => {
+  const ok = await requestMediaPermissions();
+  hidePermSheet();
+  if (ok) tg?.showAlert?.(tr("perm_ok"));
+  else tg?.showAlert?.(tr("perm_denied"));
+});
+
+document.getElementById("permSkipBtn")?.addEventListener("click", () => {
+  hidePermSheet();
+  try { localStorage.setItem(PERM_KEY, "skip"); } catch (_) {}
 });
 
 async function bootApp() {
@@ -2703,7 +2909,16 @@ async function bootApp() {
   startPresencePing();
   startPoolPolling();
   if (meLoaded) {
-    maybeShowGuide();
+    if (!termsAccepted) {
+      showTermsSheet();
+    } else {
+      maybeShowGuide();
+      try {
+        if (localStorage.getItem(PERM_KEY) !== "1" && localStorage.getItem(PERM_KEY) !== "skip") {
+          showPermSheet();
+        }
+      } catch (_) {}
+    }
     try {
       const result = await api("/api/search/status");
       if (result.outcome === "matched") {
@@ -2730,6 +2945,10 @@ async function bootApp() {
 }
 
 async function startSearch() {
+  if (!(await ensureTermsAccepted())) {
+    tg?.showAlert?.(tr("terms_need"));
+    return;
+  }
   try {
     proposalWaitUntil = 0;
     currentProposalId = null;
@@ -3404,6 +3623,18 @@ function attachRemoteTrack(track) {
 }
 
 async function enterCall(roomId, partnerId, lk = {}) {
+  if (!(await ensureTermsAccepted())) {
+    tg?.showAlert?.(tr("terms_need"));
+    return;
+  }
+  // Ruxsat so‘ralmagan bo‘lsa — bir marta so‘raymiz (bloklamaymiz)
+  try {
+    if (localStorage.getItem(PERM_KEY) !== "1" && localStorage.getItem(PERM_KEY) !== "skip") {
+      const ok = await requestMediaPermissions();
+      if (!ok) tg?.showAlert?.(tr("perm_denied"));
+    }
+  } catch (_) {}
+
   callRoomId = roomId;
   callPartnerId = partnerId;
   isMuted = false;
