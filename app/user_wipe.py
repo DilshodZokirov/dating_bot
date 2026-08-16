@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from sqlalchemy import delete, or_, select
+import logging
+
+from sqlalchemy import delete, or_, select, text
 
 from app.avatars import delete_avatar_files
 from app.database import async_session
@@ -20,11 +22,14 @@ from app.models import (
     User,
 )
 
+logger = logging.getLogger(__name__)
+
 
 async def wipe_user(user_id: int) -> bool:
     """
     Foydalanuvchi va bog‘liq yozuvlarni o‘chiradi.
     True — o‘chirildi, False — user topilmadi.
+    Xato bo‘lsa exception ko‘tariladi (handler foydalanuvchiga aytadi).
     """
     async with async_session() as session:
         user = await session.get(User, user_id)
@@ -33,7 +38,6 @@ async def wipe_user(user_id: int) -> bool:
 
         looking = user.looking_for.value if user.looking_for else "any"
 
-        # Chat xabarlari (thread orqali + sender)
         thread_ids = list(
             (
                 await session.execute(
@@ -47,9 +51,7 @@ async def wipe_user(user_id: int) -> bool:
             await session.execute(
                 delete(ChatMessage).where(ChatMessage.thread_id.in_(thread_ids))
             )
-        await session.execute(
-            delete(ChatMessage).where(ChatMessage.sender_id == user_id)
-        )
+        await session.execute(delete(ChatMessage).where(ChatMessage.sender_id == user_id))
         await session.execute(
             delete(ChatThread).where(
                 or_(ChatThread.user_a_id == user_id, ChatThread.user_b_id == user_id)
@@ -66,9 +68,7 @@ async def wipe_user(user_id: int) -> bool:
             )
         )
         await session.execute(
-            delete(Block).where(
-                or_(Block.blocker_id == user_id, Block.blocked_id == user_id)
-            )
+            delete(Block).where(or_(Block.blocker_id == user_id, Block.blocked_id == user_id))
         )
         await session.execute(
             delete(Report).where(
@@ -94,20 +94,31 @@ async def wipe_user(user_id: int) -> bool:
             )
         )
 
+        # Keyinchalik qo‘shilgan jadvallar (mavjud bo‘lsa)
+        for sql in (
+            "DELETE FROM suggestions WHERE user_id = :uid",
+        ):
+            try:
+                async with session.begin_nested():
+                    await session.execute(text(sql), {"uid": user_id})
+            except Exception:
+                pass
+
         await session.delete(user)
         await session.commit()
 
-    try:
-        await cancel_wait(user_id, looking)
-    except Exception:
-        pass
+    for lf in ("male", "female", "any", looking):
+        try:
+            await cancel_wait(user_id, lf)
+        except Exception:
+            pass
     try:
         await cancel_proposals_by_user(user_id)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("wipe cancel_proposals %s: %s", user_id, e)
     try:
         delete_avatar_files(user_id)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("wipe avatar %s: %s", user_id, e)
 
     return True

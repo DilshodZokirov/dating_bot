@@ -195,6 +195,43 @@ async def cmd_start(message: Message, state: FSMContext):
         await message.answer(f"Xato: {e}\nQayta /start yuboring.")
 
 
+@router.message(Command("reset"))
+async def cmd_reset(message: Message, state: FSMContext):
+    """Profilni o‘chirib, qayta /start bilan ro‘yxat — har qanday FSM holatida ishlaydi."""
+    lang = "uz"
+    uid = message.from_user.id
+    try:
+        async with async_session() as session:
+            user = await session.get(User, uid)
+            if user:
+                lang = _ui_lang(user)
+
+        deleted = await wipe_user(uid)
+        await state.clear()
+
+        if not deleted:
+            await state.clear()
+            await message.answer(
+                "Profil yo‘q (yoki allaqachon o‘chirilgan).\n"
+                "Qayta boshlash: /start",
+                reply_markup=ReplyKeyboardRemove(),
+            )
+            return
+
+        await message.answer(
+            t(lang, "reset_confirm"),
+            reply_markup=ReplyKeyboardRemove(),
+        )
+    except Exception as e:
+        print(f"cmd_reset ERROR: {e}", flush=True)
+        await state.clear()
+        await message.answer(
+            f"Profilni o‘chirishda xato.\n<code>{e}</code>\n\nYana /reset yuboring yoki admin bilan bog‘laning.",
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+
 @router.message(Command("app"))
 async def cmd_app(message: Message, state: FSMContext):
     await state.clear()
@@ -326,14 +363,14 @@ async def on_contact_shared(message: Message):
         await message.answer(t(lang, "accepted_confirmed"))
 
 
-@router.message(Registration.name)
+@router.message(Registration.name, F.text, ~F.text.startswith("/"))
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text.strip()[:64])
     await message.answer("Yoshingizni kiriting (faqat raqam):")
     await state.set_state(Registration.age)
 
 
-@router.message(Registration.age)
+@router.message(Registration.age, F.text, ~F.text.startswith("/"))
 async def process_age(message: Message, state: FSMContext):
     if not message.text.isdigit():
         await message.answer("Iltimos, yoshingizni raqam bilan kiriting.")
@@ -475,32 +512,6 @@ async def cmd_stop(message: Message, state: FSMContext):
     await state.clear()
     lang = _ui_lang(user)
     await message.answer(t(lang, "stop_confirm"))
-
-
-@router.message(Command("reset"))
-async def cmd_reset(message: Message, state: FSMContext):
-    """Vaqtinchalik / test: profilni o‘chirib, qayta /start bilan ro‘yxat."""
-    lang = "uz"
-    uid = message.from_user.id
-    async with async_session() as session:
-        user = await session.get(User, uid)
-        if user:
-            lang = _ui_lang(user)
-
-    deleted = await wipe_user(uid)
-    await state.clear()
-
-    if not deleted:
-        await message.answer(
-            "Profil topilmadi. Ro‘yxatdan o‘tish uchun /start yuboring.",
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        return
-
-    await message.answer(
-        t(lang, "reset_confirm"),
-        reply_markup=ReplyKeyboardRemove(),
-    )
 
 
 def _is_admin(user_id: int | None) -> bool:
