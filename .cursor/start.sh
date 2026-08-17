@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Per-boot service reconciliation: bring up PostgreSQL and Redis, then return.
-# Must be idempotent and must not block.
+# Must be idempotent and must not block. Safe to invoke concurrently (e.g. from
+# both the environment `start` hook and a terminal) — a lock serializes runs.
 set -euo pipefail
+
+# Serialize concurrent invocations so two callers never race to start a service.
+exec 9>/tmp/soyla-start.lock
+flock 9
 
 PG_VERSION=16
 PG_CLUSTER=main

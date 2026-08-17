@@ -17,4 +17,7 @@ if [ -z "${BOT_TOKEN:-}" ] || [ "${BOT_TOKEN:-}" = "dev-placeholder-token" ]; th
   exec tail -f /dev/null
 fi
 
+# Ensure PostgreSQL + Redis are up before the bot connects.
+bash "$REPO_DIR/.cursor/start.sh"
+
 exec python -m app.bot.bot
