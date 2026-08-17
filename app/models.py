@@ -92,6 +92,8 @@ class User(Base):
     is_in_call: Mapped[bool] = mapped_column(default=False)
     # Telegram contact orqali ulashilgan telefon (ixtiyoriy)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Foydalanish shartlari qabul qilingan vaqt
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

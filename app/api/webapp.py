@@ -161,7 +161,33 @@ async def get_me(x_telegram_init_data: str | None = Header(default=None)):
         "has_avatar": bool(getattr(user, "has_avatar", False)),
         "avatar_url": avatar_url(user.id, bool(getattr(user, "has_avatar", False))),
         "match_topic": normalize_topic(getattr(user, "match_topic", None)),
+        "terms_accepted": bool(getattr(user, "terms_accepted_at", None)),
+        "terms_accepted_at": (
+            user.terms_accepted_at.isoformat()
+            if getattr(user, "terms_accepted_at", None)
+            else None
+        ),
     }
+
+
+@router.post("/me/terms")
+async def accept_terms(x_telegram_init_data: str | None = Header(default=None)):
+    """Foydalanish shartlari va ruxsatlarga rozilik."""
+    tg_user = _auth(x_telegram_init_data)
+    me_id = int(tg_user["id"])
+    async with async_session() as session:
+        user = await session.get(User, me_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Ro'yxatdan o'ting")
+        if not user.terms_accepted_at:
+            user.terms_accepted_at = datetime.now(timezone.utc)
+            await session.commit()
+            await session.refresh(user)
+        return {
+            "status": "ok",
+            "terms_accepted": True,
+            "terms_accepted_at": user.terms_accepted_at.isoformat() if user.terms_accepted_at else None,
+        }
 
 
 class ProfileUpdate(BaseModel):

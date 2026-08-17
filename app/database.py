@@ -97,3 +97,6 @@ async def init_db():
         await conn.execute(
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(32)")
         )
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ")
+        )
