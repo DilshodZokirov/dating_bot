@@ -39,6 +39,11 @@ if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='dating
   sudo -u postgres createdb dating_bot
 fi
 
+echo "==> Stopping PostgreSQL so environment snapshots don't capture a stale postmaster.pid"
+# start.sh brings the cluster back up on every boot; leaving it running here would
+# bake a stale pid file into any environment-build snapshot.
+sudo pg_ctlcluster "$PG_VERSION" "$PG_CLUSTER" stop 2>/dev/null || true
+
 echo "==> Creating local .env if missing (never overwrites an existing one)"
 if [ ! -f .env ]; then
   cat > .env <<'ENVEOF'
