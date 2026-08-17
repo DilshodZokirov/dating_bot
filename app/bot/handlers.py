@@ -31,6 +31,7 @@ from app.matching.respond import respond_to_proposal
 from app.phone_share import accept_phone_share, complete_phone_await_after_contact, decline_phone_share
 from app.models import Gender, Language, LookingFor, ReportStatus, User
 from app.moderation import list_open_reports, mark_report, set_user_banned
+from app.bot_profile_stats import format_users_line, get_users_count, refresh_bot_public_profile
 from app.telegram_client import webapp_open_keyboard
 from app.user_wipe import wipe_user
 from sqlalchemy import select
@@ -174,6 +175,12 @@ LANGUAGE_MAP = {
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     try:
+        users_count = await get_users_count()
+        try:
+            await refresh_bot_public_profile(message.bot)
+        except Exception:
+            pass
+
         async with async_session() as session:
             user = await session.get(User, message.from_user.id)
 
@@ -184,12 +191,15 @@ async def cmd_start(message: Message, state: FSMContext):
                 await message.answer(t(lang, "webapp_url_missing"))
             else:
                 await message.answer(
-                    t(lang, "welcome_back", name=user.name),
+                    f"{t(lang, 'welcome_back', name=user.name)}\n\n"
+                    f"{format_users_line(lang, users_count)}",
                     reply_markup=_clear_reply_kb(),
                 )
             return
 
-        await message.answer(t("uz", "reg_hello"))
+        await message.answer(
+            f"{t('uz', 'reg_hello')}\n\n{format_users_line('uz', users_count)}"
+        )
         await state.set_state(Registration.name)
     except Exception as e:
         print(f"cmd_start ERROR: {e}", flush=True)

@@ -8,6 +8,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from app.bot.handlers import router
+from app.bot_profile_stats import public_profile_loop, refresh_bot_public_profile
 from app.config import settings
 from app.database import init_db
 
@@ -34,6 +35,14 @@ async def main():
             logging.error("Menu button o'rnatilmadi: %s", e)
     else:
         logging.warning("WEBAPP_URL sozlanmagan — Menu tugmasi Mini App'ga ulanmadi")
+
+    try:
+        n = await refresh_bot_public_profile(bot, force=True)
+        logging.info("Public user count on bot profile: %s", n)
+    except Exception as e:
+        logging.warning("Bot public profile update failed: %s", e)
+
+    asyncio.create_task(public_profile_loop(bot, interval_sec=300))
 
     logging.info("WEBAPP_URL=%r LIVEKIT=%s", settings.webapp_url, bool(settings.livekit_url))
     await bot.delete_webhook(drop_pending_updates=True)
