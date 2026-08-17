@@ -15,6 +15,7 @@ from aiogram.types import (
 from app.admin_stats import collect_admin_stats, format_stats_html
 from app.bot.states import Registration
 from app.config import settings
+from app.build_info import WEBAPP_QUERY
 from app.database import async_session
 from app.i18n import t
 from app.link_title import (
@@ -41,7 +42,7 @@ router = Router()
 def _webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?{WEBAPP_QUERY}"
 
 
 def _ui_lang(user: User | None) -> str:

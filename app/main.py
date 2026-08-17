@@ -7,6 +7,7 @@ from app.api.webapp import router as webapp_api_router
 from app.config import settings
 from app.database import init_db
 from app.livekit_tokens import livekit_configured
+from app.build_info import APP_BUILD
 import app.models  # noqa: F401 — create_all uchun jadvallar
 
 
@@ -32,7 +33,7 @@ app.mount("/webapp", NoCacheStaticFiles(directory="app/webapp", html=True), name
 async def on_startup():
     await init_db()
     print(
-        f"Soyla API up | webapp_url={'set' if settings.webapp_url else 'EMPTY'} "
+        f"Soyla API up | build={APP_BUILD} | webapp_url={'set' if settings.webapp_url else 'EMPTY'} "
         f"| livekit={'ok' if livekit_configured() else 'MISSING'}",
         flush=True,
     )
@@ -42,6 +43,7 @@ async def on_startup():
 async def health():
     return {
         "status": "ok",
+        "build": APP_BUILD,
         "webapp_url_set": bool(settings.webapp_url),
         "livekit_configured": livekit_configured(),
     }

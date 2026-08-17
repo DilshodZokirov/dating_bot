@@ -9,6 +9,7 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from app.bot.handlers import router
 from app.config import settings
+from app.build_info import WEBAPP_QUERY
 from app.database import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,7 @@ async def main():
 
     if settings.webapp_url:
         # Global default — bitta kirish: Menu. Matn /start da foydalanuvchi tiliga moslanadi.
-        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
+        menu_url = f"{settings.webapp_url.rstrip('/')}/webapp/?{WEBAPP_QUERY}"
         logging.info("Setting menu button: %s", menu_url)
         try:
             await bot.set_chat_menu_button(

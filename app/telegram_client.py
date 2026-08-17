@@ -7,6 +7,7 @@ Telegram Bot HTTP API'siga murojaat qilamiz.
 import httpx
 
 from app.config import settings
+from app.build_info import WEBAPP_QUERY
 
 TELEGRAM_API_BASE = f"https://api.telegram.org/bot{settings.bot_token}"
 
@@ -14,7 +15,7 @@ TELEGRAM_API_BASE = f"https://api.telegram.org/bot{settings.bot_token}"
 def webapp_url() -> str | None:
     if not settings.webapp_url:
         return None
-    return f"{settings.webapp_url.rstrip('/')}/webapp/?v=offline-call-3"
+    return f"{settings.webapp_url.rstrip('/')}/webapp/?{WEBAPP_QUERY}"
 
 
 async def send_message(chat_id: int, text: str, reply_markup: dict | None = None):

@@ -1339,6 +1339,7 @@
     <div class="page-head">
       <h1 id="savedTitle">Saqlanganlar</h1>
       <p id="savedHint">Video — offline bo‘lsa ham botiga taklif ketadi.</p>
+      <p id="appBuildBadge" style="margin:8px 0 0;font-size:0.75rem;color:var(--muted);opacity:0.85">build …</p>
     </div>
     <div class="invite-section" id="chatInvitesBox" style="display:none">
       <h2 id="chatInvitesTitle">Chat takliflari</h2>
@@ -2693,6 +2694,11 @@ async function bootApp() {
   }
   window.Telegram?.WebApp?.ready?.();
   window.Telegram?.WebApp?.expand?.();
+  try {
+    const h = await fetch("/health").then((r) => r.json());
+    const badge = document.getElementById("appBuildBadge");
+    if (badge && h.build) badge.textContent = "build " + h.build;
+  } catch (_) {}
   await loadCities();
   await loadAgeRanges();
   await loadMe();
