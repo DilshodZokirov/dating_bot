@@ -1,0 +1,10 @@
+{
+  "jami": 5,
+  "odamlar": [
+    { "id": 1, "ism": "Dilshod", "yosh": 24, "shahar": "Toshkent", "til": "uz", "online": true },
+    { "id": 2, "ism": "Malika", "yosh": 21, "shahar": "Samarqand", "til": "uz", "online": false },
+    { "id": 3, "ism": "Aziz", "yosh": 30, "shahar": "Buxoro", "til": "uz", "online": true },
+    { "id": 4, "ism": "Ivan", "yosh": 27, "shahar": "Toshkent", "til": "ru", "online": true },
+    { "id": 5, "ism": "Nilufar", "yosh": 19, "shahar": "Namangan", "til": "uz", "online": false }
+  ]
+}

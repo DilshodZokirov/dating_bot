@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07. DOM: sahifani o'zgartirish — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="07">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>07. DOM: sahifani o'zgartirish</h1>
+<p class="lead">
+  DOM — brauzer sizning HTML'ingizdan yasagan "daraxt". JavaScript shu daraxtni o'zgartira oladi:
+  matnni almashtirish, rang berish, yangi element qo'shish, o'chirish.
+  Shu yerdan sahifa "jonlanadi".
+</p>
+
+<h2>Skript qayerda turadi</h2>
+<pre><code>&lt;body&gt;
+  &lt;h1 id="sarlavha"&gt;Salom&lt;/h1&gt;
+
+  &lt;script&gt;
+    // Skript body oxirida bo'lishi kerak:
+    // shunda HTML allaqachon yuklangan bo'ladi.
+    document.getElementById("sarlavha").textContent = "Yangi matn";
+  &lt;/script&gt;
+&lt;/body&gt;</code></pre>
+
+<div class="warnbox">
+  <b>Eng ko'p uchraydigan xato: <code>null</code></b>
+  <code>Cannot set property of null</code> xatosi — demak skript elementdan <em>oldin</em> ishlagan
+  yoki selektor xato yozilgan. Yechim: skriptni <code>body</code> oxiriga qo'yish
+  (yoki <code>&lt;script defer&gt;</code> ishlatish).
+</div>
+
+<h2>Element topish</h2>
+
+<div class="pg" data-title="querySelector va boshqalar" data-tall>
+<textarea>
+  <h2 id="sarlavha">Sarlavha</h2>
+  <p class="matn">Birinchi paragraf</p>
+  <p class="matn">Ikkinchi paragraf</p>
+  <button class="btn" data-rol="asosiy">Tugma</button>
+
+  <pre id="natija"></pre>
+
+  <script>
+    // 1) id bo'yicha
+    const sarlavha = document.getElementById("sarlavha");
+
+    // 2) CSS selektor bo'yicha — birinchi mos element (eng ko'p ishlatiladi)
+    const birinchiMatn = document.querySelector(".matn");
+
+    // 3) CSS selektor bo'yicha — HAMMASI (massivga o'xshash ro'yxat)
+    const hammaMatn = document.querySelectorAll(".matn");
+
+    // 4) atribut bo'yicha
+    const tugma = document.querySelector('[data-rol="asosiy"]');
+
+    const chiqish = [
+      "sarlavha matni: " + sarlavha.textContent,
+      "birinchi paragraf: " + birinchiMatn.textContent,
+      "paragraflar soni: " + hammaMatn.length,
+      "tugma: " + tugma.textContent,
+      "topilmagan element: " + document.querySelector(".yoq"),
+    ];
+    document.getElementById("natija").textContent = chiqish.join("\n");
+  </script>
+</textarea>
+</div>
+
+<table>
+  <tr><th>Usul</th><th>Nimani qaytaradi</th></tr>
+  <tr><td><code>getElementById("x")</code></td><td>Bitta element yoki <code>null</code></td></tr>
+  <tr><td><code>querySelector(".x")</code></td><td>Birinchi mos element yoki <code>null</code></td></tr>
+  <tr><td><code>querySelectorAll(".x")</code></td><td>Barcha mos elementlar ro'yxati (bo'sh bo'lishi mumkin)</td></tr>
+</table>
+
+<h2>Matn va HTML'ni o'zgartirish</h2>
+
+<div class="pg" data-title="textContent va innerHTML" data-tall>
+<textarea>
+  <p id="a"></p>
+  <p id="b"></p>
+  <button onclick="yangila()">Matnni o'zgartirish</button>
+
+  <script>
+    const matn = "<b>qalin</b> matn";
+
+    // textContent — matn sifatida qo'yadi (teglar ko'rinib qoladi)
+    document.getElementById("a").textContent = "textContent: " + matn;
+
+    // innerHTML — HTML sifatida qo'yadi (teglar ishlaydi)
+    document.getElementById("b").innerHTML = "innerHTML: " + matn;
+
+    function yangila() {
+      document.getElementById("a").textContent = "Yangi matn " + new Date().getSeconds();
+    }
+  </script>
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b>Xavfsizlik qoidasi</b>
+  Foydalanuvchi kiritgan matnni (ism, izoh, xabar) <strong>hech qachon</strong> <code>innerHTML</code> ga
+  qo'ymang — ular ichida zararli skript bo'lishi mumkin (XSS hujumi).
+  Foydalanuvchi matni uchun har doim <code>textContent</code>.
+</div>
+
+<h2>Class qo'shish va olib tashlash</h2>
+
+<div class="pg" data-title="classList" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 14px; }
+    .karta { border: 2px solid #ccc; border-radius: 12px; padding: 16px; width: 240px; }
+    .faol { border-color: #3dba7a; background: #eafaf1; }
+    .ogohlik { border-color: #e5484d; background: #ffecec; }
+    button { margin: 4px 4px 0 0; padding: 8px 14px; cursor: pointer; }
+  </style>
+
+  <div class="karta" id="karta">Kartaning holati</div>
+
+  <button onclick="k.classList.add('faol')">add faol</button>
+  <button onclick="k.classList.remove('faol')">remove faol</button>
+  <button onclick="k.classList.toggle('ogohlik')">toggle ogohlik</button>
+  <button onclick="korsat()">holatni ko'rish</button>
+
+  <p id="log"></p>
+
+  <script>
+    const k = document.getElementById("karta");
+
+    function korsat() {
+      document.getElementById("log").textContent =
+        "class'lar: " + k.className + " | faol bormi: " + k.classList.contains("faol");
+    }
+  </script>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Uslubni JS'dan bermang — class bering</b>
+  <code>element.style.background = "green"</code> emas, balki <code>element.classList.add("faol")</code>.
+  Shunda dizayn CSS'da, mantiq JS'da qoladi — kod ancha toza bo'ladi.
+</div>
+
+<h2>Atribut va <code>style</code></h2>
+
+<div class="pg" data-title="Atributlar, dataset, style" data-tall>
+<textarea>
+  <img id="rasm" src="https://picsum.photos/seed/dom1/120/120" alt="rasm" width="120">
+  <div id="karta" data-user-id="42" data-shahar="Toshkent">Karta</div>
+  <pre id="natija"></pre>
+
+  <script>
+    const rasm = document.getElementById("rasm");
+    const karta = document.getElementById("karta");
+
+    // atributni o'zgartirish
+    rasm.src = "https://picsum.photos/seed/dom2/120/120";
+    rasm.alt = "boshqa rasm";
+
+    // data-* atributlari — o'z ma'lumotini elementga bog'lash uchun
+    const chiqish = [
+      "data-user-id: " + karta.dataset.userId,     // data-user-id -> dataset.userId
+      "data-shahar: " + karta.dataset.shahar,
+      "getAttribute: " + karta.getAttribute("data-shahar"),
+    ];
+    document.getElementById("natija").textContent = chiqish.join("\n");
+
+    // to'g'ridan-to'g'ri uslub (kamdan-kam kerak bo'ladi)
+    karta.style.padding = "12px";
+    karta.style.background = "#ffe8df";
+    karta.style.borderRadius = "10px";      // CSS: border-radius -> JS: borderRadius
+  </script>
+</textarea>
+</div>
+
+<h2>Element yaratish va qo'shish</h2>
+
+<div class="pg" data-title="createElement, append, remove" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 14px; }
+    li { padding: 6px 0; }
+    button { padding: 8px 14px; cursor: pointer; margin-right: 6px; }
+  </style>
+
+  <ul id="royxat"></ul>
+  <button onclick="qoshish()">Qo'shish</button>
+  <button onclick="tozalash()">Tozalash</button>
+
+  <script>
+    const royxat = document.getElementById("royxat");
+    const ismlar = ["Dilshod", "Malika", "Aziz", "Nilufar", "Sardor"];
+    let n = 0;
+
+    function qoshish() {
+      if (n >= ismlar.length) return;
+
+      const li = document.createElement("li");         // yangi element yasash
+      li.textContent = `${n + 1}. ${ismlar[n]}`;       // matnini berish
+      li.className = "element";                        // class berish
+      royxat.append(li);                               // sahifaga qo'shish
+      n++;
+    }
+
+    function tozalash() {
+      royxat.innerHTML = "";     // hammasini o'chirishning eng qisqa yo'li
+      n = 0;
+    }
+
+    qoshish();  // bittasini darhol qo'shamiz
+  </script>
+</textarea>
+</div>
+
+<h2>Ro'yxatni ma'lumotdan yasash — eng muhim namuna</h2>
+<p>
+  Real ilovada ma'lumot massivda keladi (serverdan), siz esa undan HTML yasaysiz.
+  Soyla'dagi "Saqlangan suhbatdoshlar" ro'yxati ham shunday ishlaydi:
+</p>
+
+<div class="pg" data-title="Massivdan kartalar yasash" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 14px; background: #f2f5f4; }
+    .royxat { display: grid; gap: 10px; }
+    .karta {
+      display: flex; align-items: center; gap: 12px;
+      background: #fff; border-radius: 14px; padding: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    }
+    .karta img { border-radius: 50%; }
+    .karta h4 { margin: 0; font-size: 15px; }
+    .karta p { margin: 0; color: #8aa39a; font-size: 13px; }
+    .nuqta { width: 10px; height: 10px; border-radius: 50%; margin-left: auto; }
+    .nuqta.on { background: #3dba7a; }
+    .nuqta.off { background: #c9d4d0; }
+  </style>
+
+  <div class="royxat" id="royxat"></div>
+
+  <script>
+    const odamlar = [
+      { ism: "Dilshod", yosh: 24, shahar: "Toshkent",  online: true,  rasm: "a" },
+      { ism: "Malika",  yosh: 21, shahar: "Samarqand", online: false, rasm: "b" },
+      { ism: "Aziz",    yosh: 30, shahar: "Buxoro",    online: true,  rasm: "c" },
+    ];
+
+    const royxat = document.getElementById("royxat");
+
+    function kartaYasa(odam) {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+
+      const rasm = document.createElement("img");
+      rasm.src = `https://picsum.photos/seed/${odam.rasm}/48/48`;
+      rasm.alt = "";
+      rasm.width = 48;
+
+      const matn = document.createElement("div");
+      const nom = document.createElement("h4");
+      nom.textContent = `${odam.ism}, ${odam.yosh}`;      // xavfsiz: textContent
+      const joy = document.createElement("p");
+      joy.textContent = odam.shahar;
+      matn.append(nom, joy);
+
+      const nuqta = document.createElement("span");
+      nuqta.className = "nuqta " + (odam.online ? "on" : "off");
+
+      karta.append(rasm, matn, nuqta);
+      return karta;
+    }
+
+    odamlar.forEach(odam => royxat.append(kartaYasa(odam)));
+  </script>
+</textarea>
+</div>
+
+<div class="task">
+  <b>Mashq — hisoblagich.</b>
+  Quyidagi kodni to'ldiring:
+  <ul>
+    <li>"+" tugmasi sonni oshirsin, "−" kamaytirsin, "Tozalash" nolga qaytarsin;</li>
+    <li>son 0 dan katta bo'lsa matn yashil, 0 bo'lsa kulrang bo'lsin (class orqali!);</li>
+    <li>son 10 ga yetganda "+" tugmasi <code>disabled</code> bo'lsin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; text-align: center; }
+    #son { font-size: 48px; font-weight: 700; color: #aab; }
+    #son.bor { color: #3dba7a; }
+    button { font-size: 18px; padding: 8px 18px; margin: 4px; cursor: pointer; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+  </style>
+
+  <div id="son">0</div>
+  <button id="minus">−</button>
+  <button id="plus">+</button>
+  <button id="tozala">Tozalash</button>
+
+  <script>
+    let qiymat = 0;
+    const sonEl = document.getElementById("son");
+    const plusEl = document.getElementById("plus");
+
+    function chiz() {
+      // 1) sonEl matnini yangilang
+      // 2) qiymat > 0 bo'lsa "bor" class qo'shing, aks holda olib tashlang
+      // 3) qiymat >= 10 bo'lsa plusEl.disabled = true
+    }
+
+    plusEl.onclick = function () {
+      qiymat++;
+      chiz();
+    };
+
+    // minus va tozala uchun ham shunday yozing
+
+    chiz();
+  </script>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>function chiz() {
+  sonEl.textContent = qiymat;
+  sonEl.classList.toggle("bor", qiymat &gt; 0);
+  plusEl.disabled = qiymat &gt;= 10;
+}
+
+plusEl.onclick = () =&gt; { qiymat++; chiz(); };
+document.getElementById("minus").onclick = () =&gt; { qiymat--; chiz(); };
+document.getElementById("tozala").onclick = () =&gt; { qiymat = 0; chiz(); };
+
+chiz();</code></pre>
+  <p><code>classList.toggle("bor", shart)</code> — ikkinchi parametr <code>true</code> bo'lsa qo'shadi,
+  <code>false</code> bo'lsa olib tashlaydi. Juda qulay.</p>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li><code>document.querySelector</code> — element topishning asosiy usuli.</li>
+  <li>Matn uchun <code>textContent</code> (xavfsiz), HTML uchun <code>innerHTML</code> (ehtiyot bilan).</li>
+  <li>Ko'rinishni <code>classList</code> bilan boshqaring, <code>style</code> bilan emas.</li>
+  <li><code>createElement</code> + <code>append</code> — yangi element qo'shish.</li>
+  <li>Ma'lumot massividan HTML yasash — frontend ishining asosi.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>querySelector("karta")</code> nega ishlamaydi?</strong><br>
+  Class uchun nuqta kerak: <code>querySelector(".karta")</code>.</p>
+  <p><strong>2. Foydalanuvchi yozgan ismni sahifaga qanday chiqarasiz?</strong><br>
+  <code>textContent</code> bilan — <code>innerHTML</code> XSS xavfini tug'diradi.</p>
+  <p><strong>3. <code>data-user-id</code> ni JS'da qanday o'qiysiz?</strong><br>
+  <code>element.dataset.userId</code>.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

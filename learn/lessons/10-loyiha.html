@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10. Yakuniy loyiha — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="10">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>10. Yakuniy loyiha: suhbatdoshlar ro'yxati</h1>
+<p class="lead">
+  Endi hammasini birlashtiramiz. Beshta qadamda to'liq ishlaydigan sahifa yasaymiz:
+  serverdan ma'lumot oladi, kartalar chizadi, qidiruv va filtrlarni qo'llaydi,
+  saqlanganlarni brauzer xotirasida eslab qoladi.
+</p>
+
+<div class="note">
+  <b>Qanday ishlash kerak</b>
+  Har bir qadamni o'qib, kodni <strong>o'zingiz</strong> o'zgartirib ko'ring: rangni, matnni, shartni.
+  Oxirgi qadamda to'liq ilova bo'ladi — uni o'z kompyuteringizda <code>index.html</code> fayliga
+  ko'chirib, mustaqil loyiha sifatida saqlab qo'yishingiz mumkin.
+</div>
+
+<h2>Qadam 1 — HTML skeleti</h2>
+<p>
+  Avval faqat tuzilma: sarlavha, qidiruv maydoni, filtrlar va ro'yxat uchun bo'sh joy.
+  Hech qanday bezak yo'q — shunday bo'lishi kerak. <strong>Avval tuzilma, keyin ko'rinish.</strong>
+</p>
+
+<div class="pg" data-title="1-qadam: tuzilma" data-tall>
+<textarea>
+  <header>
+    <h1>Suhbatdosh topish</h1>
+    <p>Onlayn foydalanuvchilar orasidan qidiring</p>
+  </header>
+
+  <main>
+    <section>
+      <label for="qidiruv">Ism yoki shahar</label>
+      <input id="qidiruv" type="search" placeholder="Masalan: Toshkent">
+
+      <label for="til">Til</label>
+      <select id="til">
+        <option value="">Hammasi</option>
+        <option value="uz">O'zbek</option>
+        <option value="ru">Rus</option>
+      </select>
+
+      <label>
+        <input type="checkbox" id="faqatOnline"> Faqat onlayn
+      </label>
+
+      <label for="yosh">Eng katta yosh: <output id="yoshChiqish">40</output></label>
+      <input type="range" id="yosh" min="12" max="60" value="40">
+    </section>
+
+    <p id="hisob"></p>
+    <div id="royxat"></div>
+  </main>
+
+  <footer>
+    <small>Soyla Web Kursi — yakuniy loyiha</small>
+  </footer>
+</textarea>
+</div>
+
+<h2>Qadam 2 — CSS bilan ko'rinish</h2>
+<p>
+  Xuddi shu HTML, lekin endi bezatilgan: CSS o'zgaruvchilari, Flexbox, Grid, soya va
+  moslashuvchan to'r. Hech qanday JavaScript hali yo'q.
+</p>
+
+<div class="pg" data-title="2-qadam: dizayn" data-tall>
+<textarea>
+  <style>
+    :root {
+      --bg: #0d2420;
+      --panel: rgba(255, 255, 255, .06);
+      --ink: #f3f7f5;
+      --muted: #8aa39a;
+      --accent: #e86f4a;
+      --line: rgba(255, 255, 255, .14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(600px 400px at 10% -10%, rgba(232,111,74,.25), transparent 60%), var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    header h1 { margin: 0 0 4px; font-size: 1.5rem; }
+    header p { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+
+    .filtrlar {
+      display: grid;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .filtrlar label { font-size: .82rem; color: var(--muted); }
+    .filtrlar input[type="search"], .filtrlar select {
+      width: 100%;
+      font: inherit;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, .25);
+      color: var(--ink);
+    }
+    .qator { display: flex; align-items: center; gap: 8px; }
+
+    .karta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      transition: transform .2s ease, border-color .2s ease;
+    }
+    .karta:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .karta img { width: 52px; height: 52px; border-radius: 50%; }
+    .karta .matn { flex: 1; min-width: 0; }
+    .karta h3 { margin: 0; font-size: 1rem; }
+    .karta p { margin: 0; color: var(--muted); font-size: .84rem; }
+
+    .royxat {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+  </style>
+
+  <header>
+    <h1>Suhbatdosh topish</h1>
+    <p>Onlayn foydalanuvchilar orasidan qidiring</p>
+  </header>
+
+  <div class="filtrlar">
+    <div>
+      <label for="qidiruv">Ism yoki shahar</label>
+      <input id="qidiruv" type="search" placeholder="Masalan: Toshkent">
+    </div>
+    <div class="qator">
+      <input type="checkbox" id="faqatOnline">
+      <label for="faqatOnline">Faqat onlayn</label>
+    </div>
+  </div>
+
+  <div class="royxat">
+    <div class="karta">
+      <img src="https://picsum.photos/seed/p1/52/52" alt="">
+      <div class="matn">
+        <h3>Dilshod, 24</h3>
+        <p>Toshkent · onlayn</p>
+      </div>
+    </div>
+    <div class="karta">
+      <img src="https://picsum.photos/seed/p2/52/52" alt="">
+      <div class="matn">
+        <h3>Malika, 21</h3>
+        <p>Samarqand · oflayn</p>
+      </div>
+    </div>
+  </div>
+</textarea>
+</div>
+
+<h2>Qadam 3 — ma'lumotdan kartalar chizish</h2>
+<p>
+  Kartalarni qo'lda yozish mumkin emas — ular serverdan keladi. Shuning uchun
+  <strong>ma'lumot massivi</strong> va uni HTML'ga aylantiruvchi <code>chiz()</code> funksiyasi kerak.
+  Bu — frontend ishining yuragi.
+</p>
+
+<div class="pg" data-title="3-qadam: JS bilan chizish" data-tall>
+<textarea>
+  <style>
+    body { margin:0; padding:18px; font-family: system-ui, sans-serif; background:#0d2420; color:#f3f7f5; }
+    .royxat { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+    .karta { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.06);
+             border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:12px; }
+    .karta img { width:52px; height:52px; border-radius:50%; }
+    .karta h3 { margin:0; font-size:1rem; }
+    .karta p { margin:0; color:#8aa39a; font-size:.84rem; }
+    .nuqta { width:10px; height:10px; border-radius:50%; background:#8aa39a; }
+    .nuqta.on { background:#3dba7a; }
+  </style>
+
+  <div class="royxat" id="royxat"></div>
+
+  <script>
+    const odamlar = [
+      { id:1, ism:"Dilshod", yosh:24, shahar:"Toshkent",  til:"uz", online:true,  rasm:"p1" },
+      { id:2, ism:"Malika",  yosh:21, shahar:"Samarqand", til:"uz", online:false, rasm:"p2" },
+      { id:3, ism:"Aziz",    yosh:30, shahar:"Buxoro",    til:"uz", online:true,  rasm:"p3" },
+    ];
+
+    const royxat = document.getElementById("royxat");
+
+    // Bitta odamdan bitta karta yasaydi
+    function kartaYasa(odam) {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+
+      const rasm = document.createElement("img");
+      rasm.src = `https://picsum.photos/seed/${odam.rasm}/52/52`;
+      rasm.alt = "";
+
+      const matn = document.createElement("div");
+      const nom = document.createElement("h3");
+      nom.textContent = `${odam.ism}, ${odam.yosh}`;
+      const tafsilot = document.createElement("p");
+      tafsilot.textContent = `${odam.shahar} · ${odam.online ? "onlayn" : "oflayn"}`;
+      matn.append(nom, tafsilot);
+
+      const nuqta = document.createElement("span");
+      nuqta.className = "nuqta" + (odam.online ? " on" : "");
+
+      karta.append(rasm, matn, nuqta);
+      return karta;
+    }
+
+    // Butun ro'yxatni qaytadan chizadi
+    function chiz(malumot) {
+      royxat.innerHTML = "";
+      malumot.forEach(odam => royxat.append(kartaYasa(odam)));
+    }
+
+    chiz(odamlar);
+
+    // Sinab ko'ring: odamlar massiviga to'rtinchi odamni qo'shing —
+    // hech qanday HTML yozmasdan yangi karta paydo bo'ladi.
+  </script>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Asosiy g'oya: ma'lumot → ko'rinish</b>
+  HTML'ni qo'lda o'zgartirmaysiz. Ma'lumotni o'zgartirasiz va <code>chiz()</code> ni qayta chaqirasiz.
+  React, Vue kabi kutubxonalar ham xuddi shu g'oyani avtomatlashtiradi.
+</div>
+
+<h2>Qadam 4 — qidiruv va filtrlar</h2>
+<p>
+  Endi <code>filter</code> ni ishga solamiz. Har qanday filtr o'zgarganda:
+  <strong>ma'lumotni saralaymiz → qaytadan chizamiz</strong>.
+</p>
+
+<div class="pg" data-title="4-qadam: filtr mantig'i" data-tall>
+<textarea>
+  <style>
+    body { margin:0; padding:18px; font-family: system-ui, sans-serif; background:#0d2420; color:#f3f7f5; }
+    .filtrlar { display:grid; gap:10px; background:rgba(255,255,255,.06);
+                border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:14px; margin-bottom:14px; }
+    .filtrlar input[type="search"], .filtrlar select {
+      width:100%; font:inherit; padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.25); color:#f3f7f5; }
+    .qator { display:flex; align-items:center; gap:8px; font-size:.85rem; color:#8aa39a; }
+    .hisob { color:#8aa39a; font-size:.85rem; margin:0 0 10px; }
+    .royxat { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+    .karta { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.06);
+             border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:12px; }
+    .karta img { width:48px; height:48px; border-radius:50%; }
+    .karta h3 { margin:0; font-size:.95rem; }
+    .karta p { margin:0; color:#8aa39a; font-size:.8rem; }
+    .bosh { color:#8aa39a; padding:20px; text-align:center;
+            border:1px dashed rgba(255,255,255,.2); border-radius:14px; }
+  </style>
+
+  <div class="filtrlar">
+    <input id="qidiruv" type="search" placeholder="Ism yoki shahar...">
+    <select id="til">
+      <option value="">Barcha tillar</option>
+      <option value="uz">O'zbek</option>
+      <option value="ru">Rus</option>
+    </select>
+    <div class="qator">
+      <input type="checkbox" id="faqatOnline">
+      <label for="faqatOnline">Faqat onlayn</label>
+    </div>
+    <div class="qator">
+      <label for="yosh">Eng katta yosh:</label>
+      <input type="range" id="yosh" min="12" max="60" value="60">
+      <output id="yoshChiqish">60</output>
+    </div>
+  </div>
+
+  <p class="hisob" id="hisob"></p>
+  <div class="royxat" id="royxat"></div>
+
+  <script>
+    const odamlar = [
+      { id:1, ism:"Dilshod", yosh:24, shahar:"Toshkent",  til:"uz", online:true,  rasm:"p1" },
+      { id:2, ism:"Malika",  yosh:21, shahar:"Samarqand", til:"uz", online:false, rasm:"p2" },
+      { id:3, ism:"Aziz",    yosh:30, shahar:"Buxoro",    til:"uz", online:true,  rasm:"p3" },
+      { id:4, ism:"Ivan",    yosh:27, shahar:"Toshkent",  til:"ru", online:true,  rasm:"p4" },
+      { id:5, ism:"Nilufar", yosh:19, shahar:"Namangan",  til:"uz", online:false, rasm:"p5" },
+      { id:6, ism:"Sardor",  yosh:45, shahar:"Andijon",   til:"uz", online:true,  rasm:"p6" },
+    ];
+
+    const el = {
+      qidiruv: document.getElementById("qidiruv"),
+      til: document.getElementById("til"),
+      faqatOnline: document.getElementById("faqatOnline"),
+      yosh: document.getElementById("yosh"),
+      yoshChiqish: document.getElementById("yoshChiqish"),
+      hisob: document.getElementById("hisob"),
+      royxat: document.getElementById("royxat"),
+    };
+
+    function kartaYasa(odam) {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+
+      const rasm = document.createElement("img");
+      rasm.src = `https://picsum.photos/seed/${odam.rasm}/48/48`;
+      rasm.alt = "";
+
+      const matn = document.createElement("div");
+      const nom = document.createElement("h3");
+      nom.textContent = `${odam.ism}, ${odam.yosh}`;
+      const tafsilot = document.createElement("p");
+      tafsilot.textContent = `${odam.shahar} · ${odam.til} · ${odam.online ? "onlayn" : "oflayn"}`;
+      matn.append(nom, tafsilot);
+
+      karta.append(rasm, matn);
+      return karta;
+    }
+
+    // Filtrlarni o'qib, mos odamlarni qaytaradi
+    function saralash() {
+      const soz = el.qidiruv.value.trim().toLowerCase();
+      const til = el.til.value;
+      const faqatOnline = el.faqatOnline.checked;
+      const yuqoriYosh = Number(el.yosh.value);
+
+      return odamlar.filter(function (odam) {
+        if (faqatOnline && !odam.online) return false;
+        if (til && odam.til !== til) return false;
+        if (odam.yosh > yuqoriYosh) return false;
+
+        if (soz) {
+          const matn = (odam.ism + " " + odam.shahar).toLowerCase();
+          if (!matn.includes(soz)) return false;
+        }
+        return true;
+      });
+    }
+
+    function chiz() {
+      const natija = saralash();
+
+      el.royxat.innerHTML = "";
+      el.hisob.textContent = `${natija.length} ta natija (jami ${odamlar.length})`;
+
+      if (natija.length === 0) {
+        const bosh = document.createElement("div");
+        bosh.className = "bosh";
+        bosh.textContent = "Hech kim topilmadi. Filtrlarni yumshatib ko'ring.";
+        el.royxat.append(bosh);
+        return;
+      }
+
+      natija.forEach(odam => el.royxat.append(kartaYasa(odam)));
+    }
+
+    // Har qanday filtr o'zgarsa — qayta chizamiz
+    el.qidiruv.addEventListener("input", chiz);
+    el.til.addEventListener("change", chiz);
+    el.faqatOnline.addEventListener("change", chiz);
+    el.yosh.addEventListener("input", function () {
+      el.yoshChiqish.textContent = el.yosh.value;
+      chiz();
+    });
+
+    chiz();
+  </script>
+</textarea>
+</div>
+
+<div class="task">
+  <b>Mashq.</b> Yuqoridagi kodga quyidagilarni qo'shib ko'ring:
+  <ul>
+    <li>eng <em>kichik</em> yosh uchun ham filtr;</li>
+    <li>shahar bo'yicha <code>select</code> (variantlarni <code>odamlar</code> dan
+        <code>[...new Set(odamlar.map(o =&gt; o.shahar))]</code> bilan yasash mumkin);</li>
+    <li>natijani yosh bo'yicha tartiblash (<code>sort</code>).</li>
+  </ul>
+</div>
+
+<h2>Qadam 5 — to'liq ilova: fetch + saqlanganlar</h2>
+<p>
+  Yakuniy versiya: ma'lumot serverdan (<code>fetch</code>) keladi, yuklanish va xato holatlari
+  ko'rsatiladi, saqlangan suhbatdoshlar <code>localStorage</code> da qoladi, tab almashtirish ham bor.
+  Bu — kichik, lekin haqiqiy ilova.
+</p>
+
+<div class="pg" data-title="5-qadam: to'liq ilova" data-tall>
+<textarea>
+  <style>
+    :root {
+      --bg: #0d2420; --ink: #f3f7f5; --muted: #8aa39a;
+      --accent: #e86f4a; --ok: #3dba7a;
+      --panel: rgba(255,255,255,.06); --line: rgba(255,255,255,.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; padding:16px 16px 30px; font-family: system-ui, sans-serif;
+      background: radial-gradient(600px 400px at 0% -10%, rgba(232,111,74,.22), transparent 60%), var(--bg);
+      color: var(--ink); min-height:100vh;
+    }
+    h1 { font-size:1.35rem; margin:0 0 12px; }
+
+    .tablar { display:flex; gap:8px; margin-bottom:14px; }
+    .tab {
+      font:inherit; font-size:.9rem; padding:8px 16px; border-radius:999px; cursor:pointer;
+      background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    }
+    .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+    .oyna { display:none; }
+    .oyna.active { display:block; animation: kel .35s ease both; }
+    @keyframes kel { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+    .filtrlar { display:grid; gap:10px; background:var(--panel); border:1px solid var(--line);
+                border-radius:16px; padding:14px; margin-bottom:14px; }
+    .filtrlar input[type="search"], .filtrlar select {
+      width:100%; font:inherit; padding:10px 12px; border-radius:10px;
+      border:1px solid var(--line); background:rgba(0,0,0,.25); color:var(--ink); }
+    .qator { display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--muted); }
+    .hisob { color:var(--muted); font-size:.85rem; margin:0 0 10px; }
+
+    .royxat { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px; }
+    .karta { display:flex; align-items:center; gap:12px; background:var(--panel);
+             border:1px solid var(--line); border-radius:16px; padding:12px;
+             transition: transform .2s ease, border-color .2s ease; }
+    .karta:hover { transform:translateY(-2px); border-color:var(--accent); }
+    .karta img { width:48px; height:48px; border-radius:50%; }
+    .karta .matn { flex:1; min-width:0; }
+    .karta h3 { margin:0; font-size:.95rem; }
+    .karta p { margin:0; color:var(--muted); font-size:.8rem; }
+    .yulduz { font:inherit; font-size:1.2rem; line-height:1; background:none; border:0;
+              color:var(--muted); cursor:pointer; padding:4px; }
+    .yulduz.on { color:#ffd465; }
+
+    .holat { padding:18px; text-align:center; color:var(--muted);
+             border:1px dashed var(--line); border-radius:14px; }
+    .holat.xato { border-style:solid; border-color:#e5484d; color:#ffb4b4; }
+    .spinner { width:22px; height:22px; border-radius:50%; display:inline-block; vertical-align:middle;
+               border:3px solid rgba(255,255,255,.2); border-top-color:var(--accent);
+               animation: aylan .8s linear infinite; margin-right:8px; }
+    @keyframes aylan { to { transform: rotate(360deg); } }
+
+    @media (max-width: 420px) {
+      .royxat { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <h1>Soyla — suhbatdosh qidirish</h1>
+
+  <div class="tablar">
+    <button class="tab active" data-oyna="qidiruvOyna">Qidirish</button>
+    <button class="tab" data-oyna="saqlanganOyna">Saqlangan</button>
+  </div>
+
+  <!-- ——— Qidiruv oynasi ——— -->
+  <section class="oyna active" id="qidiruvOyna">
+    <div class="filtrlar">
+      <input id="qidiruv" type="search" placeholder="Ism yoki shahar...">
+      <select id="til">
+        <option value="">Barcha tillar</option>
+        <option value="uz">O'zbek</option>
+        <option value="ru">Rus</option>
+      </select>
+      <div class="qator">
+        <input type="checkbox" id="faqatOnline">
+        <label for="faqatOnline">Faqat onlayn</label>
+      </div>
+      <div class="qator">
+        <label for="yosh">Eng katta yosh:</label>
+        <input type="range" id="yosh" min="12" max="60" value="60">
+        <output id="yoshChiqish">60</output>
+      </div>
+    </div>
+
+    <p class="hisob" id="hisob"></p>
+    <div id="qidiruvNatija"></div>
+  </section>
+
+  <!-- ——— Saqlangan oynasi ——— -->
+  <section class="oyna" id="saqlanganOyna">
+    <div id="saqlanganNatija"></div>
+  </section>
+
+  <script>
+    const KALIT = "soyla-kurs-saqlangan";
+
+    let odamlar = [];                 // serverdan keladigan ma'lumot
+    let saqlangan = yuklaSaqlangan(); // saqlangan id'lar massivi
+
+    const el = {
+      qidiruv: document.getElementById("qidiruv"),
+      til: document.getElementById("til"),
+      faqatOnline: document.getElementById("faqatOnline"),
+      yosh: document.getElementById("yosh"),
+      yoshChiqish: document.getElementById("yoshChiqish"),
+      hisob: document.getElementById("hisob"),
+      qidiruvNatija: document.getElementById("qidiruvNatija"),
+      saqlanganNatija: document.getElementById("saqlanganNatija"),
+    };
+
+    /* ——— Xotira ——— */
+
+    function yuklaSaqlangan() {
+      try {
+        return JSON.parse(localStorage.getItem(KALIT)) || [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saqlaSaqlangan() {
+      try {
+        localStorage.setItem(KALIT, JSON.stringify(saqlangan));
+      } catch (err) {
+        /* xotira ishlamasa ham ilova ishlashda davom etadi */
+      }
+    }
+
+    /* ——— Ko'rinish ——— */
+
+    function kartaYasa(odam) {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+      karta.dataset.id = odam.id;
+
+      const rasm = document.createElement("img");
+      rasm.src = `https://picsum.photos/seed/soyla${odam.id}/48/48`;
+      rasm.alt = "";
+
+      const matn = document.createElement("div");
+      matn.className = "matn";
+      const nom = document.createElement("h3");
+      nom.textContent = `${odam.ism}, ${odam.yosh}`;
+      const tafsilot = document.createElement("p");
+      tafsilot.textContent = `${odam.shahar} · ${odam.online ? "onlayn" : "oflayn"}`;
+      matn.append(nom, tafsilot);
+
+      const yulduz = document.createElement("button");
+      yulduz.className = "yulduz" + (saqlangan.includes(odam.id) ? " on" : "");
+      yulduz.dataset.amal = "saqla";
+      yulduz.title = "Saqlash";
+      yulduz.textContent = "★";
+
+      karta.append(rasm, matn, yulduz);
+      return karta;
+    }
+
+    function holatKorsat(host, matn, xato) {
+      host.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "holat" + (xato ? " xato" : "");
+      div.textContent = matn;
+      host.append(div);
+    }
+
+    function royxatChiz(host, malumot, boshMatn) {
+      host.innerHTML = "";
+      if (malumot.length === 0) {
+        holatKorsat(host, boshMatn);
+        return;
+      }
+      const box = document.createElement("div");
+      box.className = "royxat";
+      malumot.forEach(odam => box.append(kartaYasa(odam)));
+      host.append(box);
+    }
+
+    /* ——— Filtr ——— */
+
+    function saralash() {
+      const soz = el.qidiruv.value.trim().toLowerCase();
+      const til = el.til.value;
+      const faqatOnline = el.faqatOnline.checked;
+      const yuqoriYosh = Number(el.yosh.value);
+
+      return odamlar.filter(function (odam) {
+        if (faqatOnline && !odam.online) return false;
+        if (til && odam.til !== til) return false;
+        if (odam.yosh > yuqoriYosh) return false;
+        if (soz && !(odam.ism + " " + odam.shahar).toLowerCase().includes(soz)) return false;
+        return true;
+      });
+    }
+
+    function chizQidiruv() {
+      const natija = saralash();
+      el.hisob.textContent = `${natija.length} ta natija (jami ${odamlar.length})`;
+      royxatChiz(el.qidiruvNatija, natija, "Hech kim topilmadi. Filtrlarni yumshatib ko'ring.");
+    }
+
+    function chizSaqlangan() {
+      const natija = odamlar.filter(odam => saqlangan.includes(odam.id));
+      royxatChiz(el.saqlanganNatija, natija, "Saqlangan suhbatdosh yo'q. Kartadagi ★ ni bosing.");
+    }
+
+    function chiz() {
+      chizQidiruv();
+      chizSaqlangan();
+    }
+
+    /* ——— Hodisalar ——— */
+
+    el.qidiruv.addEventListener("input", chizQidiruv);
+    el.til.addEventListener("change", chizQidiruv);
+    el.faqatOnline.addEventListener("change", chizQidiruv);
+    el.yosh.addEventListener("input", function () {
+      el.yoshChiqish.textContent = el.yosh.value;
+      chizQidiruv();
+    });
+
+    // Tab almashtirish
+    document.querySelectorAll(".tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".oyna").forEach(o => o.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.oyna).classList.add("active");
+      });
+    });
+
+    // Yulduzchalar — delegatsiya bilan (ikki ro'yxat uchun bitta ishlovchi)
+    document.addEventListener("click", function (event) {
+      const tugma = event.target.closest('[data-amal="saqla"]');
+      if (!tugma) return;
+
+      const id = Number(tugma.closest(".karta").dataset.id);
+      if (saqlangan.includes(id)) {
+        saqlangan = saqlangan.filter(x => x !== id);
+      } else {
+        saqlangan.push(id);
+      }
+      saqlaSaqlangan();
+      chiz();
+    });
+
+    /* ——— Ma'lumot olish ——— */
+
+    async function boshla() {
+      el.qidiruvNatija.innerHTML = '<div class="holat"><span class="spinner"></span>Yuklanmoqda...</div>';
+      try {
+        const javob = await fetch("../assets/demo-odamlar.json");
+        if (!javob.ok) throw new Error("HTTP " + javob.status);
+
+        const malumot = await javob.json();
+        odamlar = malumot.odamlar;
+        chiz();
+      } catch (err) {
+        holatKorsat(el.qidiruvNatija, "Ma'lumot yuklanmadi: " + err.message, true);
+      }
+    }
+
+    boshla();
+  </script>
+</textarea>
+</div>
+
+<h2>Shu ilovada nimalar ishlatildi</h2>
+<table>
+  <tr><th>Dars</th><th>Qayerda ishlatildi</th></tr>
+  <tr><td>01–02 HTML</td><td>Semantik tuzilma, <code>input</code>, <code>select</code>, <code>range</code>, <code>checkbox</code></td></tr>
+  <tr><td>03 CSS asoslari</td><td><code>:root</code> o'zgaruvchilari, <code>box-sizing</code>, ranglar</td></tr>
+  <tr><td>04 Layout</td><td>Kartada Flexbox, ro'yxatda Grid <code>auto-fit</code></td></tr>
+  <tr><td>05 Responsive</td><td><code>@media</code>, <code>transition</code>, <code>@keyframes</code> (spinner va oyna almashishi)</td></tr>
+  <tr><td>06 JS asoslari</td><td><code>filter</code>, <code>includes</code>, <code>forEach</code>, arrow funksiyalar</td></tr>
+  <tr><td>07 DOM</td><td><code>createElement</code>, <code>textContent</code>, <code>classList</code>, <code>dataset</code></td></tr>
+  <tr><td>08 Hodisalar</td><td><code>input</code>/<code>change</code>/<code>click</code>, delegatsiya, <code>localStorage</code></td></tr>
+  <tr><td>09 Async</td><td><code>async/await</code>, <code>fetch</code>, yuklanish va xato holatlari</td></tr>
+</table>
+
+<div class="task">
+  <b>Loyihani rivojlantirish (mustaqil ish).</b>
+  Bittasini tanlab bajarib ko'ring:
+  <ul>
+    <li><strong>Tartiblash:</strong> "Yoshi bo'yicha / Ismi bo'yicha" <code>select</code> qo'shib, <code>sort</code> qo'llang.</li>
+    <li><strong>Shahar filtri:</strong> shaharlar ro'yxatini ma'lumotdan avtomatik yasang.</li>
+    <li><strong>Tungi/kunduzgi rejim:</strong> <code>body</code> ga <code>light</code> class qo'shib,
+        CSS o'zgaruvchilarini almashtiring va tanlovni <code>localStorage</code> da saqlang.</li>
+    <li><strong>Batafsil oyna:</strong> kartani bosganda modal oyna chiqib, odam haqida to'liq ma'lumot ko'rsatilsin.</li>
+    <li><strong>Debounce:</strong> qidiruvni har harfda emas, 300ms tinchlikdan keyin ishga tushiring
+        (<code>setTimeout</code> + <code>clearTimeout</code>).</li>
+  </ul>
+</div>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>Ishni tartib bilan qiling: HTML tuzilma → CSS ko'rinish → JS mantiq.</li>
+  <li>Ma'lumotni holat (state) sifatida saqlang, ko'rinishni <code>chiz()</code> funksiyasi yasasin.</li>
+  <li>Hodisa → holatni o'zgartir → qayta chiz. Bu naqsh barcha frontend ilovalarida bir xil.</li>
+  <li>Foydalanuvchiga har doim holatni ko'rsating: yuklanmoqda, bo'sh, xato.</li>
+</ul>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

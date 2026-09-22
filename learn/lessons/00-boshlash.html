@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>00. Web qanday ishlaydi — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="00">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>00. Web qanday ishlaydi</h1>
+<p class="lead">
+  Kod yozishdan oldin 10 daqiqa nazariya. Keyin birinchi sahifani o'zingiz yozasiz —
+  shu yerda, brauzerdan chiqmasdan.
+</p>
+
+<h2>Uchta til, uchta vazifa</h2>
+<p>Har qanday sayt — hatto Instagram ham — asosini shu uchta til tashkil qiladi:</p>
+
+<table>
+  <tr><th>Til</th><th>Vazifasi</th><th>Uy misolida</th></tr>
+  <tr><td><strong>HTML</strong></td><td>Sahifada <em>nima bor</em>: matn, rasm, tugma, forma</td><td>G'isht va devorlar</td></tr>
+  <tr><td><strong>CSS</strong></td><td>U <em>qanday ko'rinadi</em>: rang, o'lcham, joylashuv</td><td>Bo'yoq, mebel, dizayn</td></tr>
+  <tr><td><strong>JavaScript</strong></td><td>U <em>nima qiladi</em>: bosilganda javob beradi, ma'lumot oladi</td><td>Chiroq, lift, eshik qulfi</td></tr>
+</table>
+
+<p>
+  Ularni shu tartibda o'rganamiz, chunki CSS HTML ustiga, JavaScript ikkalasi ustiga qo'yiladi.
+  Tartibni buzib bo'lmaydi: devorsiz uyni bo'yash mumkin emas.
+</p>
+
+<h2>Brauzer, server va sizning loyihangiz</h2>
+<p>Siz brauzerda sahifani ochganingizda quyidagi zanjir ishlaydi:</p>
+<ol>
+  <li>Brauzer serverga <strong>so'rov</strong> yuboradi: "menga shu sahifani ber".</li>
+  <li>Server <strong>HTML</strong> faylni qaytaradi.</li>
+  <li>Brauzer HTML'ni o'qib, unda ko'rsatilgan <strong>CSS</strong> va <strong>JS</strong> fayllarni ham so'raydi.</li>
+  <li>Hammasini birlashtirib ekranga <strong>chizadi</strong> (render qiladi).</li>
+  <li>Keyin JavaScript ishlaydi va sahifani jonlantiradi.</li>
+</ol>
+
+<div class="note">
+  <b>Soyla loyihasida bu qanday?</b>
+  <code>app/api/webapp.py</code> — server (Python, FastAPI). U <code>app/webapp/index.html</code> faylni brauzerga beradi.
+  Telegram esa shu sahifani ilova ichida ko'rsatadi. Ya'ni siz o'rganayotgan HTML/CSS/JS —
+  aynan <code>app/webapp/index.html</code> ichidagi kod.
+</div>
+
+<h2>Frontend va backend</h2>
+<ul>
+  <li><strong>Frontend</strong> — foydalanuvchi ko'rayotgan qism, brauzerda ishlaydi (HTML, CSS, JS).</li>
+  <li><strong>Backend</strong> — server tomoni, foydalanuvchi ko'rmaydi (bu loyihada Python + PostgreSQL + Redis).</li>
+</ul>
+<p>Bu kurs — frontend haqida. Lekin 09-darsda ikkisi qanday gaplashishini ham ko'ramiz.</p>
+
+<h2>Birinchi sahifangiz</h2>
+<p>
+  Quyida <strong>jonli kod maydoni</strong>. Chap tomonda kod, o'ng tomonda natija.
+  Kodni o'zgartirsangiz, natija o'zi yangilanadi (yoki "Ishga tushirish" ni bosing).
+  "Boshidan" tugmasi boshlang'ich holatga qaytaradi — buzib qo'yishdan qo'rqmang.
+</p>
+
+<div class="pg" data-title="Birinchi HTML sahifa">
+<textarea>
+  <!DOCTYPE html>
+  <html lang="uz">
+  <head>
+    <meta charset="UTF-8">
+    <title>Mening birinchi sahifam</title>
+  </head>
+  <body>
+    <h1>Salom, dunyo!</h1>
+    <p>Bu men yozgan birinchi HTML sahifa.</p>
+  </body>
+  </html>
+</textarea>
+</div>
+
+<div class="task">
+  <b>Mashq 1.</b>
+  Yuqoridagi kodda:
+  <ol>
+    <li><code>Salom, dunyo!</code> o'rniga o'z ismingizni yozing.</li>
+    <li>Paragraf matnini o'zgartiring.</li>
+    <li><code>&lt;p&gt;...&lt;/p&gt;</code> qatorini nusxalab, yana bitta paragraf qo'shing.</li>
+  </ol>
+</div>
+
+<h2>Shu 6 qator nima degani?</h2>
+<table>
+  <tr><th>Kod</th><th>Ma'nosi</th></tr>
+  <tr><td><code>&lt;!DOCTYPE html&gt;</code></td><td>"Bu zamonaviy HTML fayl" — har doim birinchi qatorda turadi.</td></tr>
+  <tr><td><code>&lt;html lang="uz"&gt;</code></td><td>Butun sahifaning tashqi qobig'i. <code>lang</code> — sahifa tili.</td></tr>
+  <tr><td><code>&lt;head&gt;</code></td><td>Ko'rinmaydigan sozlamalar: sarlavha, kodlash, CSS havolalari.</td></tr>
+  <tr><td><code>&lt;meta charset="UTF-8"&gt;</code></td><td>O'zbek harflari (o', g', ʼ) to'g'ri ko'rinishi uchun. Bo'lmasa — "krakozyabra".</td></tr>
+  <tr><td><code>&lt;title&gt;</code></td><td>Brauzer yorlig'idagi (tab) yozuv.</td></tr>
+  <tr><td><code>&lt;body&gt;</code></td><td>Ekranda ko'rinadigan hamma narsa shu yerda.</td></tr>
+</table>
+
+<h2>O'z kompyuteringizda ishlash</h2>
+<p>Kurs brauzerda ishlaydi, lekin real ish quyidagicha bo'ladi:</p>
+<ol>
+  <li><strong>VS Code</strong> o'rnatasiz (bepul muharrir).</li>
+  <li>Papka yaratasiz, ichida <code>index.html</code> fayl.</li>
+  <li>Faylni yozib, brauzerda ochasiz (yoki VS Code'ning <em>Live Server</em> kengaytmasi bilan).</li>
+  <li>Kodni o'zgartirasiz → saqlaysiz (<code>Ctrl+S</code>) → brauzerni yangilaysiz (<code>F5</code>).</li>
+</ol>
+
+<div class="tip">
+  <b>DevTools — eng muhim asbob</b>
+  Brauzerda <code>F12</code> (yoki <code>Ctrl+Shift+I</code>) bosing.
+  <ul>
+    <li><strong>Elements</strong> — sahifaning HTML va CSS'ini ko'rish/vaqtincha o'zgartirish.</li>
+    <li><strong>Console</strong> — JavaScript xatolari shu yerda chiqadi. Sayt "ishlamasa", birinchi shu yerga qarang.</li>
+    <li><strong>Network</strong> — qanday so'rovlar ketdi va server nima javob berdi.</li>
+  </ul>
+  Yangi boshlovchilar 90% muammosini DevTools'ni ochishni o'rganish bilan hal qiladi.
+</div>
+
+<h2>Fayl tuzilishi qanday bo'ladi</h2>
+<pre><code>mening-saytim/
+├── index.html      ← asosiy sahifa
+├── style.css       ← uslublar
+├── app.js          ← skript
+└── images/
+    └── logo.png</code></pre>
+<p>
+  Soyla'da esa hammasi bitta faylda: HTML, CSS (<code>&lt;style&gt;</code> ichida) va
+  JS (<code>&lt;script&gt;</code> ichida). Kichik loyiha uchun bu normal yo'l.
+</p>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>HTML — tuzilma, CSS — ko'rinish, JS — harakat.</li>
+  <li>Brauzer HTML'ni o'qib, CSS va JS'ni yuklab, sahifani chizadi.</li>
+  <li>Har bir HTML fayl <code>&lt;!DOCTYPE html&gt;</code> bilan boshlanadi, <code>head</code> va <code>body</code> dan iborat.</li>
+  <li><code>F12</code> — sizning eng yaxshi do'stingiz.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari (javobni ko'rish uchun bosing)</summary>
+  <p><strong>1. <code>head</code> va <code>body</code> farqi nima?</strong><br>
+  <code>head</code> — ko'rinmaydigan sozlamalar (sarlavha, kodlash, CSS havolasi).
+  <code>body</code> — ekranda ko'rinadigan kontent.</p>
+  <p><strong>2. O'zbek harflari kvadratchaga aylanib qolsa, nimani tekshirasiz?</strong><br>
+  <code>&lt;meta charset="UTF-8"&gt;</code> borligini.</p>
+  <p><strong>3. Tugma bosilganda oyna chiqishi kerak — bu qaysi tilning ishi?</strong><br>
+  JavaScript.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

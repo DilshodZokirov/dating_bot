@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soyla Web Kursi — HTML, CSS, JavaScript noldan</title>
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="index.html">Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb">12 dars · HTML → CSS → JavaScript</span>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>HTML, CSS va JavaScript — noldan</h1>
+    <p class="lead">
+      Bu kurs aynan shu loyiha uchun yozilgan. Har bir darsda qisqa nazariya,
+      <strong>o'zgartirib ko'rish mumkin bo'lgan jonli kod</strong> va mashqlar bor.
+      Oxirgi ikki darsda esa Soyla Mini App'ining haqiqiy kodini o'qishni boshlaymiz.
+    </p>
+    <div class="progress-box">
+      <div class="bar"><i></i></div>
+      <strong data-progress-label>0 / 12 dars (0%)</strong>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Qanday o'qish kerak?</b>
+    Kuniga 1 dars — lekin har bir jonli kod maydonini albatta o'zgartirib ko'ring:
+    rangni, matnni, sonni almashtiring va natija qanday o'zgarishini kuzatib boring.
+    Faqat o'qib chiqish — o'rganish emas. Kod yozish — o'rganish.
+  </div>
+
+  <div class="cards" data-cards></div>
+
+  <h2>Kursdan keyin nima qilasiz</h2>
+  <ul>
+    <li>Sahifa tuzilmasini o'zingiz yozasiz va DevTools bilan tekshirasiz.</li>
+    <li>Flexbox/Grid bilan mobil ekranga mos joylashuv qurasiz.</li>
+    <li>JavaScript bilan tugma, forma, ro'yxat va filtrni ishlatasiz.</li>
+    <li><code>fetch</code> orqali o'z API'ingizdan ma'lumot olib, sahifaga chiqarasiz.</li>
+    <li><code>app/webapp/index.html</code> faylidagi kodni tushunib, o'zgartira olasiz.</li>
+  </ul>
+
+  <h2>Kursni ochish</h2>
+  <p>Eng oson yo'l — loyiha papkasida kichik server ishga tushirish:</p>
+  <pre><code>python -m http.server 5500
+# keyin brauzerda: http://localhost:5500/learn/</code></pre>
+  <p class="lead">
+    Fayllarni to'g'ridan-to'g'ri ikki marta bosib ham ochish mumkin, lekin server bilan
+    hamma narsa (xotira, <code>fetch</code>) haqiqiy sayt kabi ishlaydi.
+  </p>
+
+</div>
+
+<script src="assets/lessons.js"></script>
+<script src="assets/course.js"></script>
+</body>
+</html>

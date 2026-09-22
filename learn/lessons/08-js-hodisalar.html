@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08. Hodisalar va ma'lumot saqlash — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="08">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>08. Hodisalar va ma'lumot saqlash</h1>
+<p class="lead">
+  Hodisa (event) — foydalanuvchi qilgan harakat: bosdi, yozdi, formani yubordi.
+  JavaScript shu harakatlarga javob berishi kerak. Shu darsda hodisalarni to'g'ri ushlashni
+  va ma'lumotni brauzer xotirasida saqlashni o'rganamiz.
+</p>
+
+<h2><code>addEventListener</code> — to'g'ri usul</h2>
+
+<div class="pg" data-title="Birinchi hodisa" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    button { font-size: 16px; padding: 10px 18px; cursor: pointer; margin-right: 6px; }
+    #log { margin-top: 14px; font-family: monospace; font-size: 13px; white-space: pre-wrap; }
+  </style>
+
+  <button id="btn">Bosing</button>
+  <button id="btn2">Bu tugmada 2 ta ishlov bor</button>
+  <div id="log"></div>
+
+  <script>
+    const log = document.getElementById("log");
+    let n = 0;
+
+    function yoz(matn) {
+      log.textContent += matn + "\n";
+    }
+
+    // Asosiy shakl: element.addEventListener("hodisa", funksiya)
+    document.getElementById("btn").addEventListener("click", function () {
+      n++;
+      yoz(`Tugma ${n} marta bosildi`);
+    });
+
+    // Bir elementga bir nechta ishlov qo'shish mumkin — bu addEventListener'ning afzalligi
+    const btn2 = document.getElementById("btn2");
+    btn2.addEventListener("click", () => yoz("Birinchi ishlovchi"));
+    btn2.addEventListener("click", () => yoz("Ikkinchi ishlovchi"));
+  </script>
+</textarea>
+</div>
+
+<h2>Eng ko'p ishlatiladigan hodisalar</h2>
+<table>
+  <tr><th>Hodisa</th><th>Qachon ishlaydi</th></tr>
+  <tr><td><code>click</code></td><td>Element bosilganda</td></tr>
+  <tr><td><code>input</code></td><td>Maydonga har bir harf yozilganda</td></tr>
+  <tr><td><code>change</code></td><td>Maydon qiymati o'zgarib, fokus ketganda (select, checkbox)</td></tr>
+  <tr><td><code>submit</code></td><td>Forma yuborilganda</td></tr>
+  <tr><td><code>keydown</code></td><td>Klaviatura tugmasi bosilganda</td></tr>
+  <tr><td><code>focus</code> / <code>blur</code></td><td>Maydonga kirganda / chiqqanda</td></tr>
+  <tr><td><code>mouseenter</code> / <code>mouseleave</code></td><td>Sichqoncha ustiga kelganda / ketganda</td></tr>
+  <tr><td><code>DOMContentLoaded</code></td><td>HTML to'liq yuklanganda</td></tr>
+</table>
+
+<h2>Hodisa obyekti (<code>event</code>)</h2>
+
+<div class="pg" data-title="event nima beradi" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    input { font-size: 15px; padding: 8px; width: 220px; }
+    #maydon { height: 90px; background: #eef4f2; border: 1px dashed #8aa39a; margin-top: 12px; }
+    #log { margin-top: 12px; font-family: monospace; font-size: 13px; }
+  </style>
+
+  <input id="kirit" placeholder="Bir nima yozing...">
+  <div id="maydon">Shu yerni bosing</div>
+  <div id="log"></div>
+
+  <script>
+    const log = document.getElementById("log");
+
+    // event.target — hodisa sodir bo'lgan element
+    // input.value — maydondagi hozirgi matn
+    document.getElementById("kirit").addEventListener("input", function (event) {
+      log.textContent = `Yozildi: "${event.target.value}" (${event.target.value.length} belgi)`;
+    });
+
+    // Sichqoncha koordinatalari
+    document.getElementById("maydon").addEventListener("click", function (event) {
+      log.textContent = `Bosildi: x=${event.offsetX}, y=${event.offsetY}`;
+    });
+
+    // Klaviatura
+    document.getElementById("kirit").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") log.textContent = "Enter bosildi!";
+      if (event.key === "Escape") event.target.value = "";
+    });
+  </script>
+</textarea>
+</div>
+
+<h2>Forma bilan ishlash</h2>
+
+<div class="pg" data-title="submit va preventDefault" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    label { display: block; margin-bottom: 4px; font-size: 14px; }
+    input, select { font-size: 15px; padding: 8px; width: 100%; max-width: 260px; margin-bottom: 10px; }
+    button { font-size: 15px; padding: 10px 18px; cursor: pointer; }
+    #natija { margin-top: 14px; background: #eef4f2; padding: 12px; border-radius: 10px;
+              font-family: monospace; font-size: 13px; white-space: pre-wrap; }
+  </style>
+
+  <form id="forma">
+    <label for="ism">Ism</label>
+    <input id="ism" name="ism" required>
+
+    <label for="yosh">Yosh</label>
+    <input id="yosh" name="yosh" type="number" min="12" max="99" required>
+
+    <label for="til">Til</label>
+    <select id="til" name="til">
+      <option value="uz">O'zbek</option>
+      <option value="ru">Rus</option>
+    </select>
+
+    <button type="submit">Saqlash</button>
+  </form>
+
+  <div id="natija">Forma hali yuborilmadi</div>
+
+  <script>
+    const forma = document.getElementById("forma");
+    const natija = document.getElementById("natija");
+
+    forma.addEventListener("submit", function (event) {
+      // Bu qator bo'lmasa, sahifa qayta yuklanadi va hamma narsa yo'qoladi!
+      event.preventDefault();
+
+      // Barcha maydonlarni bir yo'la olish
+      const malumot = Object.fromEntries(new FormData(forma));
+
+      natija.textContent = "Yuborilgan ma'lumot:\n" + JSON.stringify(malumot, null, 2);
+    });
+  </script>
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b><code>event.preventDefault()</code></b>
+  Forma sukut bo'yicha sahifani qayta yuklaydi. Zamonaviy ilovada (Soyla ham shunday) biz
+  ma'lumotni JavaScript bilan yuboramiz, shuning uchun bu sukut xatti-harakatni to'xtatamiz.
+  Havolalar uchun ham shunday ishlatiladi.
+</div>
+
+<h2>Hodisa delegatsiyasi</h2>
+<p>
+  100 ta kartaga 100 ta ishlovchi qo'shish kerak emas. <strong>Otasiga bitta</strong> ishlovchi qo'yib,
+  <code>event.target</code> orqali qaysi bolasi bosilganini aniqlaysiz. Bu, ayniqsa,
+  kartalar keyinroq (serverdan) qo'shilganda muhim.
+</p>
+
+<div class="pg" data-title="Delegatsiya" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    .royxat { display: grid; gap: 8px; max-width: 320px; }
+    .karta { display: flex; align-items: center; gap: 10px; background: #f2f5f4;
+             border-radius: 12px; padding: 10px 12px; }
+    .karta b { flex: 1; }
+    .karta button { border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+    .saqla { background: #3dba7a; color: #fff; }
+    .ochir { background: #e5484d; color: #fff; }
+    #log { margin-top: 12px; font-size: 14px; color: #0f2a25; }
+  </style>
+
+  <div class="royxat" id="royxat"></div>
+  <div id="log"></div>
+
+  <script>
+    const odamlar = ["Dilshod", "Malika", "Aziz", "Nilufar"];
+    const royxat = document.getElementById("royxat");
+    const log = document.getElementById("log");
+
+    odamlar.forEach((ism, i) => {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+      karta.dataset.id = i;                       // kim ekanini elementga yozib qo'yamiz
+
+      const nom = document.createElement("b");
+      nom.textContent = ism;
+
+      const saqla = document.createElement("button");
+      saqla.className = "saqla";
+      saqla.dataset.amal = "saqla";               // qanday amal ekanini belgilaymiz
+      saqla.textContent = "Saqlash";
+
+      const ochir = document.createElement("button");
+      ochir.className = "ochir";
+      ochir.dataset.amal = "ochir";
+      ochir.textContent = "O'chirish";
+
+      karta.append(nom, saqla, ochir);
+      royxat.append(karta);
+    });
+
+    // BITTA ishlovchi — barcha tugmalar uchun
+    royxat.addEventListener("click", function (event) {
+      const tugma = event.target.closest("button");   // bosilgan joydan yuqoriga qarab button izlaydi
+      if (!tugma) return;                             // tugma emas — hech nima qilmaymiz
+
+      const karta = tugma.closest(".karta");
+      const ism = karta.querySelector("b").textContent;
+
+      if (tugma.dataset.amal === "saqla") {
+        log.textContent = `${ism} saqlandi (id: ${karta.dataset.id})`;
+      } else {
+        karta.remove();
+        log.textContent = `${ism} o'chirildi`;
+      }
+    });
+  </script>
+</textarea>
+</div>
+
+<div class="tip">
+  <b><code>closest()</code> — delegatsiyaning kaliti</b>
+  Foydalanuvchi tugma ichidagi matnni bosishi ham mumkin. <code>event.target.closest("button")</code>
+  bosilgan joydan yuqoriga qarab eng yaqin tugmani topib beradi.
+</div>
+
+<h2><code>localStorage</code> — brauzerda saqlash</h2>
+<p>
+  Sahifa yopilib qayta ochilsa ham saqlanib qoladigan kichik xotira.
+  Faqat <strong>matn</strong> saqlaydi — shuning uchun obyektni <code>JSON.stringify</code> bilan
+  matnga aylantirib yozamiz, o'qiganda <code>JSON.parse</code> bilan qaytaramiz.
+</p>
+
+<div class="pg" data-title="localStorage bilan sozlamalar" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    label { display: block; margin: 8px 0 4px; font-size: 14px; }
+    input, select { font-size: 15px; padding: 8px; width: 220px; }
+    button { font-size: 15px; padding: 10px 16px; cursor: pointer; margin: 12px 6px 0 0; }
+    #holat { margin-top: 12px; font-size: 14px; color: #3dba7a; min-height: 20px; }
+  </style>
+
+  <label for="ism">Ism</label>
+  <input id="ism">
+
+  <label for="til">Til</label>
+  <select id="til">
+    <option value="uz">O'zbek</option>
+    <option value="ru">Rus</option>
+    <option value="en">Ingliz</option>
+  </select>
+
+  <div>
+    <button id="saqla">Saqlash</button>
+    <button id="ochir">O'chirish</button>
+  </div>
+  <div id="holat"></div>
+
+  <script>
+    const KALIT = "soyla-demo-sozlama";
+    const ism = document.getElementById("ism");
+    const til = document.getElementById("til");
+    const holat = document.getElementById("holat");
+
+    function yukla() {
+      try {
+        const xom = localStorage.getItem(KALIT);
+        if (!xom) { holat.textContent = "Saqlangan ma'lumot yo'q"; return; }
+
+        const malumot = JSON.parse(xom);     // matndan obyektga
+        ism.value = malumot.ism || "";
+        til.value = malumot.til || "uz";
+        holat.textContent = "Saqlangan sozlamalar yuklandi";
+      } catch (err) {
+        holat.textContent = "Xotiraga kirish mumkin emas";
+      }
+    }
+
+    document.getElementById("saqla").addEventListener("click", function () {
+      const malumot = { ism: ism.value, til: til.value };
+      try {
+        localStorage.setItem(KALIT, JSON.stringify(malumot));   // obyektdan matnga
+        holat.textContent = "Saqlandi. Natija oynasini yangilab ko'ring (Ishga tushirish)";
+      } catch (err) {
+        holat.textContent = "Saqlash mumkin emas";
+      }
+    });
+
+    document.getElementById("ochir").addEventListener("click", function () {
+      try { localStorage.removeItem(KALIT); } catch (err) {}
+      ism.value = "";
+      til.value = "uz";
+      holat.textContent = "O'chirildi";
+    });
+
+    yukla();
+  </script>
+</textarea>
+</div>
+
+<div class="note">
+  <b>Sinab ko'rish</b>
+  Ismni yozib "Saqlash" ni bosing, keyin yuqoridagi "Ishga tushirish" tugmasini bosing —
+  maydon o'zi to'ldiriladi. Bu kursning o'zlashtirilgan darslar belgisi ham aynan shu usulda saqlanadi.
+</div>
+
+<table>
+  <tr><th>Metod</th><th>Vazifasi</th></tr>
+  <tr><td><code>localStorage.setItem(kalit, matn)</code></td><td>Yozish</td></tr>
+  <tr><td><code>localStorage.getItem(kalit)</code></td><td>O'qish (yo'q bo'lsa <code>null</code>)</td></tr>
+  <tr><td><code>localStorage.removeItem(kalit)</code></td><td>Bitta kalitni o'chirish</td></tr>
+  <tr><td><code>localStorage.clear()</code></td><td>Hammasini o'chirish</td></tr>
+</table>
+
+<div class="warnbox">
+  <b>Nimani saqlamaslik kerak</b>
+  <code>localStorage</code> — ochiq xotira, uni har qanday skript o'qiy oladi.
+  Parol, token, to'lov ma'lumotlarini bu yerga yozmang.
+</div>
+
+<div class="task">
+  <b>Mashq — vazifalar ro'yxati (todo).</b>
+  Quyidagi kodni to'ldiring:
+  <ul>
+    <li>forma yuborilganda yangi vazifa ro'yxatga qo'shilsin (sahifa yangilanmasin);</li>
+    <li>bo'sh matn qo'shilmasin;</li>
+    <li>vazifa ustiga bosilganda "bajarildi" ko'rinishi (chizilgan matn) o'zgarsin;</li>
+    <li>"O'chirish" tugmasi vazifani olib tashlasin (delegatsiya bilan);</li>
+    <li>ro'yxat <code>localStorage</code> da saqlansin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni — todo" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; max-width: 420px; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; font-size: 15px; padding: 9px; }
+    button { font-size: 15px; padding: 9px 14px; cursor: pointer; }
+    ul { list-style: none; padding: 0; margin-top: 14px; }
+    li { display: flex; align-items: center; gap: 10px; padding: 10px;
+         background: #f2f5f4; border-radius: 10px; margin-bottom: 8px; }
+    li span { flex: 1; cursor: pointer; }
+    li.bajarildi span { text-decoration: line-through; color: #8aa39a; }
+  </style>
+
+  <form id="forma">
+    <input id="kirit" placeholder="Yangi vazifa...">
+    <button type="submit">Qo'shish</button>
+  </form>
+
+  <ul id="royxat"></ul>
+
+  <script>
+    const forma = document.getElementById("forma");
+    const kirit = document.getElementById("kirit");
+    const royxat = document.getElementById("royxat");
+    let vazifalar = [];   // [{ matn: "...", bajarildi: false }]
+
+    function chiz() {
+      royxat.innerHTML = "";
+      vazifalar.forEach((vazifa, i) => {
+        const li = document.createElement("li");
+        if (vazifa.bajarildi) li.classList.add("bajarildi");
+        li.dataset.i = i;
+
+        const span = document.createElement("span");
+        span.textContent = vazifa.matn;
+
+        const ochir = document.createElement("button");
+        ochir.textContent = "O'chirish";
+        ochir.dataset.amal = "ochir";
+
+        li.append(span, ochir);
+        royxat.append(li);
+      });
+      saqla();
+    }
+
+    function saqla() {
+      // localStorage ga vazifalar massivini yozing
+    }
+
+    function yukla() {
+      // localStorage dan o'qib, vazifalar ga joylang (xato bo'lsa bo'sh massiv)
+    }
+
+    forma.addEventListener("submit", function (event) {
+      // 1) preventDefault
+      // 2) kirit.value ni tekshirib (trim), bo'sh bo'lmasa vazifalar ga push
+      // 3) maydonni tozalash va chiz()
+    });
+
+    royxat.addEventListener("click", function (event) {
+      // span bosilsa — bajarildi holatini almashtirish
+      // O'chirish bosilsa — vazifalar dan olib tashlash (splice)
+      // keyin chiz()
+    });
+
+    yukla();
+    chiz();
+  </script>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>const KALIT = "todo-royxat";
+
+function saqla() {
+  try { localStorage.setItem(KALIT, JSON.stringify(vazifalar)); } catch (err) {}
+}
+
+function yukla() {
+  try {
+    vazifalar = JSON.parse(localStorage.getItem(KALIT)) || [];
+  } catch (err) {
+    vazifalar = [];
+  }
+}
+
+forma.addEventListener("submit", function (event) {
+  event.preventDefault();
+  const matn = kirit.value.trim();
+  if (!matn) return;
+  vazifalar.push({ matn: matn, bajarildi: false });
+  kirit.value = "";
+  chiz();
+});
+
+royxat.addEventListener("click", function (event) {
+  const li = event.target.closest("li");
+  if (!li) return;
+  const i = Number(li.dataset.i);
+
+  if (event.target.dataset.amal === "ochir") {
+    vazifalar.splice(i, 1);
+  } else {
+    vazifalar[i].bajarildi = !vazifalar[i].bajarildi;
+  }
+  chiz();
+});</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li><code>addEventListener("click", ...)</code> — hodisani ushlashning asosiy usuli.</li>
+  <li>Formada <code>submit</code> + <code>event.preventDefault()</code>.</li>
+  <li><code>new FormData(forma)</code> + <code>Object.fromEntries</code> — barcha maydonlarni bir yo'la olish.</li>
+  <li>Ko'p elementga bitta ishlovchi: otaga <code>addEventListener</code> + <code>closest()</code>.</li>
+  <li><code>localStorage</code> faqat matn saqlaydi → <code>JSON.stringify</code> / <code>JSON.parse</code>.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. Forma yuborilgach sahifa "sakrab" yangilandi. Nima unutilgan?</strong><br>
+  <code>event.preventDefault()</code>.</p>
+  <p><strong>2. Serverdan kelgan 50 ta kartaga tugma ishlovchisini qanday qo'shasiz?</strong><br>
+  Ro'yxat otasiga bitta ishlovchi qo'yib, <code>event.target.closest("button")</code> bilan aniqlayman.</p>
+  <p><strong>3. <code>localStorage</code> ga obyektni to'g'ridan-to'g'ri yozsa nima bo'ladi?</strong><br>
+  <code>"[object Object]"</code> matni saqlanadi. <code>JSON.stringify</code> kerak.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

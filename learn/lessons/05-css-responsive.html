@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05. Moslashuvchan dizayn va animatsiya — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="05">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>05. Moslashuvchan dizayn va animatsiya</h1>
+<p class="lead">
+  Soyla — Telegram ichida, ya'ni <strong>telefonda</strong> ishlaydi. Shuning uchun mobil ekran birinchi o'rinda.
+  Shu darsda sahifani har qanday ekranga moslashtirishni va yumshoq animatsiya qo'shishni o'rganamiz.
+</p>
+
+<h2>Birinchi qadam: viewport meta tegi</h2>
+<pre><code>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code></pre>
+<p>
+  Bu qator bo'lmasa, telefon sahifani 980px kenglikda ochib, keyin kichraytiradi —
+  matn juda mayda bo'lib qoladi. Har bir HTML faylda bu qator <strong>bo'lishi shart</strong>.
+</p>
+
+<h2>Media query — ekran o'lchamiga qarab uslub</h2>
+
+<div class="pg" data-title="Media query" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+
+    .holat {
+      padding: 30px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      background: #3dba7a;     /* keng ekran: yashil */
+      color: #fff;
+    }
+
+    /* Ekran 700px dan tor bo'lsa — shu qoidalar qo'shiladi */
+    @media (max-width: 700px) {
+      .holat { background: #e86f4a; }     /* to'q sariq */
+    }
+
+    /* 420px dan tor bo'lsa */
+    @media (max-width: 420px) {
+      .holat { background: #e5484d; font-size: 16px; }
+    }
+  </style>
+
+  <div class="holat">Natija oynasini torayting!</div>
+  <p style="padding:0 20px">
+    Rang o'zgaradi: yashil → to'q sariq → qizil.
+    Chap tomondagi kod maydonining o'ng chegarasini sudrab, oynani torayting.
+  </p>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Mobile-first yondashuv</b>
+  Avval telefon uchun yozing (oddiy, bitta ustun), keyin <code>@media (min-width: ...)</code> bilan
+  kengroq ekranlar uchun qo'shimcha qilasiz. Shunday yozilgan kod soddaroq chiqadi.
+</div>
+
+<div class="pg" data-title="Mobile-first: bitta ustundan ikkiga" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #f2f5f4; }
+
+    /* Asos: telefon — hammasi ustun bo'lib joylashadi */
+    .layout { display: grid; gap: 12px; }
+    .blok { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+
+    /* Planshet va undan keng: ikki ustun */
+    @media (min-width: 640px) {
+      .layout { grid-template-columns: 2fr 1fr; }
+    }
+  </style>
+
+  <div class="layout">
+    <div class="blok"><h3>Asosiy kontent</h3><p>Keng ekranda chapda, telefonda yuqorida.</p></div>
+    <div class="blok"><h3>Yon panel</h3><p>Keng ekranda o'ngda, telefonda pastda.</p></div>
+  </div>
+</textarea>
+</div>
+
+<h2>Rasm va matnni moslashtirish</h2>
+
+<div class="pg" data-title="Moslashuvchan rasm va shrift">
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 12px; }
+
+    /* Rasm hech qachon otasidan chiqib ketmasin — juda muhim qoida */
+    img { max-width: 100%; height: auto; display: block; border-radius: 12px; }
+
+    /* Shrift ekranga qarab o'zi o'zgaradi: kamida 16px, ko'pi 28px */
+    h2 { font-size: clamp(18px, 5vw, 28px); }
+
+    /* Matn bloki juda keng bo'lmasin — o'qish qulay bo'lsin */
+    p { max-width: 60ch; }
+  </style>
+
+  <h2>clamp() bilan moslashuvchi sarlavha</h2>
+  <img src="https://picsum.photos/seed/resp/600/240" alt="Namuna">
+  <p>
+    Rasm oyna kengligidan oshmaydi, sarlavha esa oyna torayganda avtomatik kichrayadi.
+    Oynani torayting va kuzatib ko'ring.
+  </p>
+</textarea>
+</div>
+
+<h2>Soya, gradient, shaffoflik</h2>
+
+<div class="pg" data-title="Bezak xossalari" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #0d2420; color: #f3f7f5; }
+    .qator { display: flex; gap: 14px; flex-wrap: wrap; }
+    .box { width: 150px; padding: 18px; border-radius: 16px; font-size: 14px; }
+
+    .soya    { background: #fff; color: #0f2a25; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+    .grad    { background: linear-gradient(135deg, #e86f4a, #f0a070); }
+    .radial  { background: radial-gradient(circle at 30% 20%, #3dba7a, #0f2a25); }
+    .shaffof { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); }
+    .blur    { background: rgba(255,255,255,.1); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.2); }
+  </style>
+
+  <div class="qator">
+    <div class="box soya">box-shadow</div>
+    <div class="box grad">linear-gradient</div>
+    <div class="box radial">radial-gradient</div>
+    <div class="box shaffof">rgba fon</div>
+    <div class="box blur">backdrop-filter</div>
+  </div>
+</textarea>
+</div>
+
+<div class="note">
+  <b>Soyla kodida shu narsalar ishlatilgan</b>
+  <code>app/webapp/index.html</code> boshidagi <code>body</code> qoidasida uchta
+  <code>radial-gradient</code> va bitta <code>linear-gradient</code> ustma-ust qo'yilgan —
+  shuning uchun fon "chuqur" ko'rinadi. Endi u kodni o'qiy olasiz.
+</div>
+
+<h2><code>transition</code> — yumshoq o'zgarish</h2>
+
+<div class="pg" data-title="transition" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; }
+    button {
+      font-size: 16px;
+      padding: 12px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: #e86f4a;
+      color: #fff;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    /* Sehr shu qatorda: o'zgarish 0.25 soniyada silliq bo'ladi */
+    .silliq { transition: background 0.25s ease, transform 0.25s ease; }
+
+    .silliq:hover { background: #3dba7a; transform: translateY(-3px) scale(1.04); }
+    .keskin:hover { background: #3dba7a; transform: translateY(-3px) scale(1.04); }
+  </style>
+
+  <button class="silliq">transition BOR — ustiga boring</button>
+  <br>
+  <button class="keskin">transition YO'Q — farqni sezing</button>
+</textarea>
+</div>
+
+<h2><code>transform</code> — siljitish, aylantirish, kattalashtirish</h2>
+
+<div class="pg" data-title="transform">
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; }
+    .qator { display: flex; gap: 20px; flex-wrap: wrap; }
+    .kv {
+      width: 90px; height: 90px; background: #e86f4a; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px; font-size: 12px; text-align: center;
+      transition: transform .3s ease;
+    }
+    .a:hover { transform: scale(1.25); }
+    .b:hover { transform: rotate(15deg); }
+    .c:hover { transform: translateX(20px); }
+    .d:hover { transform: scale(1.1) rotate(-8deg) translateY(-6px); }
+  </style>
+
+  <div class="qator">
+    <div class="kv a">scale</div>
+    <div class="kv b">rotate</div>
+    <div class="kv c">translateX</div>
+    <div class="kv d">birgalikda</div>
+  </div>
+</textarea>
+</div>
+
+<h2><code>@keyframes</code> — o'zi ishlaydigan animatsiya</h2>
+
+<div class="pg" data-title="keyframes animatsiyalari" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; background: #0d2420; color: #f3f7f5; }
+
+    /* 1) Pulslovchi doira — "qidirilmoqda" holati uchun */
+    @keyframes puls {
+      0%   { transform: scale(1);    opacity: 1; }
+      70%  { transform: scale(1.6);  opacity: 0; }
+      100% { transform: scale(1.6);  opacity: 0; }
+    }
+    .puls {
+      position: relative; width: 70px; height: 70px; border-radius: 50%;
+      background: #e86f4a; margin: 10px 0 24px;
+    }
+    .puls::after {
+      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      background: #e86f4a; animation: puls 1.6s ease-out infinite;
+    }
+
+    /* 2) Pastdan ko'tarilib paydo bo'lish — yangi karta chiqqanda */
+    @keyframes kotaril {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .karta {
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px; padding: 16px; margin-bottom: 10px;
+      animation: kotaril .5s ease both;
+    }
+    .karta:nth-child(2) { animation-delay: .15s; }
+    .karta:nth-child(3) { animation-delay: .3s; }
+
+    /* 3) Aylanuvchi yuklanish belgisi */
+    @keyframes aylan { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.2); border-top-color: #f0a070;
+      animation: aylan .8s linear infinite;
+    }
+  </style>
+
+  <div class="puls"></div>
+
+  <div><div class="karta">Birinchi karta</div>
+  <div class="karta">Ikkinchi karta (kechikish bilan)</div>
+  <div class="karta">Uchinchi karta</div></div>
+
+  <div class="spinner"></div>
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b>Animatsiyani nimaga qo'llash kerak</b>
+  <code>transform</code> va <code>opacity</code> — brauzer uchun "arzon", silliq ishlaydi.
+  <code>width</code>, <code>height</code>, <code>top</code> kabi xossalarni animatsiya qilish
+  telefonda sekinlashishga olib keladi.
+</div>
+
+<div class="task">
+  <b>Mashq — moslashuvchan tugma va karta.</b>
+  <ul>
+    <li>Kartaga <code>transition</code> qo'shib, <code>:hover</code> da yuqoriga 4px siljishini va soyasi kuchayishini qiling.</li>
+    <li>Ekran 500px dan tor bo'lsa, karta ichidagi rasm va matn ustun bo'lib joylashsin (<code>flex-direction: column</code>).</li>
+    <li>Karta paydo bo'lganda <code>@keyframes</code> bilan pastdan ko'tarilsin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 18px; background: #f2f5f4; }
+    .karta {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border-radius: 16px; padding: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+      max-width: 420px;
+    }
+    .karta img { border-radius: 50%; }
+    .karta h3 { margin: 0 0 2px; }
+    .karta p { margin: 0; color: #8aa39a; font-size: 14px; }
+
+    /* 1) transition va hover shu yerga */
+
+    /* 2) media query shu yerga */
+
+    /* 3) keyframes va animation shu yerga */
+  </style>
+
+  <div class="karta">
+    <img src="https://picsum.photos/seed/task5/64/64" alt="" width="64">
+    <div>
+      <h3>Nilufar, 26</h3>
+      <p>Namangan · O'zbek tili</p>
+    </div>
+  </div>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>.karta {
+  transition: transform .25s ease, box-shadow .25s ease;
+  animation: kotaril .45s ease both;
+}
+.karta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 500px) {
+  .karta { flex-direction: column; text-align: center; }
+}
+
+@keyframes kotaril {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li><code>viewport</code> meta tegi — mobil moslashuvning sharti.</li>
+  <li><code>@media (max-width: ...)</code> — tor ekranga, <code>min-width</code> — keng ekranga qoida.</li>
+  <li><code>img { max-width: 100% }</code> — rasm chegaradan chiqmasligi uchun.</li>
+  <li><code>transition</code> — holat o'zgarishini yumshatadi, <code>@keyframes</code> — o'zi ishlovchi animatsiya.</li>
+  <li>Animatsiyada <code>transform</code> va <code>opacity</code> dan foydalaning.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. Telefonda matn juda mayda ko'rinsa, nimani tekshirasiz?</strong><br><code>viewport</code> meta tegi borligini.</p>
+  <p><strong>2. <code>transition</code> ni qaysi qoidaga yozamiz — asosiysiga yoki <code>:hover</code> ga?</strong><br>
+  Asosiy qoidaga. Aks holda faqat "kirish" silliq bo'lib, "chiqish" keskin bo'ladi.</p>
+  <p><strong>3. Cheksiz aylanuvchi spinner uchun nima kerak?</strong><br>
+  <code>@keyframes</code> + <code>animation: ... infinite linear</code>.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

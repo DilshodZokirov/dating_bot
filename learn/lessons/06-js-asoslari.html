@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06. JavaScript asoslari — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="06">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>06. JavaScript asoslari</h1>
+<p class="lead">
+  Bu darsda sahifaga tegmaymiz — faqat tilni o'rganamiz: o'zgaruvchi, shart, tsikl, funksiya,
+  massiv va obyekt. Natijani <code>console.log()</code> orqali ko'ramiz (o'ng tomonda qora maydon).
+</p>
+
+<h2>Birinchi kod</h2>
+
+<div class="pg" data-mode="js" data-title="console.log">
+<textarea>
+  console.log("Salom, JavaScript!");
+  console.log(2 + 2);
+  console.log("Soyla", "loyihasi", 2026);
+</textarea>
+</div>
+
+<div class="tip">
+  <b><code>console.log</code> — o'rganishning asosiy quroli</b>
+  Kod nima qilayotganini bilmasangiz, oraga <code>console.log(...)</code> qo'yib qiymatni chiqaring.
+  Haqiqiy brauzerda u <code>F12</code> → Console bo'limida ko'rinadi.
+</div>
+
+<h2>O'zgaruvchilar: <code>let</code> va <code>const</code></h2>
+
+<div class="pg" data-mode="js" data-title="let va const">
+<textarea>
+  let yosh = 24;        // keyin o'zgarishi mumkin
+  const ism = "Dilshod"; // o'zgarmaydi
+
+  yosh = 25;            // ruxsat
+  console.log(ism, yosh);
+
+  // const ni o'zgartirishga urinib ko'ring — xato chiqadi:
+  // ism = "Aziz";
+</textarea>
+</div>
+
+<ul>
+  <li><strong>Sukut bo'yicha <code>const</code></strong> yozing. Faqat qiymat o'zgarishi kerak bo'lsa — <code>let</code>.</li>
+  <li><code>var</code> — eski usul, yangi kodda ishlatilmaydi.</li>
+</ul>
+
+<h2>Ma'lumot turlari</h2>
+
+<div class="pg" data-mode="js" data-title="Turlar" data-tall>
+<textarea>
+  const matn   = "salom";          // string
+  const son    = 42;               // number
+  const kasr   = 3.14;             // number (alohida tur yo'q)
+  const rost   = true;             // boolean
+  const yoq    = null;             // "ataylab bo'sh"
+  const nomalum = undefined;       // "qiymat berilmagan"
+  const royxat = [1, 2, 3];        // array (massiv)
+  const odam   = { ism: "Aziz" };  // object
+
+  console.log(typeof matn, typeof son, typeof rost);
+  console.log(typeof yoq, typeof nomalum, typeof royxat, typeof odam);
+
+  // Qo'shimcha: son va matnni qo'shish
+  console.log("Yosh: " + 24);      // "Yosh: 24" — son matnga aylandi
+  console.log("5" * 2);            // 10 — matn songa aylandi
+  console.log("5" + 2);            // "52" — ehtiyot bo'ling!
+</textarea>
+</div>
+
+<h2>Template string — matnni yopishtirishning qulay yo'li</h2>
+
+<div class="pg" data-mode="js" data-title="Backtick bilan matn">
+<textarea>
+  const ism = "Malika";
+  const yosh = 21;
+  const shahar = "Samarqand";
+
+  // Eski usul — noqulay
+  console.log("Ism: " + ism + ", yosh: " + yosh + ", shahar: " + shahar);
+
+  // Zamonaviy usul — backtick (`) va ${...}
+  console.log(`Ism: ${ism}, yosh: ${yosh}, shahar: ${shahar}`);
+
+  // Ichida hisob ham qilish mumkin
+  console.log(`5 yildan keyin ${yosh + 5} yoshda bo'ladi`);
+</textarea>
+</div>
+
+<h2>Shartlar</h2>
+
+<div class="pg" data-mode="js" data-title="if / else if / else" data-tall>
+<textarea>
+  const yosh = 17;
+
+  if (yosh < 12) {
+    console.log("Ro'yxatdan o'tish mumkin emas");
+  } else if (yosh < 18) {
+    console.log("O'smirlar guruhi");
+  } else {
+    console.log("Kattalar guruhi");
+  }
+
+  // Solishtirish operatorlari
+  console.log(5 > 3, 5 >= 5, 5 === 5, 5 !== 3);
+
+  // === va == farqi (MUHIM)
+  console.log(5 === "5");   // false — tur ham tekshiriladi (shuni ishlatamiz)
+  console.log(5 == "5");    // true  — turni e'tiborsiz qoldiradi (ishlatmang)
+
+  // Mantiqiy operatorlar
+  const til = "uz";
+  const online = true;
+  if (til === "uz" && online) console.log("Mos suhbatdosh topildi");
+  if (til === "uz" || til === "ru") console.log("Til qo'llanadi");
+  if (!online) console.log("Oflayn");
+
+  // Qisqa shart (ternary)
+  const holat = online ? "onlayn" : "oflayn";
+  console.log(`Holat: ${holat}`);
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b>Har doim <code>===</code> ishlating</b>
+  <code>==</code> turlarni o'zi o'zgartirib solishtiradi va kutilmagan natija beradi
+  (<code>0 == ""</code> → <code>true</code>). Professional kodda faqat <code>===</code> va <code>!==</code>.
+</div>
+
+<h2>"Rost" va "yolg'on" qiymatlar</h2>
+
+<div class="pg" data-mode="js" data-title="Falsy qiymatlar">
+<textarea>
+  // Quyidagi 6 qiymat shartda "yolg'on" hisoblanadi:
+  const yolgonlar = [false, 0, "", null, undefined, NaN];
+
+  yolgonlar.forEach(function (qiymat) {
+    console.log(JSON.stringify(qiymat), "->", qiymat ? "rost" : "yolg'on");
+  });
+
+  // Qolgan hammasi rost — hatto bo'sh massiv va obyekt ham
+  console.log("[] ->", [] ? "rost" : "yolg'on");
+  console.log("'0' ->", "0" ? "rost" : "yolg'on");
+
+  // Shu bilan bo'sh matnni tekshirish oson:
+  const ism = "";
+  if (!ism) console.log("Ism kiritilmagan");
+</textarea>
+</div>
+
+<h2>Tsikllar</h2>
+
+<div class="pg" data-mode="js" data-title="for, while, for...of" data-tall>
+<textarea>
+  // 1) Klassik for
+  for (let i = 1; i <= 3; i++) {
+    console.log("for:", i);
+  }
+
+  // 2) while
+  let sanoq = 3;
+  while (sanoq > 0) {
+    console.log("while:", sanoq);
+    sanoq--;
+  }
+
+  // 3) for...of — massiv elementlari bo'ylab (eng qulay)
+  const shaharlar = ["Toshkent", "Samarqand", "Buxoro"];
+  for (const shahar of shaharlar) {
+    console.log("shahar:", shahar);
+  }
+
+  // 4) break va continue
+  for (const shahar of shaharlar) {
+    if (shahar === "Samarqand") continue;   // bu qadamni tashlab ketish
+    if (shahar === "Buxoro") break;         // tsikldan chiqish
+    console.log("qoldi:", shahar);
+  }
+</textarea>
+</div>
+
+<h2>Funksiyalar</h2>
+
+<div class="pg" data-mode="js" data-title="Funksiya yozishning uch usuli" data-tall>
+<textarea>
+  // 1) Klassik e'lon
+  function salomla(ism) {
+    return `Salom, ${ism}!`;
+  }
+
+  // 2) Arrow funksiya (zamonaviy, qisqa)
+  const qoshish = (a, b) => a + b;
+
+  // 3) Bir nechta qatorli arrow
+  const yoshMos = (yosh, quyi, yuqori) => {
+    if (yosh < quyi) return false;
+    if (yosh > yuqori) return false;
+    return true;
+  };
+
+  console.log(salomla("Dilshod"));
+  console.log(qoshish(2, 3));
+  console.log(yoshMos(24, 18, 30));
+  console.log(yoshMos(15, 18, 30));
+
+  // Sukut qiymatli parametr
+  const kutish = (soniya = 120) => `Taklif ${soniya} soniya kutadi`;
+  console.log(kutish());
+  console.log(kutish(60));
+</textarea>
+</div>
+
+<div class="note">
+  <b><code>return</code> ni unutmang</b>
+  Funksiya <code>return</code> yozmasa, <code>undefined</code> qaytaradi.
+  Bu yangi boshlovchilarning eng ko'p uchraydigan xatosi.
+</div>
+
+<h2>Massivlar</h2>
+
+<div class="pg" data-mode="js" data-title="Massiv asoslari" data-tall>
+<textarea>
+  const suhbatdoshlar = ["Dilshod", "Malika", "Aziz"];
+
+  console.log(suhbatdoshlar.length);      // uzunligi: 3
+  console.log(suhbatdoshlar[0]);          // birinchi element (0 dan boshlanadi!)
+  console.log(suhbatdoshlar[suhbatdoshlar.length - 1]); // oxirgisi
+
+  suhbatdoshlar.push("Nilufar");          // oxiriga qo'shish
+  console.log(suhbatdoshlar);
+
+  suhbatdoshlar.pop();                    // oxirgisini olib tashlash
+  console.log(suhbatdoshlar);
+
+  console.log(suhbatdoshlar.includes("Malika"));  // bormi?
+  console.log(suhbatdoshlar.indexOf("Aziz"));     // nechanchi o'rinda?
+  console.log(suhbatdoshlar.join(", "));          // matnga aylantirish
+</textarea>
+</div>
+
+<h3>Massivning eng muhim 4 metodi</h3>
+
+<div class="pg" data-mode="js" data-title="map, filter, find, sort" data-tall>
+<textarea>
+  const odamlar = [
+    { ism: "Dilshod", yosh: 24, shahar: "Toshkent" },
+    { ism: "Malika",  yosh: 21, shahar: "Samarqand" },
+    { ism: "Aziz",    yosh: 30, shahar: "Toshkent" },
+    { ism: "Sardor",  yosh: 17, shahar: "Andijon" },
+  ];
+
+  // map — har bir elementdan yangi qiymat yasash
+  const ismlar = odamlar.map(odam => odam.ism);
+  console.log("map:", ismlar);
+
+  // filter — shartga mos elementlarni tanlash
+  const kattalar = odamlar.filter(odam => odam.yosh >= 18);
+  console.log("filter:", kattalar.map(o => o.ism));
+
+  const toshkentliklar = odamlar.filter(odam => odam.shahar === "Toshkent");
+  console.log("Toshkentliklar:", toshkentliklar.map(o => o.ism));
+
+  // find — birinchi mos elementni topish (bitta obyekt qaytaradi)
+  const topildi = odamlar.find(odam => odam.yosh > 25);
+  console.log("find:", topildi);
+
+  // sort — tartiblash
+  const yoshTartib = [...odamlar].sort((a, b) => a.yosh - b.yosh);
+  console.log("sort:", yoshTartib.map(o => `${o.ism}(${o.yosh})`));
+
+  // forEach — har biri bilan biror ish qilish (hech nima qaytarmaydi)
+  odamlar.forEach(odam => console.log(`${odam.ism} — ${odam.shahar}`));
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Shu 4 metod — kundalik ishning 80%i</b>
+  <code>map</code> — o'zgartirish, <code>filter</code> — saralash, <code>find</code> — topish,
+  <code>sort</code> — tartiblash. Yakuniy loyihada (10-dars) aynan shular bilan qidiruv filtri yozamiz.
+</div>
+
+<h2>Obyektlar</h2>
+
+<div class="pg" data-mode="js" data-title="Obyekt bilan ishlash" data-tall>
+<textarea>
+  const foydalanuvchi = {
+    ism: "Dilshod",
+    yosh: 24,
+    shahar: "Toshkent",
+    tillar: ["uz", "ru"],
+    sozlamalar: {
+      quyiYosh: 18,
+      yuqoriYosh: 30,
+    },
+    salomlash() {                   // obyekt ichidagi funksiya = metod
+      return `Men ${this.ism}`;
+    },
+  };
+
+  // O'qish
+  console.log(foydalanuvchi.ism);
+  console.log(foydalanuvchi["yosh"]);              // shunday ham mumkin
+  console.log(foydalanuvchi.sozlamalar.quyiYosh);  // ichma-ich
+  console.log(foydalanuvchi.tillar[0]);
+  console.log(foydalanuvchi.salomlash());
+
+  // Yozish va qo'shish
+  foydalanuvchi.yosh = 25;
+  foydalanuvchi.online = true;
+  console.log(foydalanuvchi);
+
+  // Yo'q maydonni so'rasangiz — undefined
+  console.log(foydalanuvchi.telefon);
+
+  // Xavfsiz o'qish (?.) — ichki obyekt bo'lmasa ham xato bermaydi
+  console.log(foydalanuvchi.profil?.rasm);
+
+  // Kalitlar va qiymatlar
+  console.log(Object.keys(foydalanuvchi.sozlamalar));
+  console.log(Object.values(foydalanuvchi.sozlamalar));
+</textarea>
+</div>
+
+<div class="task">
+  <b>Mashq — mos suhbatdoshni topish.</b>
+  Quyidagi kodda <code>mosKeladi</code> funksiyasini yozib tugatib, filtr ishlashiga erishing. Shartlar:
+  <ul>
+    <li>yoshi <code>quyi</code> va <code>yuqori</code> orasida bo'lsin (chegaralar ham hisoblanadi);</li>
+    <li>tili qidiruvchi tili bilan bir xil bo'lsin;</li>
+    <li><code>online</code> bo'lsin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-mode="js" data-title="Mashq maydoni" data-tall>
+<textarea>
+  const nomzodlar = [
+    { ism: "Dilshod", yosh: 24, til: "uz", online: true },
+    { ism: "Malika",  yosh: 21, til: "uz", online: false },
+    { ism: "Aziz",    yosh: 34, til: "uz", online: true },
+    { ism: "Ivan",    yosh: 25, til: "ru", online: true },
+    { ism: "Sardor",  yosh: 19, til: "uz", online: true },
+  ];
+
+  const qidiruv = { til: "uz", quyi: 18, yuqori: 30 };
+
+  function mosKeladi(odam, qidiruv) {
+    // Shu yerga shartni yozing. Hozir hammasi "rost" qaytaryapti:
+    return true;
+  }
+
+  const natija = nomzodlar.filter(odam => mosKeladi(odam, qidiruv));
+  console.log("Topildi:", natija.map(o => o.ism));
+  console.log("Kutilgan natija: Dilshod, Sardor");
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>function mosKeladi(odam, qidiruv) {
+  if (!odam.online) return false;
+  if (odam.til !== qidiruv.til) return false;
+  if (odam.yosh &lt; qidiruv.quyi) return false;
+  if (odam.yosh &gt; qidiruv.yuqori) return false;
+  return true;
+}
+
+// yoki bir qatorda:
+const mosKeladi = (odam, q) =&gt;
+  odam.online &amp;&amp; odam.til === q.til &amp;&amp; odam.yosh &gt;= q.quyi &amp;&amp; odam.yosh &lt;= q.yuqori;</code></pre>
+  <p>Birinchi variant o'qishga qulayroq: har bir shart alohida qatorda, xato qidirish oson.</p>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li><code>const</code> asosiy, <code>let</code> — faqat o'zgaradigan qiymatga.</li>
+  <li>Matn yasashda backtick va <code>${...}</code>.</li>
+  <li>Solishtirishda faqat <code>===</code>.</li>
+  <li><code>map</code> / <code>filter</code> / <code>find</code> / <code>sort</code> — massiv bilan ishlashning asosi.</li>
+  <li>Obyekt — nom va qiymat juftliklari; <code>obyekt.maydon</code> bilan o'qiladi.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>"5" + 2</code> nima beradi?</strong><br><code>"52"</code> — chunki <code>+</code> matn bilan ishlaganda yopishtiradi.</p>
+  <p><strong>2. <code>map</code> va <code>forEach</code> farqi?</strong><br>
+  <code>map</code> yangi massiv qaytaradi, <code>forEach</code> hech nima qaytarmaydi — faqat harakat qiladi.</p>
+  <p><strong>3. Massivning 10 elementidan shartga mos 3 tasini olish uchun nima ishlatasiz?</strong><br><code>filter</code>.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>
