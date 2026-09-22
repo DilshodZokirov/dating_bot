@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>09. Asinxron JS va fetch — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="09">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>09. Asinxron JS va fetch</h1>
+<p class="lead">
+  Serverdan ma'lumot olish darhol bo'lmaydi — u vaqt talab qiladi. JavaScript bu vaqtda
+  to'xtab turmaydi, ishni davom ettiradi. Shu "kutish" mexanizmini o'rganamiz:
+  <code>Promise</code>, <code>async/await</code> va <code>fetch</code>.
+</p>
+
+<h2>Sinxron va asinxron</h2>
+
+<div class="pg" data-mode="js" data-title="Tartib qanday bo'ladi">
+<textarea>
+  console.log("1. Birinchi");
+
+  setTimeout(function () {
+    console.log("3. Bu 1 soniyadan keyin chiqadi");
+  }, 1000);
+
+  console.log("2. Ikkinchi — kutmaydi!");
+
+  // Natija tartibi: 1, 2, keyin 3.
+  // JavaScript setTimeout'ni "keyinroq bajarilsin" deb chetga qo'yadi.
+</textarea>
+</div>
+
+<div class="note">
+  <b>Nega shunday?</b>
+  Agar JS kutib turadigan bo'lsa, sahifa "muzlab" qolardi: tugmalar bosilmaydi, animatsiya to'xtaydi.
+  Shuning uchun uzoq ishlar (server so'rovi, taymer) chetga qo'yiladi va tayyor bo'lganda bajariladi.
+</div>
+
+<h2><code>Promise</code> — "keyinroq beriladigan qiymat"</h2>
+
+<div class="pg" data-mode="js" data-title="Promise" data-tall>
+<textarea>
+  // Promise — hozir emas, keyinroq tayyor bo'ladigan natija.
+  function kutish(soniya) {
+    return new Promise(function (bajarildi) {
+      setTimeout(() => bajarildi(`${soniya} soniya o'tdi`), soniya * 1000);
+    });
+  }
+
+  console.log("So'rov yuborildi...");
+
+  // .then() — tayyor bo'lganda shu funksiya ishlaydi
+  kutish(1).then(function (natija) {
+    console.log("then:", natija);
+  });
+
+  // Xato holati
+  function xatoBeradi() {
+    return new Promise(function (bajarildi, xato) {
+      setTimeout(() => xato(new Error("Server javob bermadi")), 1500);
+    });
+  }
+
+  xatoBeradi()
+    .then(natija => console.log("bu chiqmaydi"))
+    .catch(err => console.log("catch:", err.message));
+</textarea>
+</div>
+
+<h2><code>async / await</code> — o'qishga qulay shakl</h2>
+
+<div class="pg" data-mode="js" data-title="async va await" data-tall>
+<textarea>
+  function kutish(soniya, nom) {
+    return new Promise(bajarildi => setTimeout(() => bajarildi(nom), soniya * 1000));
+  }
+
+  // async funksiya ichida await yozish mumkin — kod "yuqoridan pastga" o'qiladi
+  async function ishla() {
+    console.log("Boshlandi");
+
+    const birinchi = await kutish(1, "birinchi natija");
+    console.log(birinchi);
+
+    const ikkinchi = await kutish(1, "ikkinchi natija");
+    console.log(ikkinchi);
+
+    console.log("Tugadi");
+  }
+
+  ishla();
+
+  // Ikkalasini BIR VAQTDA kutish (tezroq!)
+  async function parallel() {
+    const [a, b] = await Promise.all([
+      kutish(1, "A"),
+      kutish(1, "B"),
+    ]);
+    console.log("Promise.all:", a, b, "— ikkisi ham 1 soniyada");
+  }
+
+  parallel();
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Qaysi birini ishlatish kerak?</b>
+  Yangi kodda <code>async/await</code>. <code>.then()</code> ni bilish kerak, chunki eski kodda ko'p uchraydi.
+  <code>await</code> faqat <code>async</code> funksiya ichida ishlaydi.
+</div>
+
+<h2><code>fetch</code> — serverdan ma'lumot olish</h2>
+<p>
+  Quyidagi misol haqiqiy so'rov yuboradi: kurs papkasidagi
+  <code>assets/demo-odamlar.json</code> faylni o'qiydi. Bu xuddi o'z API'ingizdan
+  ma'lumot olishning o'zi.
+</p>
+
+<div class="pg" data-mode="js" data-title="fetch + JSON" data-tall>
+<textarea>
+  async function malumotOl() {
+    console.log("So'rov yuborilmoqda...");
+
+    const javob = await fetch("../assets/demo-odamlar.json");
+
+    // MUHIM: fetch 404 yoki 500 da ham "xato" bermaydi — o'zimiz tekshiramiz
+    if (!javob.ok) {
+      throw new Error("Server xatosi: " + javob.status);
+    }
+
+    const malumot = await javob.json();   // matnni obyektga aylantiradi
+    return malumot;
+  }
+
+  async function korsat() {
+    try {
+      const malumot = await malumotOl();
+
+      console.log("Jami:", malumot.jami);
+
+      malumot.odamlar.forEach(function (odam) {
+        console.log(`${odam.ism}, ${odam.yosh} — ${odam.shahar} (${odam.online ? "onlayn" : "oflayn"})`);
+      });
+
+      const onlaynlar = malumot.odamlar.filter(odam => odam.online);
+      console.log("Onlayn:", onlaynlar.map(o => o.ism).join(", "));
+
+    } catch (err) {
+      console.error("Xato:", err.message);
+    }
+  }
+
+  korsat();
+</textarea>
+</div>
+
+<h2>Yuklanish holati bilan to'liq namuna</h2>
+<p>
+  Real ilovada foydalanuvchi kutayotganini bilishi kerak. Uchta holat bo'ladi:
+  <strong>yuklanmoqda</strong>, <strong>tayyor</strong>, <strong>xato</strong>.
+  Har birini ko'rsatish — professional frontendning belgisi.
+</p>
+
+<div class="pg" data-title="Yuklanish, natija, xato" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #f2f5f4; }
+    button { font-size: 15px; padding: 10px 16px; cursor: pointer; margin: 0 6px 12px 0; }
+    .holat { padding: 14px; border-radius: 12px; background: #fff; }
+    .xato { background: #ffecec; color: #b42318; }
+    .royxat { display: grid; gap: 8px; }
+    .karta { display: flex; align-items: center; gap: 10px; background: #fff;
+             border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+    .karta b { flex: 1; }
+    .karta small { color: #8aa39a; }
+    .spinner { width: 22px; height: 22px; border-radius: 50%; display: inline-block;
+               border: 3px solid #dfe7e4; border-top-color: #e86f4a;
+               animation: aylan .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes aylan { to { transform: rotate(360deg); } }
+  </style>
+
+  <button id="yukla">Ma'lumotni yuklash</button>
+  <button id="xatoli">Yo'q manzilga so'rov (xatoni ko'rish)</button>
+
+  <div id="chiqish"></div>
+
+  <script>
+    const chiqish = document.getElementById("chiqish");
+
+    function yuklanmoqda() {
+      chiqish.innerHTML = '<div class="holat"><span class="spinner"></span>Yuklanmoqda...</div>';
+    }
+
+    function xatoKorsat(xabar) {
+      chiqish.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "holat xato";
+      div.textContent = "Xato: " + xabar;
+      chiqish.append(div);
+    }
+
+    function royxatChiz(odamlar) {
+      chiqish.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "royxat";
+
+      odamlar.forEach(function (odam) {
+        const karta = document.createElement("div");
+        karta.className = "karta";
+
+        const nom = document.createElement("b");
+        nom.textContent = `${odam.ism}, ${odam.yosh}`;
+
+        const joy = document.createElement("small");
+        joy.textContent = `${odam.shahar} · ${odam.online ? "onlayn" : "oflayn"}`;
+
+        karta.append(nom, joy);
+        box.append(karta);
+      });
+
+      chiqish.append(box);
+    }
+
+    async function yukla(manzil) {
+      yuklanmoqda();
+      try {
+        const javob = await fetch(manzil);
+        if (!javob.ok) throw new Error("HTTP " + javob.status);
+        const malumot = await javob.json();
+        royxatChiz(malumot.odamlar);
+      } catch (err) {
+        xatoKorsat(err.message);
+      }
+    }
+
+    document.getElementById("yukla").addEventListener("click", function () {
+      yukla("../assets/demo-odamlar.json");
+    });
+
+    document.getElementById("xatoli").addEventListener("click", function () {
+      yukla("../assets/bunday-fayl-yoq.json");
+    });
+  </script>
+</textarea>
+</div>
+
+<h2>Serverga ma'lumot yuborish (POST)</h2>
+<pre><code>async function sozlamaSaqla(sozlama) {
+  const javob = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sozlama),          // obyektni matnga aylantiramiz
+  });
+
+  if (!javob.ok) throw new Error("Saqlanmadi: " + javob.status);
+  return await javob.json();
+}
+
+// Ishlatish:
+try {
+  const natija = await sozlamaSaqla({ til: "uz", quyiYosh: 18, yuqoriYosh: 30 });
+  console.log("Saqlandi", natija);
+} catch (err) {
+  console.error(err.message);
+}</code></pre>
+
+<div class="note">
+  <b>Soyla'da bu qanday</b>
+  Mini App sozlamalarni saqlaganda aynan shunday POST so'rov yuboradi, server esa
+  <code>app/api/webapp.py</code> da uni qabul qilib, PostgreSQL'ga yozadi.
+  Telegram'ning <code>initData</code> si ham shu so'rov bilan birga ketadi —
+  server foydalanuvchi haqiqatan kim ekanini tekshirishi uchun (<code>app/telegram_auth.py</code>).
+</div>
+
+<h2>Tez-tez uchraydigan xatolar</h2>
+<table>
+  <tr><th>Xato</th><th>Sababi</th><th>Yechimi</th></tr>
+  <tr><td><code>await is only valid in async</code></td><td><code>await</code> oddiy funksiyada</td><td>Funksiyaga <code>async</code> qo'shish</td></tr>
+  <tr><td>Natija <code>Promise {...}</code> chiqadi</td><td><code>await</code> yozilmagan</td><td><code>await</code> qo'shish</td></tr>
+  <tr><td><code>Unexpected token &lt; in JSON</code></td><td>Server JSON emas, HTML qaytardi (odatda 404 sahifa)</td><td>Manzilni va <code>javob.ok</code> ni tekshirish</td></tr>
+  <tr><td><code>CORS policy</code></td><td>Boshqa domenga so'rov, server ruxsat bermagan</td><td>Server tomonida CORS sozlash</td></tr>
+  <tr><td>Ma'lumot keldi, lekin sahifa bo'sh</td><td>Chizish funksiyasi chaqirilmagan yoki selektor xato</td><td><code>console.log</code> bilan tekshirish</td></tr>
+</table>
+
+<div class="task">
+  <b>Mashq — onlayn suhbatdoshlar.</b>
+  Quyidagi kodni to'ldiring:
+  <ul>
+    <li><code>assets/demo-odamlar.json</code> dan ma'lumot oling;</li>
+    <li>faqat <code>online: true</code> bo'lganlarini ko'rsating;</li>
+    <li>yuklanish vaqtida "Yuklanmoqda..." yozuvi chiqsin;</li>
+    <li>xato bo'lsa qizil xabar chiqsin;</li>
+    <li>hech kim topilmasa "Hozir hech kim onlayn emas" deb yozilsin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #f2f5f4; }
+    button { font-size: 15px; padding: 10px 16px; cursor: pointer; margin-bottom: 12px; }
+    .karta { background: #fff; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+    .xato { background: #ffecec; color: #b42318; padding: 12px; border-radius: 12px; }
+  </style>
+
+  <button id="btn">Onlaynlarni ko'rsatish</button>
+  <div id="chiqish"></div>
+
+  <script>
+    const chiqish = document.getElementById("chiqish");
+
+    async function korsat() {
+      // 1) chiqish ga "Yuklanmoqda..." yozing
+      // 2) fetch("../assets/demo-odamlar.json") — javob.ok ni tekshiring
+      // 3) javob.json() dan odamlarni oling va online bo'yicha filter qiling
+      // 4) har biri uchun .karta div yasab chiqishga qo'shing
+      // 5) try/catch bilan xatoni ushlang
+    }
+
+    document.getElementById("btn").addEventListener("click", korsat);
+  </script>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>async function korsat() {
+  chiqish.textContent = "Yuklanmoqda...";
+
+  try {
+    const javob = await fetch("../assets/demo-odamlar.json");
+    if (!javob.ok) throw new Error("HTTP " + javob.status);
+
+    const malumot = await javob.json();
+    const onlaynlar = malumot.odamlar.filter(odam =&gt; odam.online);
+
+    chiqish.innerHTML = "";
+
+    if (onlaynlar.length === 0) {
+      chiqish.textContent = "Hozir hech kim onlayn emas";
+      return;
+    }
+
+    onlaynlar.forEach(function (odam) {
+      const karta = document.createElement("div");
+      karta.className = "karta";
+      karta.textContent = `${odam.ism}, ${odam.yosh} — ${odam.shahar}`;
+      chiqish.append(karta);
+    });
+
+  } catch (err) {
+    chiqish.innerHTML = "";
+    const xato = document.createElement("div");
+    xato.className = "xato";
+    xato.textContent = "Xato: " + err.message;
+    chiqish.append(xato);
+  }
+}</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>JavaScript uzoq ishlarni kutib turmaydi — ular <code>Promise</code> orqali keyinroq tugaydi.</li>
+  <li><code>async</code> funksiya + <code>await</code> — o'qishga eng qulay shakl.</li>
+  <li><code>fetch</code> dan keyin <code>javob.ok</code> ni <strong>albatta</strong> tekshiring.</li>
+  <li><code>await javob.json()</code> — ikkinchi <code>await</code> ni unutmang.</li>
+  <li>Har bir so'rov uchun uchta holatni ko'rsating: yuklanmoqda / natija / xato.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>fetch</code> 404 qaytarsa, <code>catch</code> ishlaydimi?</strong><br>
+  Yo'q. <code>javob.ok</code> ni o'zingiz tekshirib, <code>throw</code> qilishingiz kerak.</p>
+  <p><strong>2. <code>const m = fetch(url)</code> da <code>m</code> nima bo'ladi?</strong><br>
+  <code>Promise</code>. <code>await</code> yozish kerak.</p>
+  <p><strong>3. Ikki so'rovni bir vaqtda yuborish uchun nima ishlatiladi?</strong><br>
+  <code>Promise.all([...])</code>.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

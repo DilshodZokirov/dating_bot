@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03. CSS asoslari — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="03">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>03. CSS asoslari</h1>
+<p class="lead">
+  CSS — sahifaning ko'rinishi. Bitta qoida ikki qismdan iborat:
+  <strong>kimga</strong> (selektor) va <strong>nima qilish</strong> (xossalar).
+</p>
+
+<h2>CSS qoidasi tuzilishi</h2>
+<pre><code>h1 {                    ← selektor: barcha h1 teglar
+  color: #e86f4a;       ← xossa: qiymat;
+  font-size: 32px;
+}                       ← qoida tugadi</code></pre>
+
+<h2>CSS'ni HTML'ga ulashning 3 yo'li</h2>
+
+<div class="pg" data-title="Uchta usul">
+<textarea>
+  <!-- 1) Alohida fayl (eng to'g'ri yo'l, real loyihalarda shunday):
+       <link rel="stylesheet" href="style.css"> -->
+
+  <!-- 2) Sahifa ichida style tegi (Soyla shu usuldan foydalanadi) -->
+  <style>
+    h1 { color: #e86f4a; }
+    p  { color: #555; }
+  </style>
+
+  <h1>Sarlavha</h1>
+  <p>Paragraf</p>
+
+  <!-- 3) To'g'ridan-to'g'ri tegda (inline) — faqat juda kichik holatlar uchun -->
+  <p style="color: green; font-weight: bold;">Inline uslubdagi paragraf</p>
+</textarea>
+</div>
+
+<div class="note">
+  <b>Qaysi biri kuchli?</b>
+  Inline uslub eng kuchli, keyin <code>style</code> tegi / fayl, keyin brauzerning o'z uslubi.
+  Shuning uchun inline uslubni keyin CSS bilan bekor qilish qiyin — undan kamroq foydalaning.
+</div>
+
+<h2>Selektorlar</h2>
+
+<div class="pg" data-title="Asosiy selektorlar" data-tall>
+<textarea>
+  <style>
+    /* teg selektori — barcha p */
+    p { color: #333; }
+
+    /* class selektori — nuqta bilan */
+    .muhim { color: #e86f4a; font-weight: bold; }
+
+    /* id selektori — panjara bilan */
+    #birinchi { text-decoration: underline; }
+
+    /* ikki class birga (bo'sh joysiz!) */
+    .karta.faol { border: 2px solid green; }
+
+    /* ichidagi elementlar (bo'sh joy bilan) */
+    .karta p { font-size: 14px; }
+
+    /* bir nechta selektorga bitta qoida */
+    h2, h3 { font-family: Georgia, serif; }
+
+    /* atribut bo'yicha */
+    input[type="text"] { border: 2px solid #e86f4a; }
+
+    /* holat (pseudo-class) */
+    button:hover { background: #e86f4a; color: white; }
+    a:visited { color: purple; }
+
+    .karta { border: 1px solid #ccc; padding: 10px; margin-bottom: 8px; }
+  </style>
+
+  <h2>Selektorlar bilan tanishuv</h2>
+  <p id="birinchi">Men id orqali tanlandim.</p>
+  <p class="muhim">Men class orqali tanlandim.</p>
+
+  <div class="karta">
+    <p>Karta ichidagi paragraf — kichikroq shriftda.</p>
+  </div>
+  <div class="karta faol">
+    <p>Bu karta "faol" — yashil chegara.</p>
+  </div>
+
+  <input type="text" placeholder="matn maydoni">
+  <br><br>
+  <button>Ustiga sichqoncha olib boring</button>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Amaliy maslahat</b>
+  Kundalik ishda 90% holatda <strong><code>class</code></strong> ishlatiladi.
+  <code>id</code> asosan JavaScript uchun va sahifa ichidagi havolalar uchun qoldiriladi.
+</div>
+
+<h2>Rang, shrift, matn</h2>
+
+<div class="pg" data-title="Matn uslublari" data-tall>
+<textarea>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; }
+
+    .a { color: red; }                      /* nom bilan */
+    .b { color: #e86f4a; }                  /* hex — eng ko'p ishlatiladigan */
+    .c { color: rgb(61, 186, 122); }        /* rgb */
+    .d { color: rgba(0, 0, 0, 0.45); }      /* rgba — shaffoflik bilan */
+
+    .katta   { font-size: 28px; }
+    .qalin   { font-weight: 700; }
+    .qiya    { font-style: italic; }
+    .markaz  { text-align: center; }
+    .ochiq   { letter-spacing: 3px; text-transform: uppercase; }
+    .zich    { line-height: 1.1; }
+    .keng    { line-height: 2; }
+    .chizsiz { text-decoration: none; }
+  </style>
+
+  <p class="a">Nom bilan: red</p>
+  <p class="b">Hex: #e86f4a</p>
+  <p class="c">RGB: rgb(61, 186, 122)</p>
+  <p class="d">RGBA: yarim shaffof qora</p>
+
+  <p class="katta qalin">Katta va qalin</p>
+  <p class="qiya">Qiya matn</p>
+  <p class="markaz">Markazlashtirilgan</p>
+  <p class="ochiq">Harflar orasi keng</p>
+  <p class="zich">Zich qatorlar. Zich qatorlar. Zich qatorlar. Zich qatorlar. Zich qatorlar.</p>
+  <p class="keng">Keng qatorlar. Keng qatorlar. Keng qatorlar. Keng qatorlar. Keng qatorlar.</p>
+  <p><a href="#" class="chizsiz">Chiziqsiz havola</a></p>
+</textarea>
+</div>
+
+<h2>Box model — CSS'ning yuragi</h2>
+<p>Har bir element to'rtburchak "quti". Uning o'lchami 4 qatlamdan yig'iladi:</p>
+<pre><code>┌─────────── margin (tashqi bo'shliq) ───────────┐
+│  ┌───────── border (chegara) ─────────────┐    │
+│  │  ┌────── padding (ichki bo'shliq) ──┐  │    │
+│  │  │        content (kontent)         │  │    │
+│  │  └──────────────────────────────────┘  │    │
+│  └────────────────────────────────────────┘    │
+└────────────────────────────────────────────────┘</code></pre>
+
+<div class="pg" data-title="Box model'ni ko'rib chiqing" data-tall>
+<textarea>
+  <style>
+    .quti {
+      width: 200px;
+      padding: 20px;              /* ichki bo'shliq */
+      border: 4px solid #e86f4a;  /* chegara */
+      margin: 20px;               /* tashqi bo'shliq */
+      background: #ffe8df;
+    }
+
+    /* Tomonlarni alohida berish */
+    .quti2 {
+      padding: 10px 20px;          /* yuqori-past 10, chap-o'ng 20 */
+      margin: 0 0 20px 0;          /* yuqori o'ng past chap */
+      border-radius: 14px;         /* burchaklarni yumshatish */
+      border: 1px dashed #3dba7a;
+      background: #eafaf1;
+    }
+
+    /* MUHIM: shu qatorni izohga olib ko'ring va farqni ko'ring */
+    * { box-sizing: border-box; }
+  </style>
+
+  <div class="quti">width: 200px, padding 20, border 4</div>
+  <div class="quti2">padding: 10px 20px — qisqa yozuv</div>
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b><code>box-sizing: border-box</code> nima qiladi?</b>
+  Sukut bo'yicha <code>width: 200px</code> faqat <em>kontent</em> uchun bo'ladi,
+  padding va border ustiga qo'shiladi → element 248px chiqadi.
+  <code>border-box</code> bilan esa 200px — <strong>hammasi bilan</strong> 200px.
+  Shu sababli deyarli har bir loyiha <code>* { box-sizing: border-box; }</code> dan boshlanadi
+  (Soyla'da ham shunday).
+</div>
+
+<h2>O'lchov birliklari</h2>
+<table>
+  <tr><th>Birlik</th><th>Ma'nosi</th><th>Qachon</th></tr>
+  <tr><td><code>px</code></td><td>Piksel, qat'iy</td><td>Chegara, kichik bo'shliqlar</td></tr>
+  <tr><td><code>%</code></td><td>Ota elementga nisbatan</td><td>Kenglik</td></tr>
+  <tr><td><code>rem</code></td><td>Sahifa asosiy shriftiga nisbatan (odatda 16px)</td><td>Shrift va bo'shliqlar</td></tr>
+  <tr><td><code>em</code></td><td>O'z shriftiga nisbatan</td><td>Element ichidagi bo'shliq</td></tr>
+  <tr><td><code>vh</code> / <code>vw</code></td><td>Ekran balandligi / kengligi 1%</td><td>To'liq ekran bloklari</td></tr>
+  <tr><td><code>fr</code></td><td>Grid'da ulush</td><td>Ustunlar (04-dars)</td></tr>
+</table>
+
+<div class="pg" data-title="Birliklarni solishtirish">
+<textarea>
+  <style>
+    div { background: #ffe8df; margin-bottom: 6px; padding: 4px; }
+    .px  { width: 250px; }
+    .pc  { width: 50%; }
+    .vw  { width: 40vw; }
+    .rem { width: 20rem; }
+  </style>
+
+  <div class="px">width: 250px</div>
+  <div class="pc">width: 50% (ota elementning yarmi)</div>
+  <div class="vw">width: 40vw (ekran kengligining 40%)</div>
+  <div class="rem">width: 20rem (= 320px)</div>
+
+  <p><em>Natija oynasini sichqoncha bilan torayting — qaysi biri o'zgaradi?</em></p>
+</textarea>
+</div>
+
+<h2>CSS o'zgaruvchilari</h2>
+<p>
+  Bir xil rangni 20 joyda takrorlash — muammo: birini o'zgartirsangiz, qolganini unutasiz.
+  Yechim — o'zgaruvchi. Soyla kodining boshida aynan shunday qilingan:
+</p>
+
+<div class="pg" data-title="var() bilan ishlash" data-tall>
+<textarea>
+  <style>
+    :root {
+      --accent: #e86f4a;
+      --ink: #0f2a25;
+      --muted: #8aa39a;
+      --radius: 14px;
+    }
+
+    body { color: var(--ink); font-family: system-ui, sans-serif; }
+
+    .tugma {
+      background: var(--accent);
+      color: white;
+      border: 0;
+      padding: 12px 22px;
+      border-radius: var(--radius);
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .karta {
+      border: 1px solid var(--muted);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .karta h3 { color: var(--accent); margin: 0 0 6px; }
+    .karta p { color: var(--muted); margin: 0; }
+  </style>
+
+  <button class="tugma">Qidirishni boshlash</button>
+
+  <div class="karta">
+    <h3>Dilshod, 24</h3>
+    <p>Toshkent · O'zbek tili</p>
+  </div>
+
+  <!-- Sinab ko'ring: yuqorida --accent qiymatini #3dba7a ga o'zgartiring.
+       Bir joyni o'zgartirdingiz, lekin tugma ham, karta ham o'zgardi. -->
+</textarea>
+</div>
+
+<div class="task">
+  <b>Mashq — profil kartasi.</b>
+  Quyidagi HTML berilgan. Faqat CSS yozib, uni chiroyli kartaga aylantiring:
+  <ul>
+    <li>oq fon, yumaloq burchak (16px), yengil soya (<code>box-shadow</code>);</li>
+    <li>ichki bo'shliq 20px, kenglik 300px;</li>
+    <li>ism — qalin va katta, shahar — kulrang va kichik;</li>
+    <li>tugma — to'q sariq fon, oq matn, chegarasiz, yumaloq;</li>
+    <li>tugma ustiga sichqoncha kelganda rangi to'qlashsin.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <style>
+    body { background: #f2f5f4; font-family: system-ui, sans-serif; padding: 20px; }
+
+    /* Shu yerga yozing */
+    .profil {
+
+    }
+  </style>
+
+  <div class="profil">
+    <h3 class="ism">Malika, 21</h3>
+    <p class="shahar">Samarqand · O'zbek tili</p>
+    <button class="btn">Suhbatlashish</button>
+  </div>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>.profil {
+  width: 300px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+.ism {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f2a25;
+}
+.shahar {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #8aa39a;
+}
+.btn {
+  background: #e86f4a;
+  color: #fff;
+  border: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn:hover { background: #d1552f; }</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>Qoida = selektor + <code>{ xossa: qiymat; }</code></li>
+  <li>Class — nuqta (<code>.karta</code>), id — panjara (<code>#asosiy</code>).</li>
+  <li>Box model: content → padding → border → margin.</li>
+  <li><code>box-sizing: border-box</code> ni har doim yozing.</li>
+  <li>Takrorlanadigan qiymatlarni <code>:root</code> da o'zgaruvchiga oling.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>.karta.faol</code> va <code>.karta .faol</code> farqi?</strong><br>
+  Birinchisi — ikkala class ham bitta elementda. Ikkinchisi — <code>.karta</code> <em>ichidagi</em> <code>.faol</code> element.</p>
+  <p><strong>2. <code>padding</code> va <code>margin</code> farqi?</strong><br>
+  <code>padding</code> — chegara ichidagi bo'shliq (fon rangi bor). <code>margin</code> — chegaradan tashqaridagi bo'shliq.</p>
+  <p><strong>3. Ranglarni bir joydan boshqarish uchun nima qilasiz?</strong><br>
+  <code>:root</code> ichida <code>--accent</code> kabi o'zgaruvchi e'lon qilib, <code>var(--accent)</code> bilan ishlataman.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

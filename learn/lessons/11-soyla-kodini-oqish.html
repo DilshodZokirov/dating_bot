@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11. Soyla kodini o'qish — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="11">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>11. Soyla kodini o'qishni boshlash</h1>
+<p class="lead">
+  Endi bilimingizni o'z loyihangizga qo'llaymiz. <code>app/webapp/index.html</code> — 4000 qatordan ortiq fayl.
+  Uni boshdan-oxir o'qish kerak emas: kerakli joyni topib, faqat shu qismni tushunish kerak.
+  Shu darsda buni qanday qilishni ko'rsatamiz.
+</p>
+
+<h2>Fayl xaritasi</h2>
+<p>Fayl uch katta qismdan iborat:</p>
+<table>
+  <tr><th>Qism</th><th>Taxminan qayerda</th><th>Nima bor</th></tr>
+  <tr><td><code>head</code></td><td>Boshidan ~11-qatorgacha</td><td>Shrift, <code>telegram-web-app.js</code>, LiveKit kutubxonasi</td></tr>
+  <tr><td><code>&lt;style&gt;</code></td><td>~12–1066</td><td>Butun dizayn: <code>:root</code> o'zgaruvchilari, oynalar, kartalar, pastki menyu</td></tr>
+  <tr><td><code>&lt;body&gt;</code> markup</td><td>~1068–1390</td><td>To'rt oyna (<code>searchView</code>, <code>profileView</code>, <code>savedView</code>, <code>adminView</code>) va pastki menyu</td></tr>
+  <tr><td><code>&lt;script&gt;</code></td><td>~1391–4181</td><td>Tarjimalar, API chaqiruvlar, qidiruv, qo'ng'iroq, admin panel</td></tr>
+</table>
+
+<div class="note">
+  <b>Qator raqamlari o'zgaradi</b>
+  Kod yangilanganda raqamlar suriladi. Shuning uchun qator raqamiga emas,
+  <strong>qidirishga</strong> tayanish kerak: VS Code'da <code>Ctrl+F</code> (fayl ichida) yoki
+  <code>Ctrl+Shift+F</code> (butun loyiha bo'ylab).
+</div>
+
+<h2>Naqsh 1 — oynalarni almashtirish</h2>
+<p>
+  Mini App'da sahifa yangilanmaydi. Barcha "sahifalar" bir faylda turadi va CSS orqali
+  biri ko'rsatiladi, qolgani yashiriladi. Siz bu naqshni 07 va 10-darslarda ko'rdingiz:
+</p>
+
+<pre><code>/* CSS: faqat active bo'lgani ko'rinadi */
+.view { display: none; }
+.view.active { display: flex; }</code></pre>
+
+<pre><code>// JS: pastki menyu tugmasi bosilganda class'lar almashtiriladi
+document.querySelectorAll(".nav-btn").forEach((btn) =&gt; {
+  btn.addEventListener("click", () =&gt; {
+    document.querySelectorAll(".nav-btn").forEach((b) =&gt; b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach((v) =&gt; v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.view).classList.add("active");
+    if (btn.dataset.view === "savedView") loadSavedList();
+    if (btn.dataset.view === "adminView") loadAdminPanel();
+  });
+});</code></pre>
+
+<p>Tanish narsalar: <code>querySelectorAll</code> (07-dars), <code>addEventListener</code> (08-dars),
+<code>classList</code> (07-dars), <code>dataset</code> (07-dars). Yangi hech nima yo'q.</p>
+
+<p>Quyida xuddi shu naqshning kichik ishlaydigan nusxasi — bosib ko'ring:</p>
+
+<div class="pg" data-title="Soyla'ning oyna naqshi" data-xl>
+<textarea>
+  <style>
+    :root { --bg:#071512; --ink:#f3f7f5; --muted:#8aa39a; --accent:#e86f4a; --line:rgba(255,255,255,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+           font-family:system-ui,sans-serif; padding-bottom:70px; }
+
+    /* Soyla'dagi asosiy naqsh */
+    .view { display:none; padding:20px; }
+    .view.active { display:flex; flex-direction:column; animation:fadeUp .4s ease both; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+    .bottom-nav {
+      position:fixed; left:0; right:0; bottom:0; height:64px;
+      display:flex; background:rgba(7,21,18,.92); border-top:1px solid var(--line);
+      backdrop-filter:blur(10px);
+    }
+    .nav-btn {
+      flex:1; background:none; border:0; color:var(--muted); font:inherit; font-size:.8rem;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+      cursor:pointer;
+    }
+    .nav-btn.active { color:var(--accent); }
+    .nav-btn span.belgi { font-size:1.2rem; }
+  </style>
+
+  <div class="view active" id="searchView">
+    <h2>Qidirish</h2>
+    <p>Bu searchView — boshlang'ich oyna.</p>
+  </div>
+
+  <div class="view" id="savedView">
+    <h2>Saqlangan</h2>
+    <p id="savedInfo">Bu savedView. Ochilganda ma'lumot yuklanadi.</p>
+  </div>
+
+  <div class="view" id="profileView">
+    <h2>Profil</h2>
+    <p>Bu profileView.</p>
+  </div>
+
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn active" data-view="searchView">
+      <span class="belgi">◎</span><span>Qidirish</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="savedView">
+      <span class="belgi">★</span><span>Saqlangan</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="profileView">
+      <span class="belgi">☺</span><span>Profil</span>
+    </button>
+  </nav>
+
+  <script>
+    function loadSavedList() {
+      document.getElementById("savedInfo").textContent =
+        "Ro'yxat yuklandi: " + new Date().toLocaleTimeString();
+    }
+
+    document.querySelectorAll(".nav-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.view).classList.add("active");
+        if (btn.dataset.view === "savedView") loadSavedList();
+      });
+    });
+  </script>
+</textarea>
+</div>
+
+<h2>Naqsh 2 — <code>api()</code> yordamchisi</h2>
+<p>
+  Har bir so'rovda sarlavhalarni qayta yozmaslik uchun bitta yordamchi funksiya yozilgan.
+  Bu 09-darsdagi <code>fetch</code> ning aynan o'zi, faqat qulay o'ramda:
+</p>
+
+<pre><code>async function api(path, options = {}) {
+  refreshTelegramContext();
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Telegram-Init-Data": initData,       // server foydalanuvchini tekshiradi
+      "ngrok-skip-browser-warning": "true",
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() =&gt; ({}));
+    throw new Error(body.detail || `Error: ${res.status}`);
+  }
+  return res.json();
+}</code></pre>
+
+<ul>
+  <li><code>...options</code> — "spread": berilgan sozlamalarni nusxalab qo'yadi.</li>
+  <li><code>X-Telegram-Init-Data</code> — Telegram bergan imzo. Server <code>app/telegram_auth.py</code> da
+      uni tekshirib, so'rov haqiqatan shu foydalanuvchidan kelganiga ishonch hosil qiladi.</li>
+  <li><code>if (!res.ok) throw</code> — 09-darsdagi qoida: <code>fetch</code> o'zi xato bermaydi.</li>
+  <li>Natijada har joyda shunchaki <code>await api("/api/me")</code> deb yozish kifoya.</li>
+</ul>
+
+<h2>Naqsh 3 — holatni davriy tekshirish (polling)</h2>
+<p>
+  Suhbatdosh topilganini bilish uchun ilova serverga har necha soniyada "nima bo'ldi?" deb so'raydi:
+</p>
+<pre><code>poolTimer = setInterval(refreshPoolCount, 8000);   // har 8 soniyada
+// to'xtatish uchun:
+clearInterval(poolTimer);</code></pre>
+<p>
+  <code>setInterval</code> — <code>setTimeout</code> ning takrorlanuvchi shakli (09-dars).
+  Muhim qoida: <strong>yangi taymer boshlashdan oldin eskisini <code>clearInterval</code> bilan to'xtatish</strong>,
+  aks holda ular ustma-ust to'planib, so'rovlar soni ko'payib ketadi.
+</p>
+
+<h2>Naqsh 4 — tarjimalar</h2>
+<p>Har bir matn to'g'ridan-to'g'ri yozilmagan, balki lug'atdan olinadi:</p>
+<pre><code>const TRANSLATIONS = {
+  idle_title: { uz: "Yangi suhbatni boshlang", ru: "Начните новый разговор", en: "Start a new chat" },
+  // ...
+};
+
+function tr(key, vars) { /* tanlangan tildagi matnni qaytaradi */ }</code></pre>
+<p>
+  Shuning uchun yozuvni o'zgartirmoqchi bo'lsangiz, HTML'dan emas — <code>TRANSLATIONS</code> dan
+  qidirish kerak. Bu obyekt ichida obyekt (06-dars).
+</p>
+
+<h2>Kerakli joyni topish usuli</h2>
+<ol>
+  <li><strong>Ekranda ko'rgan matnni qidiring.</strong> Masalan "Saqlangan" so'zini —
+      <code>TRANSLATIONS</code> yoki markup'dan topasiz.</li>
+  <li><strong>Tugmadan boshlab yuring.</strong> Tugmaning <code>id</code> sini toping, keyin shu
+      <code>id</code> ni qidiring — <code>addEventListener</code> ni topasiz. Undan keyin
+      chaqirilgan funksiyaga o'tasiz.</li>
+  <li><strong>So'rovdan boshlab yuring.</strong> Brauzerda <code>F12</code> → Network'da qaysi manzilga
+      so'rov ketganini ko'rib, shu manzilni kodda qidiring (masalan <code>/api/saved</code>).</li>
+  <li><strong>Xatodan boshlab yuring.</strong> Console'dagi xato yozuvida qator raqami bo'ladi — bosing,
+      to'g'ri joyga olib boradi.</li>
+</ol>
+
+<div class="task">
+  <b>Mashq 1 — kodni kuzatish (o'zgartirishsiz).</b>
+  <code>app/webapp/index.html</code> ni VS Code'da ochib, quyidagilarni toping va daftaringizga
+  qator raqamini yozib qo'ying:
+  <ol>
+    <li><code>:root</code> ichidagi <code>--accent</code> rangi qanday qiymatda?</li>
+    <li><code>.view.active</code> qoidasi qayerda?</li>
+    <li>Pastki menyudagi to'rtta tugma <code>data-view</code> qiymatlari qanday?</li>
+    <li><code>api()</code> funksiyasi qayerda e'lon qilingan va u nechta joyda chaqirilgan?</li>
+    <li><code>loadSavedList()</code> funksiyasi qaysi qatordan boshlanadi? U <code>api()</code> ni chaqiradimi?</li>
+  </ol>
+</div>
+
+<div class="task">
+  <b>Mashq 2 — birinchi xavfsiz o'zgartirish.</b>
+  Eng oson va foydali o'zgartirish — rang:
+  <ol>
+    <li><code>app/webapp/index.html</code> boshidagi <code>:root</code> blokini toping.</li>
+    <li><code>--accent</code> qiymatini boshqa rangga o'zgartiring (masalan <code>#7c5cff</code>).</li>
+    <li>Saqlang, Mini App'ni qayta yuklang.</li>
+    <li>Butun ilova rangi o'zgarganini ko'rasiz — chunki hamma joyda <code>var(--accent)</code> ishlatilgan (03-dars).</li>
+    <li>Yoqmasa, eski qiymatni qaytaring yoki <code>git checkout -- app/webapp/index.html</code> bilan bekor qiling.</li>
+  </ol>
+</div>
+
+<div class="tip">
+  <b>O'zgartirishni qanday sinash mumkin</b>
+  <code>index.html</code> — statik fayl, u volume orqali ulangan. Ya'ni faylni saqlab,
+  Telegram'da Mini App'ni yopib-ochsangiz (yoki brauzerda <code>Ctrl+Shift+R</code>) yangi kod ko'rinadi —
+  <code>docker compose</code> ni qayta qurish kerak emas. Faqat Python kodini o'zgartirganda konteynerni
+  qayta ishga tushirish kerak bo'ladi.
+</div>
+
+<h2>Kod hajmidan qo'rqmaslik</h2>
+<p>
+  4000 qator — ko'p ko'rinadi, lekin u bir xil naqshlarning takroridan iborat:
+</p>
+<ul>
+  <li>element top (<code>getElementById</code>) → <code>addEventListener</code> qo'sh → funksiya chaqir;</li>
+  <li>funksiya <code>api()</code> bilan serverga boradi → javobni oladi;</li>
+  <li>javobdan <code>createElement</code> bilan kartalar yasaydi;</li>
+  <li><code>classList</code> bilan holatni ko'rsatadi (yuklanmoqda / xato / tayyor).</li>
+</ul>
+<p>
+  Shu to'rtta naqshni bilsangiz, faylning istalgan joyini tushunishga qurol yetarli.
+  Qolgani — mashq.
+</p>
+
+<h2>Keyin nima o'rganish kerak</h2>
+<ol>
+  <li><strong>Git</strong> — <code>branch</code>, <code>commit</code>, <code>diff</code>. Kod o'zgartirishdan qo'rqmaslik uchun eng foydali ko'nikma.</li>
+  <li><strong>DevTools chuqurroq</strong> — Network'da so'rovlarni o'qish, Elements'da CSS'ni jonli tahrirlash.</li>
+  <li><strong>Kengaytirilgan JS</strong> — modullar (<code>import</code>/<code>export</code>), <code>class</code>, <code>try/catch</code> naqshlari.</li>
+  <li><strong>Kodni bo'lish</strong> — bitta katta <code>index.html</code> ni <code>style.css</code> va <code>app.js</code> ga ajratish.</li>
+  <li><strong>Keyin</strong> — xohlasangiz React yoki Vue. Lekin faqat shu darslar mustahkam bo'lganda: ular ham oxirida HTML, CSS va JS yasaydi.</li>
+</ol>
+
+<div class="note">
+  <b>Mustaqil mashq uchun eng yaxshi usul</b>
+  Har hafta Soyla'ga bitta kichik ko'rinish o'zgartirishi kiritib ko'ring: tugma shakli, bo'shliqlar,
+  yangi belgi (badge), bo'sh ro'yxat uchun chiroyli xabar. Kichik o'zgarishlar — eng tez o'rganish yo'li.
+</div>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>Katta faylni qidirish orqali o'qing, boshdan-oxir emas.</li>
+  <li>Soyla'dagi asosiy naqshlar: oyna almashtirish, <code>api()</code> yordamchisi, polling, tarjimalar.</li>
+  <li>Birinchi o'zgartirishni <code>:root</code> ranglaridan boshlang — xavfsiz va natijasi darhol ko'rinadi.</li>
+  <li>Git bilan har qanday o'zgarishni bekor qilish mumkin — shuning uchun tajriba qilishdan qo'rqmang.</li>
+</ul>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

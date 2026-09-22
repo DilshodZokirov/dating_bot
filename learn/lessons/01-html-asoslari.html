@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01. HTML asoslari — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="01">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>01. HTML asoslari</h1>
+<p class="lead">
+  HTML — teglardan iborat. Teg brauzerga "bu matn sarlavha", "bu rasm", "bu havola" deb aytadi.
+  Shu darsda kerak bo'ladigan barcha asosiy teglarni o'rganamiz.
+</p>
+
+<h2>Teg qanday tuzilgan</h2>
+<pre><code>&lt;p class="izoh"&gt;Salom&lt;/p&gt;
+ │    │            │      │
+ │    │            │      └── yopilish tegi
+ │    │            └───────── kontent (matn)
+ │    └────────────────────── atribut (nom="qiymat")
+ └─────────────────────────── ochilish tegi, teg nomi: p</code></pre>
+
+<p>Ba'zi teglar kontentga ega emas va yopilmaydi — ular <strong>bo'sh teglar</strong>:</p>
+<pre><code>&lt;br&gt;          &lt;!-- qatorni uzish --&gt;
+&lt;hr&gt;          &lt;!-- gorizontal chiziq --&gt;
+&lt;img src="..." alt="..."&gt;
+&lt;input type="text"&gt;</code></pre>
+
+<div class="warnbox">
+  <b>Eng ko'p uchraydigan xato</b>
+  Tegni yopishni unutish. <code>&lt;div&gt;</code> ochib, <code>&lt;/div&gt;</code> yozmasangiz,
+  sahifa "buzilib" ketadi. VS Code teglarni avtomatik yopadi — shuning uchun muharrirdan foydalanish muhim.
+</div>
+
+<h2>Matn teglari</h2>
+
+<div class="pg" data-title="Sarlavhalar va matn">
+<textarea>
+  <h1>Soyla</h1>
+  <h2>Tasodifiy suhbatdosh</h2>
+  <h3>Qanday ishlaydi</h3>
+
+  <p>
+    Bu <strong>oddiy paragraf</strong>. Ichida <em>qiya matn</em> ham bo'lishi mumkin.
+    HTML'da bir necha bo'sh joy yoki yangi qator
+    bitta bo'sh joy deb hisoblanadi.
+  </p>
+
+  <p>Yangi qator kerak bo'lsa:<br>mana shunday br tegi bilan.</p>
+
+  <hr>
+
+  <blockquote>Kod yozmasdan kod o'rganilmaydi.</blockquote>
+  <small>Kichik izoh matni</small>
+</textarea>
+</div>
+
+<ul>
+  <li><code>h1</code>–<code>h6</code> — sarlavhalar. Sahifada <strong>bitta</strong> <code>h1</code> bo'lishi to'g'ri.</li>
+  <li><code>p</code> — paragraf, oddiy matn uchun asosiy teg.</li>
+  <li><code>strong</code> — muhim (qalin), <code>em</code> — urg'u (qiya).</li>
+  <li><code>br</code> — qator uzish, <code>hr</code> — ajratuvchi chiziq.</li>
+</ul>
+
+<div class="note">
+  <b>Nega <code>h2</code> ni shrift kattaligi uchun ishlatmaslik kerak?</b>
+  Sarlavha teglari <em>ma'no</em> beradi: qidiruv tizimlari va ekran o'quvchilari shu tartibga qaraydi.
+  Shriftni kattalashtirish — CSS'ning ishi, teg tanlashning emas.
+</div>
+
+<h2>Ro'yxatlar</h2>
+
+<div class="pg" data-title="Ro'yxatlar">
+<textarea>
+  <h3>Tartibsiz ro'yxat (belgi bilan)</h3>
+  <ul>
+    <li>Audio qo'ng'iroq</li>
+    <li>Video qo'ng'iroq</li>
+    <li>Suhbatdoshni saqlash</li>
+  </ul>
+
+  <h3>Tartibli ro'yxat (raqam bilan)</h3>
+  <ol>
+    <li>Ro'yxatdan o'ting</li>
+    <li>Sozlamalarni tanlang</li>
+    <li>Qidirishni boshlang</li>
+  </ol>
+
+  <h3>Ichma-ich ro'yxat</h3>
+  <ul>
+    <li>Sozlamalar
+      <ul>
+        <li>Yosh oralig'i</li>
+        <li>Til</li>
+      </ul>
+    </li>
+    <li>Profil</li>
+  </ul>
+</textarea>
+</div>
+
+<h2>Havolalar</h2>
+
+<div class="pg" data-title="Havolalar">
+<textarea>
+  <p><a href="https://telegram.org">Oddiy havola</a></p>
+
+  <p><a href="https://telegram.org" target="_blank" rel="noopener">Yangi oynada ochiladi</a></p>
+
+  <p><a href="#bolim">Shu sahifaning bo'limiga o'tish</a></p>
+
+  <p><a href="mailto:salom@example.com">Email yozish</a></p>
+
+  <div style="height:300px"></div>
+  <h3 id="bolim">Mana shu bo'lim</h3>
+  <p>Yuqoridagi havola shu yerga olib keldi.</p>
+</textarea>
+</div>
+
+<ul>
+  <li><code>href</code> — qayerga olib borishi.</li>
+  <li><code>target="_blank"</code> — yangi yorliqda ochish (tashqi saytlar uchun).</li>
+  <li><code>href="#id"</code> — shu sahifadagi elementga o'tish.</li>
+</ul>
+
+<h2>Rasmlar</h2>
+
+<div class="pg" data-title="Rasm va alt">
+<textarea>
+  <img src="https://picsum.photos/seed/soyla/300/180" alt="Namuna rasm" width="300">
+
+  <p>Rasm topilmasa, <code>alt</code> matni ko'rinadi:</p>
+  <img src="yoq-bunday-rasm.png" alt="Bu yerda profil rasmi bo'lishi kerak edi" width="300">
+</textarea>
+</div>
+
+<div class="tip">
+  <b><code>alt</code> ni hech qachon tashlab ketmang</b>
+  U: (1) rasm yuklanmasa matn ko'rsatadi, (2) ko'zi ojiz foydalanuvchiga rasmni tushuntiradi,
+  (3) qidiruv tizimi uchun ma'lumot beradi.
+</div>
+
+<h2>Guruhlash: <code>div</code> va <code>span</code></h2>
+<p>
+  Bu ikki teg hech qanday ko'rinish bermaydi — ular faqat <strong>o'rash</strong> uchun.
+  Keyinchalik CSS bilan ularni bezaymiz.
+</p>
+<ul>
+  <li><code>div</code> — <strong>blok</strong>: butun qator egallaydi, yangi qatordan boshlanadi.</li>
+  <li><code>span</code> — <strong>satr ichida</strong>: faqat o'z matni joyini egallaydi.</li>
+</ul>
+
+<div class="pg" data-title="div va span farqi">
+<textarea>
+  <div style="background:#ffd7c9">Birinchi div</div>
+  <div style="background:#c9f0d8">Ikkinchi div — o'z qatorida</div>
+
+  <p>
+    Matn ichida
+    <span style="background:#ffd465">span faqat shu so'zni</span>
+    belgilaydi.
+  </p>
+</textarea>
+</div>
+
+<h2>Semantik teglar</h2>
+<p>
+  Hammasini <code>div</code> bilan yozish mumkin, lekin ma'noli teglar kodni tushunarli qiladi:
+</p>
+<table>
+  <tr><th>Teg</th><th>Nima uchun</th></tr>
+  <tr><td><code>header</code></td><td>Yuqori qism: logo, sarlavha</td></tr>
+  <tr><td><code>nav</code></td><td>Menyu, navigatsiya havolalari</td></tr>
+  <tr><td><code>main</code></td><td>Sahifaning asosiy kontenti (bitta bo'ladi)</td></tr>
+  <tr><td><code>section</code></td><td>Mavzuli bo'lim</td></tr>
+  <tr><td><code>article</code></td><td>Mustaqil birlik: post, karta, yangilik</td></tr>
+  <tr><td><code>aside</code></td><td>Yon qism, qo'shimcha ma'lumot</td></tr>
+  <tr><td><code>footer</code></td><td>Pastki qism</td></tr>
+  <tr><td><code>button</code></td><td>Bosiladigan tugma (<code>div</code> emas!)</td></tr>
+</table>
+
+<div class="pg" data-title="Semantik sahifa tuzilmasi" data-tall>
+<textarea>
+  <header>
+    <h1>Soyla</h1>
+    <nav>
+      <a href="#">Qidirish</a> ·
+      <a href="#">Saqlangan</a> ·
+      <a href="#">Sozlamalar</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>Suhbatdosh topildi</h2>
+      <article>
+        <h3>Dilshod, 24</h3>
+        <p>Toshkent · O'zbek tili</p>
+        <button>Roziman</button>
+        <button>Rad etish</button>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p><small>Soyla © 2026</small></p>
+  </footer>
+</textarea>
+</div>
+
+<h2>Izohlar</h2>
+<pre><code>&lt;!-- Bu izoh. Brauzer uni ko'rsatmaydi. --&gt;
+&lt;!-- Vaqtincha o'chirib qo'yish uchun ham ishlatiladi:
+&lt;button&gt;Hali tayyor emas&lt;/button&gt;
+--&gt;</code></pre>
+
+<div class="task">
+  <b>Mashq 2 — o'z profil sahifangiz.</b>
+  Quyidagi bo'sh maydonga o'zingiz haqida sahifa yozing. Shartlar:
+  <ul>
+    <li><code>header</code> ichida <code>h1</code> — ismingiz;</li>
+    <li>bitta rasm (<code>alt</code> bilan);</li>
+    <li><code>ul</code> — 3 ta qiziqishingiz;</li>
+    <li><code>ol</code> — o'rganmoqchi bo'lgan 3 narsa;</li>
+    <li>bitta tashqi havola (<code>target="_blank"</code> bilan);</li>
+    <li><code>footer</code> ichida yil.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni — o'zingiz yozing" data-tall>
+<textarea>
+  <!-- Shu yerga yozing. Xohlagancha o'chirib, qaytadan yozing. -->
+  <header>
+    <h1>Ismim</h1>
+  </header>
+
+  <main>
+
+  </main>
+</textarea>
+</div>
+
+<details>
+  <summary>Mashq 2 — namuna yechim</summary>
+<pre><code>&lt;header&gt;
+  &lt;h1&gt;Dilshod&lt;/h1&gt;
+  &lt;p&gt;Telegram bot ishlab chiquvchi&lt;/p&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;img src="https://picsum.photos/seed/me/200/200" alt="Mening rasmim" width="200"&gt;
+
+  &lt;h2&gt;Qiziqishlarim&lt;/h2&gt;
+  &lt;ul&gt;
+    &lt;li&gt;Python&lt;/li&gt;
+    &lt;li&gt;Telegram botlar&lt;/li&gt;
+    &lt;li&gt;Shaxmat&lt;/li&gt;
+  &lt;/ul&gt;
+
+  &lt;h2&gt;O'rganmoqchiman&lt;/h2&gt;
+  &lt;ol&gt;
+    &lt;li&gt;HTML&lt;/li&gt;
+    &lt;li&gt;CSS&lt;/li&gt;
+    &lt;li&gt;JavaScript&lt;/li&gt;
+  &lt;/ol&gt;
+
+  &lt;p&gt;&lt;a href="https://telegram.org" target="_blank" rel="noopener"&gt;Telegram&lt;/a&gt;&lt;/p&gt;
+&lt;/main&gt;
+
+&lt;footer&gt;&lt;small&gt;2026&lt;/small&gt;&lt;/footer&gt;</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>Teg = ochilish + kontent + yopilish. Bo'sh teglar yopilmaydi.</li>
+  <li>Atributlar tegga qo'shimcha ma'lumot beradi: <code>href</code>, <code>src</code>, <code>alt</code>, <code>class</code>, <code>id</code>.</li>
+  <li><code>div</code> — blok, <code>span</code> — satr ichida.</li>
+  <li>Ma'noli teglarni tanlang: tugma uchun <code>button</code>, bo'lim uchun <code>section</code>.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>&lt;strong&gt;</strong> va <code>&lt;div style="font-weight:bold"&gt;</code> — qaysi biri to'g'ri?</strong><br>
+  Matn muhim bo'lsa — <code>strong</code>. Faqat ko'rinish uchun qalin kerak bo'lsa — CSS.</p>
+  <p><strong>2. Sahifada nechta <code>h1</code> bo'lishi kerak?</strong><br>Bitta.</p>
+  <p><strong>3. <code>id</code> va <code>class</code> farqi?</strong><br>
+  <code>id</code> — sahifada yakka, faqat bitta elementda. <code>class</code> — ko'p elementda takrorlanishi mumkin.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

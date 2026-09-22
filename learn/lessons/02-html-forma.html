@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02. Formalar va jadvallar — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="02">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>02. Formalar va jadvallar</h1>
+<p class="lead">
+  Forma — foydalanuvchidan ma'lumot olish usuli. Soyla'dagi "Sozlamalar" oynasi ham forma:
+  yosh, til, shahar, suhbatdosh jinsi. Shu darsda barcha kerakli maydon turlarini ko'ramiz.
+</p>
+
+<h2>Eng oddiy forma</h2>
+
+<div class="pg" data-title="Input va label">
+<textarea>
+  <form>
+    <label for="ism">Ismingiz</label>
+    <br>
+    <input type="text" id="ism" name="ism" placeholder="Masalan: Dilshod">
+    <br><br>
+    <button type="submit">Saqlash</button>
+  </form>
+</textarea>
+</div>
+
+<p>Uchta muhim narsa:</p>
+<ul>
+  <li><code>label</code> — maydon nomi. <code>for</code> va input'ning <code>id</code> si <strong>bir xil</strong> bo'lishi kerak —
+      shunda yozuvni bosganda kursor maydonga tushadi.</li>
+  <li><code>name</code> — ma'lumot serverga shu nom bilan boradi.</li>
+  <li><code>placeholder</code> — bo'sh maydondagi kulrang namuna matn (label o'rnini bosmaydi!).</li>
+</ul>
+
+<h2>Input turlari</h2>
+
+<div class="pg" data-title="Barcha asosiy input turlari" data-tall>
+<textarea>
+  <form>
+    <p><label>Matn: <input type="text" placeholder="matn"></label></p>
+    <p><label>Parol: <input type="password" placeholder="••••••"></label></p>
+    <p><label>Email: <input type="email" placeholder="ism@mail.com"></label></p>
+    <p><label>Raqam: <input type="number" min="12" max="99" value="24"></label></p>
+    <p><label>Telefon: <input type="tel" placeholder="+998 90 123 45 67"></label></p>
+    <p><label>Sana: <input type="date"></label></p>
+    <p><label>Rang: <input type="color" value="#e86f4a"></label></p>
+    <p><label>Diapazon: <input type="range" min="12" max="60" value="24"></label></p>
+    <p><label>Fayl: <input type="file"></label></p>
+    <p><label>Qidiruv: <input type="search" placeholder="qidirish..."></label></p>
+  </form>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Telefonda farqi katta</b>
+  <code>type="number"</code> va <code>type="tel"</code> mobil klaviaturani raqamli qilib ochadi,
+  <code>type="email"</code> esa <code>@</code> ni chiqaradi. Bu foydalanuvchi uchun katta qulaylik.
+</div>
+
+<h2>Tanlash: checkbox, radio, select</h2>
+
+<div class="pg" data-title="Tanlov maydonlari" data-tall>
+<textarea>
+  <form>
+    <h3>Checkbox — bir nechtasini tanlash mumkin</h3>
+    <label><input type="checkbox" name="mavzu" value="dost" checked> Do'stlashish</label><br>
+    <label><input type="checkbox" name="mavzu" value="oqish"> O'qish</label><br>
+    <label><input type="checkbox" name="mavzu" value="juft"> Juft topish</label>
+
+    <h3>Radio — faqat bittasi (name bir xil bo'lishi shart!)</h3>
+    <label><input type="radio" name="jins" value="m" checked> Erkak</label><br>
+    <label><input type="radio" name="jins" value="f"> Ayol</label><br>
+    <label><input type="radio" name="jins" value="any"> Farqi yo'q</label>
+
+    <h3>Select — ochiladigan ro'yxat</h3>
+    <label for="til">Til</label>
+    <select id="til" name="til">
+      <option value="uz">O'zbek</option>
+      <option value="ru" selected>Rus</option>
+      <option value="en">Ingliz</option>
+    </select>
+
+    <h3>Textarea — uzun matn</h3>
+    <textarea name="izoh" rows="3" placeholder="O'zingiz haqida...">@@/textarea@@
+  </form>
+</textarea>
+</div>
+
+<div class="warnbox">
+  <b>Radio ishlamasa</b>
+  Demak <code>name</code> lari boshqa-boshqa. Bir guruh radio tugmalar <strong>bir xil</strong>
+  <code>name</code> ga ega bo'lishi kerak — shundagina ular bir-birini o'chiradi.
+</div>
+
+<h2>Tekshiruv (validatsiya) — JavaScript'siz</h2>
+<p>Brauzer o'zi tekshirib, xato haqida ogohlantiradi:</p>
+
+<div class="pg" data-title="required, min, max, pattern">
+<textarea>
+  <form>
+    <p>
+      <label>Ism (majburiy, 2–20 harf)<br>
+      <input type="text" required minlength="2" maxlength="20"></label>
+    </p>
+    <p>
+      <label>Yosh (12–99)<br>
+      <input type="number" required min="12" max="99"></label>
+    </p>
+    <p>
+      <label>Email<br>
+      <input type="email" required></label>
+    </p>
+    <p>
+      <label>Telefon (+998XXXXXXXXX)<br>
+      <input type="tel" required pattern="\+998[0-9]{9}"
+             placeholder="+998901234567"></label>
+    </p>
+    <button type="submit">Yuborish</button>
+  </form>
+
+  <p><em>Bo'sh holda "Yuborish" ni bosib ko'ring.</em></p>
+</textarea>
+</div>
+
+<table>
+  <tr><th>Atribut</th><th>Vazifasi</th></tr>
+  <tr><td><code>required</code></td><td>Majburiy maydon</td></tr>
+  <tr><td><code>minlength</code> / <code>maxlength</code></td><td>Matn uzunligi chegarasi</td></tr>
+  <tr><td><code>min</code> / <code>max</code></td><td>Son yoki sana chegarasi</td></tr>
+  <tr><td><code>pattern</code></td><td>Shablon (regular expression)</td></tr>
+  <tr><td><code>disabled</code></td><td>Maydon o'chirilgan, o'zgartirilmaydi</td></tr>
+  <tr><td><code>readonly</code></td><td>O'qish uchun, lekin serverga yuboriladi</td></tr>
+  <tr><td><code>autocomplete="off"</code></td><td>Brauzer eslab qolmasin</td></tr>
+</table>
+
+<div class="note">
+  <b>Muhim</b>
+  Brauzer tekshiruvi — faqat qulaylik uchun. Haqiqiy tekshiruv <strong>serverda</strong> bo'lishi kerak,
+  chunki foydalanuvchi HTML'ni DevTools bilan o'zgartirib yuborishi mumkin.
+  Soyla'da bu <code>app/api/webapp.py</code> va Pydantic modellarida qilingan.
+</div>
+
+<h2>Jadvallar</h2>
+
+<div class="pg" data-title="table, thead, tbody">
+<textarea>
+  <table border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>Ism</th>
+        <th>Yosh</th>
+        <th>Shahar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dilshod</td>
+        <td>24</td>
+        <td>Toshkent</td>
+      </tr>
+      <tr>
+        <td>Malika</td>
+        <td>21</td>
+        <td>Samarqand</td>
+      </tr>
+    </tbody>
+  </table>
+</textarea>
+</div>
+
+<ul>
+  <li><code>tr</code> — qator, <code>th</code> — sarlavha yacheykasi, <code>td</code> — oddiy yacheyka.</li>
+  <li>Jadval faqat <strong>haqiqiy jadval ma'lumot</strong> uchun. Sahifa joylashuvi uchun emas — u ish Grid/Flexbox'ning (04-dars).</li>
+</ul>
+
+<div class="task">
+  <b>Mashq — "Sozlamalar" formasi.</b>
+  Soyla sozlamalariga o'xshash forma yozing:
+  <ul>
+    <li>Ism (matn, majburiy);</li>
+    <li>Yosh (son, 12–99);</li>
+    <li>Jins — radio: erkak / ayol;</li>
+    <li>Suhbatdosh tili — select: uz / ru / en;</li>
+    <li>Mavzu — checkbox: do'st / juft / o'qish;</li>
+    <li>"Saqlash" tugmasi.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <form>
+    <h3>Sozlamalar</h3>
+
+    <!-- Shu yerga maydonlarni yozing -->
+
+    <button type="submit">Saqlash</button>
+  </form>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>&lt;form&gt;
+  &lt;h3&gt;Sozlamalar&lt;/h3&gt;
+
+  &lt;p&gt;&lt;label for="ism"&gt;Ism&lt;/label&gt;&lt;br&gt;
+  &lt;input type="text" id="ism" name="ism" required&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;label for="yosh"&gt;Yosh&lt;/label&gt;&lt;br&gt;
+  &lt;input type="number" id="yosh" name="yosh" min="12" max="99" required&gt;&lt;/p&gt;
+
+  &lt;fieldset&gt;
+    &lt;legend&gt;Jins&lt;/legend&gt;
+    &lt;label&gt;&lt;input type="radio" name="jins" value="m" checked&gt; Erkak&lt;/label&gt;
+    &lt;label&gt;&lt;input type="radio" name="jins" value="f"&gt; Ayol&lt;/label&gt;
+  &lt;/fieldset&gt;
+
+  &lt;p&gt;&lt;label for="til"&gt;Til&lt;/label&gt;&lt;br&gt;
+  &lt;select id="til" name="til"&gt;
+    &lt;option value="uz"&gt;O'zbek&lt;/option&gt;
+    &lt;option value="ru"&gt;Rus&lt;/option&gt;
+    &lt;option value="en"&gt;Ingliz&lt;/option&gt;
+  &lt;/select&gt;&lt;/p&gt;
+
+  &lt;fieldset&gt;
+    &lt;legend&gt;Mavzu&lt;/legend&gt;
+    &lt;label&gt;&lt;input type="checkbox" name="mavzu" value="dost"&gt; Do'st&lt;/label&gt;
+    &lt;label&gt;&lt;input type="checkbox" name="mavzu" value="juft"&gt; Juft&lt;/label&gt;
+    &lt;label&gt;&lt;input type="checkbox" name="mavzu" value="oqish"&gt; O'qish&lt;/label&gt;
+  &lt;/fieldset&gt;
+
+  &lt;button type="submit"&gt;Saqlash&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+  <p><code>fieldset</code> va <code>legend</code> — bir guruh maydonlarni nomi bilan o'rash uchun qulay teglar.</p>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li>Har bir maydonga <code>label</code> bering — <code>for</code> = <code>id</code>.</li>
+  <li>To'g'ri <code>type</code> tanlash mobil foydalanuvchi uchun juda muhim.</li>
+  <li>Radio guruhida <code>name</code> bir xil bo'ladi.</li>
+  <li><code>required</code>, <code>min</code>, <code>pattern</code> — bepul tekshiruv, lekin serverni almashtirmaydi.</li>
+</ul>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>

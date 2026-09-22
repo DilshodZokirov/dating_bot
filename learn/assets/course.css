@@ -1,0 +1,325 @@
+/* Soyla Web Kursi — umumiy uslub */
+
+:root {
+  --bg0: #071512;
+  --bg1: #0d2420;
+  --panel: #0f2a25;
+  --panel-2: #123329;
+  --ink: #f3f7f5;
+  --muted: #8aa39a;
+  --line: rgba(243, 247, 245, 0.12);
+  --accent: #e86f4a;
+  --accent-2: #f0a070;
+  --ok: #3dba7a;
+  --warn: #f0b429;
+  --code-bg: #05100e;
+  --radius: 14px;
+  --maxw: 900px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 520px at 10% -10%, rgba(232, 111, 74, 0.18), transparent 55%),
+    radial-gradient(700px 480px at 100% 5%, rgba(61, 186, 122, 0.12), transparent 50%),
+    linear-gradient(165deg, var(--bg0), var(--bg1) 60%, #0a1c19);
+  background-attachment: fixed;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 17px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 28px 18px 90px;
+}
+
+/* —— Sarlavhalar —— */
+h1 { font-size: 2rem; line-height: 1.25; margin: 0 0 10px; }
+h2 {
+  font-size: 1.4rem;
+  margin: 46px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+h3 { font-size: 1.12rem; margin: 30px 0 8px; color: var(--accent-2); }
+p, ul, ol { margin: 0 0 14px; }
+ul, ol { padding-left: 22px; }
+li { margin-bottom: 6px; }
+a { color: var(--accent-2); }
+strong { color: #fff; }
+
+.lead { color: var(--muted); font-size: 1.05rem; }
+
+/* —— Yuqori panel —— */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(7, 21, 18, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--ink);
+}
+.topbar .brand span { color: var(--accent); }
+.topbar .spacer { flex: 1; }
+.topbar .crumb { color: var(--muted); font-size: 0.9rem; }
+
+/* —— Teglar / belgilar —— */
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pill.html { color: #ff9f7a; border-color: rgba(232, 111, 74, 0.5); }
+.pill.css { color: #7fc5ff; border-color: rgba(127, 197, 255, 0.4); }
+.pill.javascript { color: #ffd465; border-color: rgba(255, 212, 101, 0.4); }
+.pill.loyiha { color: #7ce0a8; border-color: rgba(61, 186, 122, 0.45); }
+
+/* —— Bosh sahifa kartalari —— */
+.hero {
+  padding: 34px 26px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(140deg, rgba(232, 111, 74, 0.16), rgba(13, 36, 32, 0.6));
+  margin-bottom: 26px;
+}
+.hero h1 { font-size: 2.3rem; }
+
+.progress-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 0;
+  flex-wrap: wrap;
+}
+.bar {
+  flex: 1;
+  min-width: 180px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.4s ease;
+}
+
+.cards { display: grid; gap: 14px; }
+.card {
+  display: block;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(15, 42, 37, 0.7);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 111, 74, 0.55);
+  background: rgba(18, 51, 41, 0.85);
+}
+.card .row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.card .num {
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.card h3 { margin: 0; color: var(--ink); font-size: 1.08rem; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.card .meta { margin-top: 8px; color: var(--muted); font-size: 0.83rem; }
+.card.done { border-color: rgba(61, 186, 122, 0.5); }
+.card .tick { color: var(--ok); font-weight: 700; }
+
+/* —— Bloklar —— */
+.note, .tip, .warnbox {
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: rgba(232, 111, 74, 0.1);
+  padding: 12px 16px;
+  margin: 18px 0;
+}
+.tip { border-color: var(--ok); background: rgba(61, 186, 122, 0.1); }
+.warnbox { border-color: var(--warn); background: rgba(240, 180, 41, 0.1); }
+.note b, .tip b, .warnbox b { display: block; margin-bottom: 4px; }
+
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.92em;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+pre code { background: none; padding: 0; font-size: 0.88rem; line-height: 1.6; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: rgba(255, 255, 255, 0.05); }
+
+details {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 0 0 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 10px; color: var(--accent-2); }
+
+.task {
+  border: 1px dashed rgba(232, 111, 74, 0.55);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 18px 0;
+  background: rgba(232, 111, 74, 0.06);
+}
+.task > b { color: var(--accent-2); }
+
+/* —— Jonli kod maydoni (playground) —— */
+.pg {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 18px 0 22px;
+  background: rgba(5, 16, 14, 0.75);
+}
+.pg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.pg-head .pg-title { flex: 1; font-weight: 600; color: var(--ink); }
+.pg-head button {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pg-head button:hover { border-color: var(--accent); color: var(--accent-2); }
+.pg-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 220px; }
+.pg-src {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  tab-size: 2;
+  color: #d8f3e8;
+  background: var(--code-bg);
+  border: 0;
+  border-right: 1px solid var(--line);
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 220px;
+  outline: none;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+.pg-src:focus { box-shadow: inset 0 0 0 2px rgba(232, 111, 74, 0.45); }
+.pg-out { border: 0; width: 100%; min-height: 220px; background: #fff; }
+.pg[data-tall] .pg-src, .pg[data-tall] .pg-out { min-height: 340px; }
+.pg[data-xl] .pg-src, .pg[data-xl] .pg-out { min-height: 560px; }
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .pg-body { grid-template-columns: 1fr; }
+  .pg-src { border-right: 0; border-bottom: 1px solid var(--line); }
+  .hero { padding: 24px 18px; }
+  .hero h1 { font-size: 1.8rem; }
+}
+
+/* —— Dars oxiri navigatsiyasi —— */
+.lesson-foot {
+  margin-top: 50px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.done-btn {
+  font: inherit;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  cursor: pointer;
+}
+.done-btn.is-done {
+  border-color: var(--ok);
+  background: rgba(61, 186, 122, 0.18);
+  color: #b6f0ce;
+}
+.nav-row {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.nav-row a {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+.nav-row a:hover { border-color: var(--accent); }
+.nav-row a small { display: block; color: var(--muted); font-size: 0.78rem; }
+.nav-row a.next { text-align: right; }

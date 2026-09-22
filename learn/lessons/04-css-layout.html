@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04. Flexbox va Grid — Soyla Web Kursi</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body data-lesson="04">
+
+<div class="topbar">
+  <a class="brand" href="../index.html">← Soyla <span>Web Kursi</span></a>
+  <div class="spacer"></div>
+  <span class="crumb"></span>
+</div>
+
+<div class="wrap">
+
+<h1>04. Joylashuv: Flexbox va Grid</h1>
+<p class="lead">
+  Elementlarni yonma-yon qo'yish, markazlashtirish, ular orasida bo'shliq qoldirish —
+  hammasi shu darsda. Bu CSS'ning eng ko'p kerak bo'ladigan qismi.
+</p>
+
+<h2>Avval: blok va satr elementlari</h2>
+
+<div class="pg" data-title="display turlari">
+<textarea>
+  <style>
+    span, div, b { background: #ffe8df; border: 1px solid #e86f4a; }
+
+    .blok        { display: block; }        /* butun qatorni egallaydi */
+    .satr        { display: inline; }       /* faqat matn joyini */
+    .satr-blok   { display: inline-block; } /* yonma-yon, lekin o'lcham beriladi */
+    .satr-blok   { width: 120px; height: 40px; }
+    .yashirin    { display: none; }         /* butunlay yo'q bo'ladi */
+  </style>
+
+  <div class="blok">display: block</div>
+  <span class="satr">inline 1</span>
+  <span class="satr">inline 2</span>
+  <br><br>
+  <span class="satr-blok">inline-block</span>
+  <span class="satr-blok">inline-block</span>
+  <div class="yashirin">Bu ko'rinmaydi</div>
+</textarea>
+</div>
+
+<h2>Flexbox — bir o'lchovli joylashuv</h2>
+<p>
+  Flexbox elementlarni <strong>bir qatorda</strong> (yoki bir ustunda) joylashtiradi.
+  Sirri shunda: <code>display: flex</code> ni <em>ota</em> elementga yozasiz,
+  bolalari avtomatik moslashadi.
+</p>
+
+<div class="pg" data-title="Birinchi flex" data-tall>
+<textarea>
+  <style>
+    .qator {
+      display: flex;
+      gap: 10px;              /* elementlar orasidagi bo'shliq */
+      background: #eef4f2;
+      padding: 10px;
+    }
+    .qator > div {
+      background: #e86f4a;
+      color: white;
+      padding: 16px;
+      border-radius: 10px;
+    }
+  </style>
+
+  <div class="qator">
+    <div>1</div>
+    <div>2</div>
+    <div>3</div>
+  </div>
+
+  <!-- Sinab ko'ring: .qator ichiga quyidagilarni birma-bir qo'shing
+       flex-direction: column;
+       justify-content: center;
+       justify-content: space-between;
+       align-items: center;  (balandlik bilan birga: height: 160px) -->
+</textarea>
+</div>
+
+<h3>Flex'ning asosiy xossalari</h3>
+<table>
+  <tr><th>Xossa</th><th>Nima qiladi</th></tr>
+  <tr><td><code>flex-direction</code></td><td><code>row</code> (sukut, gorizontal) / <code>column</code> (vertikal)</td></tr>
+  <tr><td><code>justify-content</code></td><td>Asosiy o'q bo'ylab taqsimlash: <code>flex-start</code>, <code>center</code>, <code>flex-end</code>, <code>space-between</code>, <code>space-around</code></td></tr>
+  <tr><td><code>align-items</code></td><td>Ko'ndalang o'q bo'ylab: <code>stretch</code> (sukut), <code>center</code>, <code>flex-start</code>, <code>flex-end</code></td></tr>
+  <tr><td><code>gap</code></td><td>Elementlar orasidagi bo'shliq</td></tr>
+  <tr><td><code>flex-wrap</code></td><td><code>wrap</code> — joy yetmasa keyingi qatorga o'tsin</td></tr>
+  <tr><td><code>flex: 1</code></td><td><em>Bolaga</em> beriladi: bo'sh joyni egallasin</td></tr>
+</table>
+
+<div class="pg" data-title="justify-content va align-items" data-tall>
+<textarea>
+  <style>
+    .demo {
+      display: flex;
+      height: 90px;
+      background: #eef4f2;
+      border: 1px dashed #8aa39a;
+      margin-bottom: 12px;
+      padding: 8px;
+    }
+    .demo > div {
+      background: #e86f4a; color: #fff; padding: 8px 14px; border-radius: 8px;
+    }
+    .d1 { justify-content: flex-start; }
+    .d2 { justify-content: center; }
+    .d3 { justify-content: space-between; }
+    .d4 { justify-content: center; align-items: center; }   /* to'liq markaz! */
+    .d5 { align-items: flex-end; }
+    .nom { font: 12px system-ui; color: #0f2a25; margin: 0 0 2px; }
+  </style>
+
+  <p class="nom">flex-start</p>
+  <div class="demo d1"><div>A</div><div>B</div></div>
+
+  <p class="nom">center</p>
+  <div class="demo d2"><div>A</div><div>B</div></div>
+
+  <p class="nom">space-between</p>
+  <div class="demo d3"><div>A</div><div>B</div></div>
+
+  <p class="nom">center + align-items: center = ideal markaz</p>
+  <div class="demo d4"><div>A</div><div>B</div></div>
+
+  <p class="nom">align-items: flex-end</p>
+  <div class="demo d5"><div>A</div><div>B</div></div>
+</textarea>
+</div>
+
+<div class="tip">
+  <b>Eng ko'p kerak bo'ladigan 3 qator</b>
+  Biror narsani markazga qo'yish kerak bo'lsa:
+  <code>display: flex; justify-content: center; align-items: center;</code> —
+  bu retsept minglab marta ishlatiladi.
+</div>
+
+<h3><code>flex: 1</code> — bo'sh joyni bo'lish</h3>
+
+<div class="pg" data-title="flex: 1 va header namunasi" data-tall>
+<textarea>
+  <style>
+    .panel {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #0f2a25;
+      color: #f3f7f5;
+      border-radius: 12px;
+      font-family: system-ui, sans-serif;
+    }
+    .logo { font-weight: 700; color: #f0a070; }
+    .spacer { flex: 1; }               /* qolgan bo'sh joyni egallaydi */
+    .panel button {
+      background: rgba(255,255,255,.1); color: inherit;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    }
+
+    .ustunlar { display: flex; gap: 10px; margin-top: 16px; }
+    .ustunlar > div { background: #ffe8df; padding: 14px; border-radius: 10px; }
+    .katta { flex: 2; }               /* 2 ulush */
+    .kichik { flex: 1; }              /* 1 ulush */
+  </style>
+
+  <div class="panel">
+    <span class="logo">Soyla</span>
+    <span class="spacer"></span>
+    <button>Sozlamalar</button>
+    <button>Chiqish</button>
+  </div>
+
+  <div class="ustunlar">
+    <div class="katta">flex: 2 — ikki barobar keng</div>
+    <div class="kichik">flex: 1</div>
+  </div>
+</textarea>
+</div>
+
+<h2>Grid — ikki o'lchovli joylashuv</h2>
+<p>
+  Flexbox bir chiziq bo'ylab ishlaydi, Grid esa <strong>ustun va qatorlar to'ri</strong> yasaydi.
+  Kartalar galereyasi uchun ideal.
+</p>
+
+<div class="pg" data-title="Grid asoslari" data-tall>
+<textarea>
+  <style>
+    .tor {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;   /* 3 teng ustun */
+      gap: 12px;
+    }
+    .tor > div {
+      background: #d9f0e4;
+      border: 1px solid #3dba7a;
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      font-family: system-ui, sans-serif;
+    }
+
+    /* Avtomatik moslashuvchi to'r — eng foydali retsept:
+       "kamida 140px bo'lsin, joy bo'lsa yana ustun qo'sh" */
+    .auto {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .auto > div { background: #ffe8df; border: 1px solid #e86f4a; border-radius: 10px; padding: 18px; }
+  </style>
+
+  <div class="tor">
+    <div>1</div><div>2</div><div>3</div>
+    <div>4</div><div>5</div><div>6</div>
+  </div>
+
+  <div class="auto">
+    <div>A</div><div>B</div><div>C</div><div>D</div><div>E</div>
+  </div>
+
+  <p><em>Natija oynasini torayting: pastdagi to'r ustunlar sonini o'zi kamaytiradi.</em></p>
+</textarea>
+</div>
+
+<table>
+  <tr><th>Xossa</th><th>Nima qiladi</th></tr>
+  <tr><td><code>grid-template-columns: 1fr 2fr</code></td><td>Ikki ustun, ikkinchisi ikki barobar keng</td></tr>
+  <tr><td><code>repeat(3, 1fr)</code></td><td><code>1fr 1fr 1fr</code> ning qisqa yozuvi</td></tr>
+  <tr><td><code>repeat(auto-fit, minmax(140px, 1fr))</code></td><td>Ekranga qarab ustun sonini o'zi tanlaydi</td></tr>
+  <tr><td><code>gap: 12px</code></td><td>Yacheykalar orasidagi bo'shliq</td></tr>
+  <tr><td><code>grid-column: span 2</code></td><td><em>Bolaga</em>: ikki ustunni egallasin</td></tr>
+</table>
+
+<h2><code>position</code> — erkin joylashtirish</h2>
+
+<div class="pg" data-title="relative, absolute, fixed, sticky" data-tall>
+<textarea>
+  <style>
+    .maydon {
+      position: relative;         /* bolalar uchun "koordinata boshi" */
+      height: 170px;
+      background: #eef4f2;
+      border: 1px dashed #8aa39a;
+      border-radius: 12px;
+      font-family: system-ui, sans-serif;
+    }
+    .nishon {
+      position: absolute;         /* ota elementga nisbatan joylashadi */
+      top: 10px;
+      right: 10px;
+      background: #e5484d;
+      color: #fff;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .pastda {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: #3dba7a;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+    .avatar { position: relative; display: inline-block; margin: 20px; }
+    .avatar img { border-radius: 50%; display: block; }
+    .online {
+      position: absolute; right: 2px; bottom: 2px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #3dba7a; border: 2px solid #fff;
+    }
+  </style>
+
+  <div class="maydon">
+    <p style="padding:12px">position: relative bo'lgan maydon</p>
+    <span class="nishon">3 yangi</span>
+    <span class="pastda">pastki chap burchak</span>
+  </div>
+
+  <div class="avatar">
+    <img src="https://picsum.photos/seed/av/80/80" alt="avatar" width="80">
+    <span class="online"></span>
+  </div>
+</textarea>
+</div>
+
+<table>
+  <tr><th>Qiymat</th><th>Ma'nosi</th></tr>
+  <tr><td><code>static</code></td><td>Sukut holat, oddiy oqimda</td></tr>
+  <tr><td><code>relative</code></td><td>O'z joyida qoladi, lekin <code>top/left</code> bilan siljitiladi; bolalari uchun tayanch bo'ladi</td></tr>
+  <tr><td><code>absolute</code></td><td>Oqimdan chiqadi, eng yaqin <code>relative</code> otaga nisbatan joylashadi</td></tr>
+  <tr><td><code>fixed</code></td><td>Ekranga yopishadi, skrollda joyida qoladi</td></tr>
+  <tr><td><code>sticky</code></td><td>Skroll qilinsa ma'lum joyda "yopishib" turadi (bu kursdagi yuqori panel shunday)</td></tr>
+</table>
+
+<p><code>z-index</code> — bir-birining ustidagi elementlar tartibi. Kattasi ustida turadi (faqat <code>position</code> berilgan elementlarda ishlaydi).</p>
+
+<div class="task">
+  <b>Mashq — suhbatdosh kartalari to'ri.</b>
+  Quyidagi 5 ta kartani:
+  <ul>
+    <li>Grid bilan moslashuvchi to'rga joylashtiring (kamida 160px, <code>auto-fit</code>);</li>
+    <li>har bir karta ichida avatar va matn <strong>yonma-yon</strong> bo'lsin (Flexbox, <code>gap: 12px</code>, <code>align-items: center</code>);</li>
+    <li>kartaga oq fon, yumaloq burchak va soya bering.</li>
+  </ul>
+</div>
+
+<div class="pg" data-title="Mashq maydoni" data-tall>
+<textarea>
+  <style>
+    body { background: #f2f5f4; font-family: system-ui, sans-serif; padding: 16px; }
+
+    .royxat {
+      /* Grid shu yerda */
+    }
+    .karta {
+      /* Flex va bezak shu yerda */
+    }
+    .karta img { border-radius: 50%; }
+    .karta h4 { margin: 0; }
+    .karta p { margin: 0; color: #8aa39a; font-size: 13px; }
+  </style>
+
+  <div class="royxat">
+    <div class="karta">
+      <img src="https://picsum.photos/seed/a/56/56" alt="" width="56">
+      <div><h4>Dilshod, 24</h4><p>Toshkent</p></div>
+    </div>
+    <div class="karta">
+      <img src="https://picsum.photos/seed/b/56/56" alt="" width="56">
+      <div><h4>Malika, 21</h4><p>Samarqand</p></div>
+    </div>
+    <div class="karta">
+      <img src="https://picsum.photos/seed/c/56/56" alt="" width="56">
+      <div><h4>Aziz, 30</h4><p>Buxoro</p></div>
+    </div>
+    <div class="karta">
+      <img src="https://picsum.photos/seed/d/56/56" alt="" width="56">
+      <div><h4>Nilufar, 26</h4><p>Namangan</p></div>
+    </div>
+    <div class="karta">
+      <img src="https://picsum.photos/seed/e/56/56" alt="" width="56">
+      <div><h4>Sardor, 19</h4><p>Andijon</p></div>
+    </div>
+  </div>
+</textarea>
+</div>
+
+<details>
+  <summary>Namuna yechim</summary>
+<pre><code>.royxat {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.karta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}</code></pre>
+</details>
+
+<h2>Xulosa</h2>
+<ul>
+  <li><code>display: flex</code> — bir qator/ustun; <code>display: grid</code> — to'r.</li>
+  <li>Markazlashtirish: <code>justify-content: center; align-items: center;</code></li>
+  <li><code>gap</code> — bo'shliq uchun eng qulay xossa (margin bilan kurashmang).</li>
+  <li><code>flex: 1</code> bolaga beriladi — bo'sh joyni egallaydi.</li>
+  <li>Moslashuvchi to'r retsepti: <code>repeat(auto-fit, minmax(160px, 1fr))</code>.</li>
+  <li><code>absolute</code> ishlashi uchun otada <code>relative</code> bo'lishi kerak.</li>
+</ul>
+
+<details>
+  <summary>Tekshiruv savollari</summary>
+  <p><strong>1. <code>display: flex</code> ni otaga yozamizmi, bolaga?</strong><br>Otaga. <code>flex: 1</code> esa bolaga.</p>
+  <p><strong>2. Kartalar galereyasi uchun Flex yoki Grid?</strong><br>Grid — ustun va qatorlarni birga boshqaradi.</p>
+  <p><strong>3. Avatar ustidagi "online" nuqtasini qanday qo'yamiz?</strong><br>
+  Otaga <code>position: relative</code>, nuqtaga <code>position: absolute</code> + <code>bottom/right</code>.</p>
+</details>
+
+<div class="lesson-foot"></div>
+
+</div>
+
+<script src="../assets/lessons.js"></script>
+<script src="../assets/course.js"></script>
+</body>
+</html>
