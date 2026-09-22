@@ -85,7 +85,7 @@ learn/
 ```
 
 - `data-mode="js"` — faqat JavaScript rejimi: kod `console.log` chiqishi bilan ko'rsatiladi.
-- `data-tall` — balandroq maydon (uzun misollar uchun).
+- `data-tall` — balandroq maydon (uzun misollar uchun), `data-xl` — eng baland (to'liq ilova misollari uchun).
 - Kod chekilgan holda yozilsa ham, yuklanishda chap chegaraga tekislanadi.
 - Kod ichida **yopiluvchi `textarea` tegini yozib bo'lmaydi** (u maydonni vaqtidan oldin yopadi).
   Kerak bo'lsa `@@/textarea@@` belgisini yozing — yuklanishda haqiqiy tegga almashtiriladi.
