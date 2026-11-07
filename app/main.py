@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 
-from app.api.signaling import router as signaling_router
 from app.api.webapp import router as webapp_api_router
 from app.config import settings
 from app.database import init_db
@@ -24,7 +23,6 @@ class NoCacheStaticFiles(StaticFiles):
 app = FastAPI(title="Soyla API")
 
 app.include_router(webapp_api_router)
-app.include_router(signaling_router)
 app.mount("/webapp", NoCacheStaticFiles(directory="app/webapp", html=True), name="webapp")
 
 

@@ -18,13 +18,6 @@ class Settings(BaseSettings):
     livekit_api_key: str = ""
     livekit_api_secret: str = ""
 
-    # TURN (ixtiyoriy; LiveKit bo'lsa odatda kerak emas)
-    metered_domain: str = ""
-    metered_secret_key: str = ""
-    turn_urls: str = ""
-    turn_username: str = ""
-    turn_password: str = ""
-
     # Admin Telegram ID lar (vergul bilan): 123,456
     admin_ids: str = ""
 

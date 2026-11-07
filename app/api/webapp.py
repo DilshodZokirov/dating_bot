@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime, timezone
 
-import httpx
 from fastapi import APIRouter, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -213,53 +212,6 @@ LANGUAGES = [
 @router.get("/languages")
 async def get_languages():
     return {"languages": LANGUAGES}
-
-
-async def _build_ice_servers() -> dict:
-    ice_servers: list[dict] = [{"urls": "stun:stun.l.google.com:19302"}]
-
-    # 1) O'z TURN (coturn / static) — eng oddiy yo'l
-    if settings.turn_urls and settings.turn_username and settings.turn_password:
-        urls = [u.strip() for u in settings.turn_urls.split(",") if u.strip()]
-        ice_servers.append(
-            {
-                "urls": urls if len(urls) > 1 else urls[0],
-                "username": settings.turn_username,
-                "credential": settings.turn_password,
-            }
-        )
-        return {"iceServers": ice_servers}
-
-    # 2) Metered.ca dinamik credential
-    if not settings.metered_domain or not settings.metered_secret_key:
-        return {"iceServers": ice_servers}
-
-    base = f"https://{settings.metered_domain}/api/v1/turn"
-    try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            create_resp = await client.post(
-                f"{base}/credential",
-                params={"secretKey": settings.metered_secret_key},
-                json={"expiryInSeconds": 3600, "label": "call"},
-            )
-            create_resp.raise_for_status()
-            api_key = create_resp.json()["apiKey"]
-
-            ice_resp = await client.get(f"{base}/credentials", params={"apiKey": api_key})
-            ice_resp.raise_for_status()
-            metered_servers = ice_resp.json()
-        if isinstance(metered_servers, list) and metered_servers:
-            return {"iceServers": metered_servers}
-        return {"iceServers": ice_servers}
-    except Exception as e:
-        print(f"TURN credentials error: {e}")
-        return {"iceServers": ice_servers}
-
-
-@router.get("/turn-credentials")
-async def get_turn_credentials(x_telegram_init_data: str | None = Header(default=None)):
-    _auth(x_telegram_init_data)  # faqat ro'yxatdan o'tgan/haqiqiy Telegram foydalanuvchisi so'rasin
-    return await _build_ice_servers()
 
 
 @router.post("/profile")

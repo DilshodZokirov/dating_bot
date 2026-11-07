@@ -3385,23 +3385,34 @@ let facingMode = "user";
 let speakerOn = false;
 let sessionTopic = "any";
 
+function setRemoteCameraVisible(on) {
+  const video = document.getElementById("remoteVideo");
+  const avatar = document.getElementById("callAvatar");
+  if (video) video.style.display = on ? "block" : "none";
+  if (avatar) avatar.style.display = on ? "none" : "grid";
+}
+
+function isRemoteCamera(pubOrTrack) {
+  const kind = pubOrTrack?.kind;
+  const source = pubOrTrack?.source;
+  return kind === "video" || source === LivekitClient?.Track?.Source?.Camera;
+}
+
 function attachRemoteTrack(track) {
   if (track.kind === "audio") {
-    const el = track.attach();
+    const el = document.getElementById("remoteAudio");
+    if (!el) return;
+    track.attach(el);
     el.autoplay = true;
     el.playsInline = true;
-    const box = document.getElementById("remoteAudio");
-    box.replaceWith(el);
-    el.id = "remoteAudio";
     el.play?.().catch(() => {});
   } else if (track.kind === "video") {
-    const el = track.attach();
+    const el = document.getElementById("remoteVideo");
+    if (!el) return;
+    track.attach(el);
     el.autoplay = true;
     el.playsInline = true;
-    el.id = "remoteVideo";
-    el.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;background:#000;";
-    document.getElementById("remoteVideo").replaceWith(el);
-    document.getElementById("callAvatar").style.display = "none";
+    setRemoteCameraVisible(!track.isMuted);
   }
 }
 
@@ -3471,7 +3482,16 @@ async function enterCall(roomId, partnerId, lk = {}) {
     onPeerReady();
   });
   lkRoom.on(RoomEvent.TrackUnsubscribed, (track) => {
-    track.detach().forEach((el) => el.remove());
+    track.detach();
+    if (track.kind === "video") setRemoteCameraVisible(false);
+  });
+  lkRoom.on(RoomEvent.TrackMuted, (pub, participant) => {
+    if (participant === lkRoom.localParticipant) return;
+    if (isRemoteCamera(pub)) setRemoteCameraVisible(false);
+  });
+  lkRoom.on(RoomEvent.TrackUnmuted, (pub, participant) => {
+    if (participant === lkRoom.localParticipant) return;
+    if (isRemoteCamera(pub)) setRemoteCameraVisible(true);
   });
   lkRoom.on(RoomEvent.ParticipantConnected, () => onPeerReady());
   lkRoom.on(RoomEvent.Disconnected, () => {
