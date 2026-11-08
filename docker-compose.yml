@@ -30,6 +30,8 @@ services:
   api:
     build: .
     restart: unless-stopped
+    environment:
+      PYTHONUNBUFFERED: "1"
     # Build muvaffaqiyatsiz bo'lsa: eski image + livekit-api ni startida o'rnatadi
     command: >
       sh -c "python -c 'import livekit.api' 2>/dev/null || pip install --no-cache-dir 'livekit-api==1.2.0';
@@ -50,6 +52,8 @@ services:
   bot:
     build: .
     restart: unless-stopped
+    environment:
+      PYTHONUNBUFFERED: "1"
     command: >
       sh -c "python -c 'import livekit.api' 2>/dev/null || pip install --no-cache-dir 'livekit-api==1.2.0';
              python -c 'import multipart' 2>/dev/null || pip install --no-cache-dir 'python-multipart==0.0.12';
